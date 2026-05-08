@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-vh3ai",
-	"version": "0.6.5",
+	"version": "0.7.0",
 	"description": "n8n community node for the VH3 AI API — jobs, contacts, resources, vehicles, worksheets, invoices, quotes, and more.",
 	"keywords": [
 		"n8n-community-node-package",
@@ -39,8 +39,7 @@
 			"dist/credentials/Vh3AiApi.credentials.js"
 		],
 		"nodes": [
-			"dist/nodes/Vh3Ai/Vh3Ai.node.js",
-			"dist/nodes/Vh3AiPro/Vh3AiPro.node.js"
+			"dist/nodes/Vh3Ai/Vh3Ai.node.js"
 		]
 	},
 	"devDependencies": {

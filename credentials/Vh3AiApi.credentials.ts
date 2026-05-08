@@ -12,6 +12,8 @@ export class Vh3AiApi implements ICredentialType {
 
 	documentationUrl = 'https://vh3.ai/docs';
 
+	icon = 'file:vh3ai.svg' as const;
+
 	properties: INodeProperties[] = [
 		{
 			displayName: 'API Key',

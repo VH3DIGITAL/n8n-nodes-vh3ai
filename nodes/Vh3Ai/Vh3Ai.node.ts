@@ -16,6 +16,12 @@ import {
 	requireCompanyId,
 	toUtcDateTime,
 	defaultCreatedAtRange,
+	vh3FsiGetRequest,
+	vh3FsiPostRequest,
+	vh3FsiPatchRequest,
+	vh3FsiDeleteRequest,
+	vh3FsiGetAllPages,
+	buildAttachments,
 } from './GenericFunctions';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
@@ -32,19 +38,32 @@ import { jobGroupsOperations, jobGroupsFields } from './descriptions/JobGroupsDe
 import { stockOperations, stockFields } from './descriptions/StockDescription';
 import { referenceDataOperations, referenceDataFields } from './descriptions/ReferenceDataDescription';
 import { quotesOperations, quotesFields } from './descriptions/QuotesDescription';
+import { fsiAccountReportOperations, fsiAccountReportFields } from './descriptions/FsiAccountReviewDescription';
+import { fsiBriefingOperations, fsiBriefingFields } from './descriptions/FsiBriefingDescription';
+import { fsiEmailOperations, fsiEmailFields } from './descriptions/FsiEmailDescription';
+import { fsiJobsOperations, fsiJobsFields } from './descriptions/FsiJobsDescription';
+import { fsiReportsOperations, fsiReportsFields } from './descriptions/FsiReportsDescription';
+import { fsiSearchOperations, fsiSearchFields } from './descriptions/FsiSearchDescription';
+import { fsiSentinelOperations, fsiSentinelFields } from './descriptions/FsiSentinelDescription';
+import { fsiCasesOperations, fsiCasesFields } from './descriptions/FsiCasesDescription';
+import { fsiPulseOperations, fsiPulseFields } from './descriptions/FsiPulseDescription';
+import { fsiWeatherOperations, fsiWeatherFields } from './descriptions/FsiWeatherDescription';
+import { fsiIntelligenceOperations, fsiIntelligenceFields } from './descriptions/FsiIntelligenceDescription';
+import { fsiInvestigateOperations, fsiInvestigateFields } from './descriptions/FsiInvestigateDescription';
+import { fsiConnieOperations, fsiConnieFields } from './descriptions/FsiConnieDescription';
 
 export class Vh3Ai implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'VH3 AI - BigChange API',
+		displayName: 'VH3 AI',
 		name: 'vh3Ai',
 		icon: 'file:vh3ai.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + " (" + $parameter["resource"] + ")"}}',
 		description:
-			'Read and write BigChange field service data (jobs, contacts/sites, engineers, vehicles, invoices, quotes, notes, stock, persons, reference data) through the VH3 Connect proxy. Use this as a tool when an agent needs concrete operational records — e.g. "list yesterday\'s jobs for customer X", "create an invoice for job 12345", "update a contact\'s address". All list operations support paging and a Simplify (compact) flag that strips deep BigChange envelopes. IDs are numeric; dates are UTC ISO-8601.',
+			'Read and write BigChange field service data and access VH3 AI intelligence features — jobs, contacts, invoices, reports, search, cases, and more.',
 		defaults: {
-			name: 'VH3 AI - BigChange API',
+			name: 'VH3 AI',
 		},
 		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],
@@ -62,20 +81,33 @@ export class Vh3Ai implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{ name: 'Contact', value: 'contacts', description: 'Customers and sites — companies, addresses, locations. Pick this for anything customer- or site-related (CRM-style).' },
-					{ name: 'Invoice', value: 'invoices', description: 'Sales invoices and their line items — read, create, edit, mark sent/paid, cancel.' },
-					{ name: 'Job', value: 'jobs', description: 'Field service jobs — the core operational unit. Read/list/search jobs, schedule, start, set result, cancel; manage constraints and stock used per job.' },
-					{ name: 'Job Group', value: 'jobGroups', description: 'Linked sets of jobs (e.g. multi-visit projects) and their status history.' },
-					{ name: 'Job Type', value: 'jobTypes', description: 'Job type definitions (templates) — schemas for installation/repair/maintenance, including custom field definitions.' },
-					{ name: 'Note', value: 'notes', description: 'Notes, tasks, and progress updates attached to jobs/contacts/persons. Includes note types (categories).' },
-					{ name: 'Person', value: 'persons', description: 'Individual people attached to a contact (e.g. site contacts at a customer). Includes consent history.' },
-					{ name: 'Quote', value: 'quotes', description: 'Sales quotes and their line items — read, create, edit, mark sent/accepted/rejected.' },
-					{ name: 'Reference Data', value: 'referenceData', description: 'Lookup tables — department codes and nominal (accounting) codes used on quotes/invoices.' },
-					{ name: 'Resource (Engineer)', value: 'resources', description: 'Engineers/technicians (the field workforce) and their groups. Use when the agent talks about "engineers", "technicians", "operatives", or "resources".' },
-					{ name: 'Stock', value: 'stock', description: 'Inventory — product categories, stock details (SKUs), stock items (physical units), movements, and suppliers.' },
-					{ name: 'Vehicle', value: 'vehicles', description: 'Fleet vehicles — read/create/update vehicle records and their group assignments.' },
-					{ name: 'Worksheet', value: 'worksheets', description: 'Mobile-app worksheet/checklist definitions, questions, and submitted answers per job.' },
-					{ name: 'Worksheet Group', value: 'worksheetGroups', description: 'Folders that organise worksheet definitions.' },
+					{ name: 'Account Report (VH3 AI)', value: 'accountReport', description: 'Generate monthly account review reports for a contact.' },
+					{ name: 'Briefing (VH3 AI)', value: 'briefing', description: 'Generate pre-job intelligence briefings.' },
+					{ name: 'Case (VH3 AI)', value: 'cases', description: 'Case management — create, update, transition, comment, link items and participants.' },
+					{ name: 'Connie (VH3 AI)', value: 'connie', description: 'Conversational AI assistant — chat, sessions, and history search.' },
+					{ name: 'Contact (BigChange)', value: 'contacts', description: 'Customers and sites — companies, addresses, locations.' },
+					{ name: 'Email (VH3 AI)', value: 'email', description: 'Email triage — classify, ingest, and list triage categories.' },
+					{ name: 'Intelligence (VH3 AI)', value: 'intelligence', description: 'Job type profiling — list, get, and generate intelligence profiles.' },
+					{ name: 'Investigate (VH3 AI)', value: 'investigate', description: 'Run investigative queries against operational data.' },
+					{ name: 'Invoice (BigChange)', value: 'invoices', description: 'Sales invoices and their line items — read, create, edit, mark sent/paid, cancel.' },
+					{ name: 'Job (BigChange)', value: 'jobs', description: 'Field service jobs — CRUD, schedule, start, set result, cancel; manage constraints and stock.' },
+					{ name: 'Job Feed (VH3 AI)', value: 'jobFeed', description: 'Enriched job feed with aggregation and analytics.' },
+					{ name: 'Job Group (BigChange)', value: 'jobGroups', description: 'Linked sets of jobs (e.g. multi-visit projects) and their status history.' },
+					{ name: 'Job Type (BigChange)', value: 'jobTypes', description: 'Job type definitions (templates) — schemas for installation/repair/maintenance.' },
+					{ name: 'Note (BigChange)', value: 'notes', description: 'Notes, tasks, and progress updates attached to jobs/contacts/persons.' },
+					{ name: 'Person (BigChange)', value: 'persons', description: 'Individual people attached to a contact (e.g. site contacts). Includes consent history.' },
+					{ name: 'Pulse (VH3 AI)', value: 'pulse', description: 'Operational pulse dashboard for your company.' },
+					{ name: 'Quote (BigChange)', value: 'quotes', description: 'Sales quotes and their line items — read, create, edit, mark sent/accepted/rejected.' },
+					{ name: 'Reference Data (BigChange)', value: 'referenceData', description: 'Lookup tables — department codes and nominal (accounting) codes.' },
+					{ name: 'Report (VH3 AI)', value: 'reports', description: 'Generate operational reports (daily, weekly, monthly).' },
+					{ name: 'Resource / Engineer (BigChange)', value: 'resources', description: 'Engineers/technicians (the field workforce) and their groups.' },
+					{ name: 'Search (VH3 AI)', value: 'search', description: 'Semantic and outcome search across operational data.' },
+					{ name: 'Sentinel (VH3 AI)', value: 'sentinel', description: 'Proactive monitoring — run sentinels, view registry and results.' },
+					{ name: 'Stock (BigChange)', value: 'stock', description: 'Inventory — product categories, stock details, items, movements, and suppliers.' },
+					{ name: 'Vehicle (BigChange)', value: 'vehicles', description: 'Fleet vehicles — read/create/update vehicle records and groups.' },
+					{ name: 'Weather (VH3 AI)', value: 'weather', description: 'Weather data for jobs, sites, forecasts, and historical lookups.' },
+					{ name: 'Worksheet (BigChange)', value: 'worksheets', description: 'Mobile-app worksheet/checklist definitions, questions, and submitted answers.' },
+					{ name: 'Worksheet Group (BigChange)', value: 'worksheetGroups', description: 'Folders that organise worksheet definitions.' },
 				],
 				default: 'jobs',
 			},
@@ -107,6 +139,32 @@ export class Vh3Ai implements INodeType {
 			...stockFields,
 			...referenceDataOperations,
 			...referenceDataFields,
+			...fsiAccountReportOperations,
+			...fsiAccountReportFields,
+			...fsiBriefingOperations,
+			...fsiBriefingFields,
+			...fsiEmailOperations,
+			...fsiEmailFields,
+			...fsiJobsOperations,
+			...fsiJobsFields,
+			...fsiReportsOperations,
+			...fsiReportsFields,
+			...fsiSearchOperations,
+			...fsiSearchFields,
+			...fsiSentinelOperations,
+			...fsiSentinelFields,
+			...fsiCasesOperations,
+			...fsiCasesFields,
+			...fsiPulseOperations,
+			...fsiPulseFields,
+			...fsiWeatherOperations,
+			...fsiWeatherFields,
+			...fsiIntelligenceOperations,
+			...fsiIntelligenceFields,
+			...fsiInvestigateOperations,
+			...fsiInvestigateFields,
+			...fsiConnieOperations,
+			...fsiConnieFields,
 		],
 	};
 
@@ -120,9 +178,21 @@ export class Vh3Ai implements INodeType {
 		const parseIds = (v: unknown) => String(v).split(',').map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n));
 		const parseTexts = (v: unknown) => String(v).split(',').map((s) => s.trim()).filter((s) => s.length > 0);
 
+		const fsiResources = new Set([
+			'accountReport', 'briefing', 'cases', 'connie', 'email',
+			'intelligence', 'investigate', 'jobFeed', 'pulse', 'reports',
+			'search', 'sentinel', 'weather',
+		]);
+
 		for (let i = 0; i < items.length; i++) {
 			try {
 				let responseData: JsonObject[] = [];
+
+				if (fsiResources.has(resource)) {
+					const credentials = await this.getCredentials('vh3AiApi');
+					const companyId = credentials.companyId;
+					requireCompanyId(this, companyId);
+				}
 
 				// ── JOBS ──────────────────────────────────────────────────
 				if (resource === 'jobs') {
@@ -1460,6 +1530,523 @@ export class Vh3Ai implements INodeType {
 						const qs: Record<string, string | number | boolean> = { nominalCodeId };
 						if (simplify) qs.compact = true;
 						const raw = await vh3ProxyGetRequest.call(this, '/reference_data/nominal_code_id', qs);
+						responseData = [raw];
+					}
+				}
+
+				// ── ACCOUNT REPORT (FSI) ─────────────────────────────────────
+				else if (resource === 'accountReport') {
+					if (operation === 'generateAccountReport') {
+						const contactId = this.getNodeParameter('contactId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { report_type: 'account_monthly', contact_id: contactId };
+						if (additionalFields.month) body.month = additionalFields.month;
+						if (additionalFields.includeNarrative !== undefined) body.include_narrative = additionalFields.includeNarrative;
+						const raw = await vh3FsiPostRequest.call(this, '/reports/generate', body);
+						responseData = [raw];
+					}
+				}
+
+				// ── BRIEFING (FSI) ───────────────────────────────────────────
+				else if (resource === 'briefing') {
+					if (operation === 'generateBriefing') {
+						const jobId = this.getNodeParameter('jobId', i) as number;
+						const contactId = this.getNodeParameter('contactId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { job_id: jobId, contact_id: contactId };
+						if (additionalFields.forceRegenerateSummary !== undefined) body.force_regenerate_summary = additionalFields.forceRegenerateSummary;
+						if (additionalFields.jobPayload) {
+							body.job_payload = typeof additionalFields.jobPayload === 'string'
+								? JSON.parse(additionalFields.jobPayload as string)
+								: additionalFields.jobPayload;
+						}
+						const raw = await vh3FsiPostRequest.call(this, '/briefing/generate', body);
+						responseData = [raw];
+					}
+				}
+
+				// ── EMAIL (FSI) ──────────────────────────────────────────────
+				else if (resource === 'email') {
+					const attachments = await buildAttachments(this, i);
+
+					if (operation === 'classifyEmail') {
+						const subject = this.getNodeParameter('subject', i) as string;
+						const emailBody = this.getNodeParameter('emailBody', i) as string;
+						const senderAddress = this.getNodeParameter('senderAddress', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { subject, email_body: emailBody, sender_address: senderAddress, attachments: attachments as unknown as JsonObject };
+						if (additionalFields.senderName) body.sender_name = additionalFields.senderName;
+						if (additionalFields.timestamp) body.timestamp = additionalFields.timestamp;
+						if (additionalFields.isReply !== undefined) body.is_reply = additionalFields.isReply;
+						if (additionalFields.isForward !== undefined) body.is_forward = additionalFields.isForward;
+						if (additionalFields.sourceRef) body.source_ref = additionalFields.sourceRef;
+						const raw = await vh3FsiPostRequest.call(this, '/triage/classify', body);
+						responseData = [raw];
+					} else if (operation === 'listTriageCategories') {
+						const raw = await vh3FsiGetRequest.call(this, '/triage/categories', {});
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'ingestEmail') {
+						const emailText = this.getNodeParameter('emailText', i) as string;
+						const emailSubject = this.getNodeParameter('emailSubject', i) as string;
+						const emailFrom = this.getNodeParameter('emailFrom', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { email_text: emailText, email_subject: emailSubject, email_from: emailFrom, attachments: attachments as unknown as JsonObject, preferred_type_ids: [] as unknown as JsonObject };
+						if (additionalFields.emailHtml) body.email_html = additionalFields.emailHtml;
+						if (additionalFields.emailDate) body.email_date = additionalFields.emailDate;
+						const typeIdsRaw = (additionalFields.preferredTypeIds as string) || '';
+						if (typeIdsRaw.trim()) {
+							body.preferred_type_ids = typeIdsRaw.split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n)) as unknown as JsonObject;
+						}
+						const raw = await vh3FsiPostRequest.call(this, '/ingest/email', body);
+						responseData = [raw];
+					}
+				}
+
+				// ── JOB FEED (FSI) ───────────────────────────────────────────
+				else if (resource === 'jobFeed') {
+					if (operation === 'aggregateJobs') {
+						const metric = this.getNodeParameter('metric', i) as string;
+						const period = this.getNodeParameter('period', i) as string;
+						const timeAxis = this.getNodeParameter('timeAxis', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { metric, period, time_axis: timeAxis };
+						if (additionalFields.compareTo) body.compare_to = additionalFields.compareTo;
+						if (additionalFields.groupBy) body.group_by = additionalFields.groupBy;
+						if (additionalFields.limit) body.limit = additionalFields.limit;
+						const filters: Record<string, unknown> = {};
+						if (additionalFields.resourceId) filters.resourceId = additionalFields.resourceId;
+						if (additionalFields.contactId) filters.contactId = additionalFields.contactId;
+						if (additionalFields.siteKey) filters.siteKey = additionalFields.siteKey;
+						if (additionalFields.typeId) filters.typeId = additionalFields.typeId;
+						if (additionalFields.categoryId) filters.categoryId = additionalFields.categoryId;
+						if (additionalFields.vertical) filters.vertical = additionalFields.vertical;
+						if (additionalFields.status) filters.status = additionalFields.status;
+						if (additionalFields.result) filters.result = additionalFields.result;
+						if (additionalFields.startDate) filters.startDate = additionalFields.startDate;
+						if (additionalFields.endDate) filters.endDate = additionalFields.endDate;
+						if (Object.keys(filters).length > 0) body.filters = filters as unknown as JsonObject;
+						const raw = await vh3FsiPostRequest.call(this, '/aggregate/jobs', body);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'listJobFeed') {
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const simplify = this.getNodeParameter('simplify', i) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = {};
+						if (simplify) qs.compact = true;
+						if (additionalFields.contactId) qs.contact_id = additionalFields.contactId as number;
+						if (additionalFields.resourceId) qs.resource_id = additionalFields.resourceId as number;
+						if (additionalFields.typeId) qs.type_id = additionalFields.typeId as number;
+						if (additionalFields.categoryId) qs.category_id = additionalFields.categoryId as number;
+						if (additionalFields.status) qs.status = additionalFields.status as string;
+						if (additionalFields.result) qs.result = additionalFields.result as string;
+						if (returnAll) {
+							responseData = await vh3FsiGetAllPages.call(this, '/jobs/feed', qs, 'jobs');
+						} else {
+							const pageSize = this.getNodeParameter('pageSize', i) as number;
+							const pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							qs.page_size = pageSize;
+							qs.page_number = pageNumber;
+							const raw = await vh3FsiGetRequest.call(this, '/jobs/feed', qs);
+							responseData = (Array.isArray(raw.jobs) ? raw.jobs : []) as JsonObject[];
+						}
+					} else if (operation === 'getEnrichedJob') {
+						const jobId = this.getNodeParameter('jobId', i) as number;
+						const simplify = this.getNodeParameter('simplify', i) as boolean;
+						const qs: Record<string, string | number | boolean> = {};
+						if (simplify) qs.compact = true;
+						const raw = await vh3FsiGetRequest.call(this, `/jobs/${jobId}`, qs);
+						responseData = [raw];
+					}
+				}
+
+				// ── REPORTS (FSI) ────────────────────────────────────────────
+				else if (resource === 'reports') {
+					if (operation === 'generateReport') {
+						const reportType = this.getNodeParameter('reportType', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { report_type: reportType };
+						if (additionalFields.date) {
+							const d = new Date(additionalFields.date as string);
+							body.date = d.toISOString().split('T')[0];
+						}
+						if (additionalFields.includeNarrative !== undefined) body.include_narrative = additionalFields.includeNarrative;
+						if (additionalFields.sections) {
+							body.sections = (typeof additionalFields.sections === 'string'
+								? JSON.parse(additionalFields.sections as string)
+								: additionalFields.sections) as JsonObject;
+						}
+						const raw = await vh3FsiPostRequest.call(this, '/reports/generate', body);
+						responseData = [raw];
+					} else if (operation === 'listReportSections') {
+						const raw = await vh3FsiGetRequest.call(this, '/reports/sections', {});
+						responseData = [raw];
+					}
+				}
+
+				// ── SEARCH (FSI) ─────────────────────────────────────────────
+				else if (resource === 'search') {
+					if (operation === 'autocomplete') {
+						const q = this.getNodeParameter('query', i) as string;
+						const limit = this.getNodeParameter('limit', i) as number;
+						const typeFilter = this.getNodeParameter('typeFilter', i, []) as string[];
+						const qs: Record<string, string | number> = { q, limit };
+						const raw = await vh3FsiGetRequest.call(this, '/search/autocomplete', qs);
+						let results: JsonObject[];
+						if (Array.isArray(raw)) {
+							results = raw as JsonObject[];
+						} else if (raw && Array.isArray((raw as JsonObject).results)) {
+							results = ((raw as JsonObject).results as unknown) as JsonObject[];
+						} else {
+							results = [raw];
+						}
+						if (typeFilter.length > 0) {
+							const allowed = new Set(typeFilter);
+							results = results.filter((item) => allowed.has((item?.type as string) ?? ''));
+						}
+						responseData = results;
+					} else {
+						const endpoint = operation === 'searchOutcomes'
+							? '/search/outcomes'
+							: operation === 'searchIntakeBasic'
+								? '/search/intake'
+								: '/search/intake/enriched';
+						const queryText = this.getNodeParameter('queryText', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { query_text: queryText };
+						if (additionalFields.limit) body.limit = additionalFields.limit;
+						if (additionalFields.typeId) body.type_id = additionalFields.typeId;
+						if (additionalFields.categoryId) body.category_id = additionalFields.categoryId;
+						if (additionalFields.resourceId) body.resource_id = additionalFields.resourceId;
+						if (additionalFields.contactId) body.contact_id = additionalFields.contactId;
+						if (additionalFields.siteKey) body.site_key = additionalFields.siteKey;
+						const raw = await vh3FsiPostRequest.call(this, endpoint, body);
+						let results: JsonObject[];
+						if (Array.isArray(raw)) {
+							results = raw as JsonObject[];
+						} else if (raw && Array.isArray((raw as JsonObject).hits)) {
+							results = ((raw as JsonObject).hits as unknown) as JsonObject[];
+						} else {
+							results = [raw];
+						}
+						const dateFrom = additionalFields.dateFrom as string | undefined;
+						const dateTo = additionalFields.dateTo as string | undefined;
+						const maxAgeMonths = additionalFields.maxAgeMonths as number | undefined;
+						if (dateFrom || dateTo || maxAgeMonths) {
+							let fromMs: number | null = dateFrom ? Date.parse(dateFrom) : null;
+							const toMs = dateTo ? Date.parse(dateTo) : null;
+							if (fromMs == null && maxAgeMonths) {
+								const cutoff = new Date();
+								cutoff.setMonth(cutoff.getMonth() - maxAgeMonths);
+								fromMs = cutoff.getTime();
+							}
+							const extractTimestamp = (item: JsonObject): number | null => {
+								const candidates: unknown[] = [
+									item?.actualStartAt, item?.actualEndAt, item?.createdAt,
+									item?.created_at, item?.plannedStartAt, item?.scheduledAt,
+									(item?.job as JsonObject | undefined)?.actualStartAt,
+									(item?.job as JsonObject | undefined)?.createdAt,
+								];
+								for (const v of candidates) {
+									if (v == null) continue;
+									const ts = typeof v === 'number' ? v : Date.parse(String(v));
+									if (!Number.isNaN(ts)) return ts;
+								}
+								return null;
+							};
+							results = results.filter((item) => {
+								const ts = extractTimestamp(item);
+								if (ts == null) return true;
+								if (fromMs != null && ts < fromMs) return false;
+								if (toMs != null && ts > toMs) return false;
+								return true;
+							});
+						}
+						responseData = results;
+					}
+				}
+
+				// ── SENTINEL (FSI) ───────────────────────────────────────────
+				else if (resource === 'sentinel') {
+					if (operation === 'runSentinels') {
+						const sentinelId = this.getNodeParameter('sentinelId', i) as string;
+						if (sentinelId === 'all') {
+							const raw = await vh3FsiPostRequest.call(this, '/sentinels/run', { sentinel_ids: [] as unknown as JsonObject });
+							responseData = [raw];
+						} else {
+							const raw = await vh3FsiPostRequest.call(this, `/sentinels/run/${sentinelId}`, {});
+							responseData = [raw];
+						}
+					} else if (operation === 'listSentinelRegistry') {
+						const raw = await vh3FsiGetRequest.call(this, '/sentinels/registry', {});
+						responseData = [raw];
+					} else if (operation === 'getSentinelResults') {
+						const raw = await vh3FsiGetRequest.call(this, '/sentinels/results', {});
+						responseData = [raw];
+					}
+				}
+
+				// ── CASES (FSI) ──────────────────────────────────────────────
+				else if (resource === 'cases') {
+					if (operation === 'createCase') {
+						const title = this.getNodeParameter('title', i) as string;
+						const caseType = this.getNodeParameter('caseType', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { title, type: caseType };
+						if (additionalFields.description) body.description = additionalFields.description;
+						if (additionalFields.priority) body.priority = additionalFields.priority;
+						if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+						if (additionalFields.dueDate) body.due_date = additionalFields.dueDate;
+						if (additionalFields.tags) body.tags = typeof additionalFields.tags === 'string' ? JSON.parse(additionalFields.tags as string) : additionalFields.tags;
+						if (additionalFields.metadata) body.metadata = typeof additionalFields.metadata === 'string' ? JSON.parse(additionalFields.metadata as string) : additionalFields.metadata;
+						const raw = await vh3FsiPostRequest.call(this, '/cases/create', body);
+						responseData = [raw];
+					} else if (operation === 'listCases') {
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = {};
+						if (additionalFields.status) qs.status = additionalFields.status as string;
+						if (additionalFields.type) qs.type = additionalFields.type as string;
+						if (additionalFields.priority) qs.priority = additionalFields.priority as string;
+						if (additionalFields.ownerId) qs.owner_id = additionalFields.ownerId as number;
+						if (additionalFields.search) qs.search = additionalFields.search as string;
+						if (additionalFields.page) qs.page = additionalFields.page as number;
+						if (additionalFields.perPage) qs.per_page = additionalFields.perPage as number;
+						const raw = await vh3FsiGetRequest.call(this, '/cases/list', qs);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'searchCases') {
+						const query = this.getNodeParameter('query', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = { q: query };
+						if (additionalFields.status) qs.status = additionalFields.status as string;
+						if (additionalFields.type) qs.type = additionalFields.type as string;
+						if (additionalFields.priority) qs.priority = additionalFields.priority as string;
+						if (additionalFields.page) qs.page = additionalFields.page as number;
+						if (additionalFields.perPage) qs.per_page = additionalFields.perPage as number;
+						const raw = await vh3FsiGetRequest.call(this, '/cases/search', qs);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'getCase') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const raw = await vh3FsiGetRequest.call(this, `/cases/${caseId}`, {});
+						responseData = [raw];
+					} else if (operation === 'updateCase') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const updateFields = this.getNodeParameter('updateFields', i) as JsonObject;
+						const body: JsonObject = {};
+						if (updateFields.title) body.title = updateFields.title;
+						if (updateFields.description) body.description = updateFields.description;
+						if (updateFields.type) body.type = updateFields.type;
+						if (updateFields.priority) body.priority = updateFields.priority;
+						if (updateFields.actorType) body.actor_type = updateFields.actorType;
+						if (updateFields.actorId) body.actor_id = updateFields.actorId;
+						if (updateFields.dueDate) body.due_date = updateFields.dueDate;
+						if (updateFields.resolution) body.resolution = updateFields.resolution;
+						if (updateFields.tags) body.tags = typeof updateFields.tags === 'string' ? JSON.parse(updateFields.tags as string) : updateFields.tags;
+						if (updateFields.metadata) body.metadata = typeof updateFields.metadata === 'string' ? JSON.parse(updateFields.metadata as string) : updateFields.metadata;
+						const raw = await vh3FsiPatchRequest.call(this, `/cases/${caseId}`, body);
+						responseData = [raw];
+					} else if (operation === 'transitionCase') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const targetStatus = this.getNodeParameter('targetStatus', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { status: targetStatus };
+						if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+						if (additionalFields.comment) body.comment = additionalFields.comment;
+						const raw = await vh3FsiPostRequest.call(this, `/cases/${caseId}/transition`, body);
+						responseData = [raw];
+					} else if (operation === 'addComment') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const comment = this.getNodeParameter('comment', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { comment };
+						if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+						const raw = await vh3FsiPostRequest.call(this, `/cases/${caseId}/comments`, body);
+						responseData = [raw];
+					} else if (operation === 'listActivity') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = {};
+						if (additionalFields.page) qs.page = additionalFields.page as number;
+						if (additionalFields.perPage) qs.per_page = additionalFields.perPage as number;
+						const raw = await vh3FsiGetRequest.call(this, `/cases/${caseId}/activity`, qs);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'listCaseItems') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = {};
+						if (additionalFields.itemType) qs.type = additionalFields.itemType as string;
+						const raw = await vh3FsiGetRequest.call(this, `/cases/${caseId}/items`, qs);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'addCaseItem') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const itemType = this.getNodeParameter('itemType', i) as string;
+						const itemId = this.getNodeParameter('itemId', i) as string;
+						const label = this.getNodeParameter('label', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { item_type: itemType, item_id: itemId, label };
+						if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+						if (additionalFields.context) body.context = additionalFields.context;
+						if (additionalFields.metadata) body.metadata = typeof additionalFields.metadata === 'string' ? JSON.parse(additionalFields.metadata as string) : additionalFields.metadata;
+						const raw = await vh3FsiPostRequest.call(this, `/cases/${caseId}/items`, body);
+						responseData = [raw];
+					} else if (operation === 'removeCaseItem') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const itemRecordId = this.getNodeParameter('itemRecordId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = {};
+						if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+						const raw = await vh3FsiDeleteRequest.call(this, `/cases/${caseId}/items/${itemRecordId}`, body);
+						responseData = [raw];
+					} else if (operation === 'addParticipant') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const userId = this.getNodeParameter('userId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { user_id: userId };
+						if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+						if (additionalFields.role) body.role = additionalFields.role;
+						const raw = await vh3FsiPostRequest.call(this, `/cases/${caseId}/participants`, body);
+						responseData = [raw];
+					} else if (operation === 'removeParticipant') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const participantRecordId = this.getNodeParameter('participantRecordId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = {};
+						if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+						const raw = await vh3FsiDeleteRequest.call(this, `/cases/${caseId}/participants/${participantRecordId}`, body);
+						responseData = [raw];
+					} else if (operation === 'listCasesForItem') {
+						const itemType = this.getNodeParameter('itemType', i) as string;
+						const externalId = this.getNodeParameter('externalId', i) as string;
+						const raw = await vh3FsiGetRequest.call(this, `/items/${itemType}/${externalId}/cases`, {});
+						responseData = Array.isArray(raw) ? raw : [raw];
+					}
+				}
+
+				// ── CONNIE (FSI) ─────────────────────────────────────────────
+				else if (resource === 'connie') {
+					if (operation === 'connieChat') {
+						const message = this.getNodeParameter('message', i) as string;
+						const experimental = this.getNodeParameter('experimentalMode', i, false) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { message };
+						if (additionalFields.sessionId) body.session_id = additionalFields.sessionId;
+						if (additionalFields.userId) body.user_id = additionalFields.userId;
+						if (additionalFields.userName) body.user_name = additionalFields.userName;
+						if (additionalFields.userCompanyName) body.user_company_name = additionalFields.userCompanyName;
+						if (additionalFields.summary) body.summary = additionalFields.summary;
+						if (additionalFields.contactId) body.contact_id = additionalFields.contactId;
+						if (additionalFields.currentJobReference) body.current_job_reference = additionalFields.currentJobReference;
+						const endpoint = experimental ? '/connie/experimental/chat' : '/connie/chat';
+						const raw = await vh3FsiPostRequest.call(this, endpoint, body);
+						responseData = [raw];
+					} else if (operation === 'connieListSessions') {
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = {};
+						if (additionalFields.userId) qs.user_id = additionalFields.userId as string;
+						if (additionalFields.contactId) qs.contact_id = additionalFields.contactId as string;
+						if (additionalFields.limit) qs.limit = additionalFields.limit as number;
+						const raw = await vh3FsiGetRequest.call(this, '/connie/sessions', qs);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'connieGetSessionMessages') {
+						const sessionId = this.getNodeParameter('sessionId', i) as string;
+						const raw = await vh3FsiGetRequest.call(this, `/connie/sessions/${sessionId}/messages`, {});
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'connieSearchHistory') {
+						const query = this.getNodeParameter('query', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { query };
+						if (additionalFields.userId) body.user_id = additionalFields.userId;
+						if (additionalFields.contactId) body.contact_id = additionalFields.contactId;
+						if (additionalFields.limit) body.limit = additionalFields.limit;
+						const raw = await vh3FsiPostRequest.call(this, '/connie/history/search', body);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					}
+				}
+
+				// ── INVESTIGATE (FSI) ────────────────────────────────────────
+				else if (resource === 'investigate') {
+					if (operation === 'runInvestigation') {
+						const question = this.getNodeParameter('question', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { question };
+						if (additionalFields.maxEvidenceItems) body.max_evidence_items = additionalFields.maxEvidenceItems;
+						const raw = await vh3FsiPostRequest.call(this, '/investigate', body);
+						responseData = [raw];
+					}
+				}
+
+				// ── PULSE (FSI) ──────────────────────────────────────────────
+				else if (resource === 'pulse') {
+					if (operation === 'getPulse') {
+						const credentials = await this.getCredentials('vh3AiApi');
+						const companyId = credentials.companyId;
+						const raw = await vh3FsiGetRequest.call(this, `/pulse/${companyId}`, {});
+						responseData = [raw];
+					}
+				}
+
+				// ── WEATHER (FSI) ────────────────────────────────────────────
+				else if (resource === 'weather') {
+					if (operation === 'getWeatherForJob') {
+						const jobId = this.getNodeParameter('jobId', i) as string;
+						const raw = await vh3FsiGetRequest.call(this, `/weather/for-job/${jobId}`, {});
+						responseData = [raw];
+					} else if (operation === 'getWeatherForSite') {
+						const siteKey = this.getNodeParameter('siteKey', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = { site_key: siteKey };
+						if (additionalFields.startDate) qs.start_date = additionalFields.startDate as string;
+						if (additionalFields.endDate) qs.end_date = additionalFields.endDate as string;
+						const raw = await vh3FsiGetRequest.call(this, '/weather/for-site', qs);
+						responseData = [raw];
+					} else if (operation === 'getForecast') {
+						const latitude = this.getNodeParameter('latitude', i) as string;
+						const longitude = this.getNodeParameter('longitude', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = { latitude, longitude };
+						if (additionalFields.startHour) qs.start_hour = additionalFields.startHour as string;
+						if (additionalFields.endHour) qs.end_hour = additionalFields.endHour as string;
+						if (additionalFields.timezone) qs.timezone = additionalFields.timezone as string;
+						const raw = await vh3FsiGetRequest.call(this, '/weather/forecast', qs);
+						responseData = [raw];
+					} else if (operation === 'getHistorical') {
+						const latitude = this.getNodeParameter('latitude', i) as string;
+						const longitude = this.getNodeParameter('longitude', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = { latitude, longitude };
+						if (additionalFields.startDate) qs.start_date = additionalFields.startDate as string;
+						if (additionalFields.endDate) qs.end_date = additionalFields.endDate as string;
+						if (additionalFields.timezone) qs.timezone = additionalFields.timezone as string;
+						const raw = await vh3FsiGetRequest.call(this, '/weather/historical', qs);
+						responseData = [raw];
+					}
+				}
+
+				// ── INTELLIGENCE (FSI) ───────────────────────────────────────
+				else if (resource === 'intelligence') {
+					const credentials = await this.getCredentials('vh3AiApi');
+					const companyId = credentials.companyId;
+					if (operation === 'listProfiles') {
+						const profiledOnly = this.getNodeParameter('profiledOnly', i) as boolean;
+						const qs: Record<string, string | number | boolean> = {};
+						if (profiledOnly) qs.profiled_only = true;
+						const raw = await vh3FsiGetRequest.call(this, `/intelligence/profiles/${companyId}`, qs);
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'getProfile') {
+						const typeId = this.getNodeParameter('typeId', i) as string;
+						const raw = await vh3FsiGetRequest.call(this, `/intelligence/profiles/${companyId}/types/${typeId}`, {});
+						responseData = [raw];
+					} else if (operation === 'generateProfiles') {
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = {};
+						if (additionalFields.scope) body.scope = additionalFields.scope;
+						if (additionalFields.typeIds) body.type_ids = typeof additionalFields.typeIds === 'string' ? JSON.parse(additionalFields.typeIds as string) : additionalFields.typeIds;
+						const raw = await vh3FsiPostRequest.call(this, '/intelligence/generate-profiles', body);
 						responseData = [raw];
 					}
 				}
