@@ -1,0 +1,397 @@
+import type { INodeProperties } from 'n8n-workflow';
+
+export const fsiJobsOperations: INodeProperties[] = [
+	{
+		displayName: 'Operation',
+		name: 'operation',
+		type: 'options',
+		noDataExpression: true,
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+			},
+		},
+		options: [
+			{
+				name: 'Aggregate Jobs',
+				value: 'aggregateJobs',
+				action: 'Aggregate job metrics',
+				description: 'Compute job metrics with grouping, time-axis control, and period-over-period comparison',
+			},
+			{
+				name: 'Get Enriched Job',
+				value: 'getEnrichedJob',
+				action: 'Get an enriched job',
+				description: 'Get a single job with worksheets, AI enrichment (vertical, sentiment, key phrases), and timing data',
+			},
+			{
+				name: 'List Job Feed',
+				value: 'listJobFeed',
+				action: 'List job feed',
+				description: 'Paginated list of AI-enriched jobs with filters for status, result, engineer, customer, job type, and category',
+			},
+		],
+		default: 'listJobFeed',
+	},
+];
+
+export const fsiJobsFields: INodeProperties[] = [
+	// ── List Job Feed fields ──
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given page size',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['listJobFeed'],
+			},
+		},
+	},
+	{
+		displayName: 'Page Size',
+		name: 'pageSize',
+		type: 'number',
+		typeOptions: { minValue: 1, maxValue: 200 },
+		default: 25,
+		description: 'Number of jobs per page (max 200)',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['listJobFeed'],
+				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Page Number',
+		name: 'pageNumber',
+		type: 'number',
+		typeOptions: { minValue: 1 },
+		default: 1,
+		description: 'Page to retrieve (1-based)',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['listJobFeed'],
+				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Simplify',
+		name: 'simplify',
+		type: 'boolean',
+		default: true,
+		description: 'Whether to return a simplified version of the response instead of the raw data',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['listJobFeed'],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Filter',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['listJobFeed'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Category ID',
+				name: 'categoryId',
+				type: 'number',
+				default: 0,
+				description: 'Filter by job category ID',
+			},
+			{
+				displayName: 'Contact ID',
+				name: 'contactId',
+				type: 'number',
+				default: 0,
+				description: 'Filter by customer contact ID',
+			},
+			{
+				displayName: 'Resource ID',
+				name: 'resourceId',
+				type: 'number',
+				default: 0,
+				description: 'Filter by engineer (resource) ID',
+			},
+			{
+				displayName: 'Result',
+				name: 'result',
+				type: 'string',
+				default: '',
+				description: 'Filter by job result (tenant-specific free text, e.g. "Complete", "Job ongoing", "Pricing required")',
+			},
+			{
+				displayName: 'Status',
+				name: 'status',
+				type: 'options',
+				options: [
+					{ name: 'Accepted', value: 'accepted' },
+					{ name: 'Completed OK', value: 'completedOk' },
+					{ name: 'Completed With Issues', value: 'completedWithIssues' },
+					{ name: 'New', value: 'new' },
+					{ name: 'On The Way', value: 'onTheWay' },
+					{ name: 'Scheduled', value: 'scheduled' },
+					{ name: 'Sent', value: 'sent' },
+					{ name: 'Started', value: 'started' },
+					{ name: 'Suspended', value: 'suspended' },
+					{ name: 'Unscheduled', value: 'unscheduled' },
+				],
+				default: '',
+				description: 'Filter by job status',
+			},
+			{
+				displayName: 'Type ID',
+				name: 'typeId',
+				type: 'number',
+				default: 0,
+				description: 'Filter by job type ID',
+			},
+		],
+	},
+
+	// ── Aggregate Jobs fields ──
+	{
+		displayName: 'Metric',
+		name: 'metric',
+		type: 'options',
+		required: true,
+		options: [
+			{ name: 'Job Count', value: 'job_count' },
+			{ name: 'Completion Rate', value: 'completion_rate' },
+			{ name: 'First Visit Fix Rate', value: 'first_visit_fix_rate' },
+			{ name: 'Avg Start Delay (mins)', value: 'avg_start_delta_mins' },
+			{ name: 'Avg End Delay (mins)', value: 'avg_end_delta_mins' },
+		],
+		default: 'job_count',
+		description: 'The metric to compute',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['aggregateJobs'],
+			},
+		},
+	},
+	{
+		displayName: 'Period',
+		name: 'period',
+		type: 'options',
+		options: [
+			{ name: 'Today', value: 'today' },
+			{ name: 'Yesterday', value: 'yesterday' },
+			{ name: 'This Week', value: 'this_week' },
+			{ name: 'Last Week', value: 'last_week' },
+			{ name: 'This Month', value: 'this_month' },
+			{ name: 'Last Month', value: 'last_month' },
+			{ name: 'Last 7 Days', value: 'last_7_days' },
+			{ name: 'Last 30 Days', value: 'last_30_days' },
+			{ name: 'Last 90 Days', value: 'last_90_days' },
+		],
+		default: 'last_7_days',
+		description: 'Time period to aggregate over',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['aggregateJobs'],
+			},
+		},
+	},
+	{
+		displayName: 'Time Axis',
+		name: 'timeAxis',
+		type: 'options',
+		options: [
+			{ name: 'Actual Start At', value: 'actualStartAt' },
+			{ name: 'Actual End At', value: 'actualEndAt' },
+			{ name: 'Created At', value: 'createdAt' },
+			{ name: 'Planned Start At', value: 'plannedStartAt' },
+			{ name: 'Scheduled At', value: 'scheduledAt' },
+		],
+		default: 'actualStartAt',
+		description: 'Which job timestamp to use for period filtering',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['aggregateJobs'],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['aggregateJobs'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Category ID',
+				name: 'categoryId',
+				type: 'string',
+				default: '',
+				description: 'Filter by job category ID',
+			},
+			{
+				displayName: 'Compare To',
+				name: 'compareTo',
+				type: 'options',
+				options: [
+					{ name: 'Previous Period', value: 'previous_period' },
+					{ name: 'Same Period Last Week', value: 'same_period_last_week' },
+					{ name: 'Same Period Last Month', value: 'same_period_last_month' },
+				],
+				default: '',
+				description: 'Compare against a reference period to see deltas',
+			},
+			{
+				displayName: 'Contact ID',
+				name: 'contactId',
+				type: 'string',
+				default: '',
+				description: 'Filter by customer/contact ID',
+			},
+			{
+				displayName: 'End Date',
+				name: 'endDate',
+				type: 'string',
+				default: '',
+				description: 'Custom end date (ISO format, e.g. 2026-03-07)',
+			},
+			{
+				displayName: 'Group By',
+				name: 'groupBy',
+				type: 'options',
+				options: [
+					{ name: 'Status', value: 'status' },
+					{ name: 'Result', value: 'result' },
+					{ name: 'Job Type', value: 'typeId' },
+					{ name: 'Category', value: 'categoryId' },
+					{ name: 'Engineer', value: 'resourceId' },
+					{ name: 'Site', value: 'siteKey' },
+					{ name: 'Vertical', value: 'vertical' },
+					{ name: 'Day', value: 'day' },
+					{ name: 'Week', value: 'week' },
+					{ name: 'Month', value: 'month' },
+				],
+				default: '',
+				description: 'Dimension to group the results by',
+			},
+			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				typeOptions: { minValue: 1, maxValue: 200 },
+				default: 10,
+				description: 'Max number of grouped rows to return',
+			},
+			{
+				displayName: 'Resource ID',
+				name: 'resourceId',
+				type: 'string',
+				default: '',
+				description: 'Filter by engineer/resource ID',
+			},
+			{
+				displayName: 'Result',
+				name: 'result',
+				type: 'string',
+				default: '',
+				description: 'Filter by job result value',
+			},
+			{
+				displayName: 'Site Key',
+				name: 'siteKey',
+				type: 'string',
+				default: '',
+				description: 'Filter by site key',
+			},
+			{
+				displayName: 'Start Date',
+				name: 'startDate',
+				type: 'string',
+				default: '',
+				description: 'Custom start date (ISO format, e.g. 2026-03-01)',
+			},
+			{
+				displayName: 'Status',
+				name: 'status',
+				type: 'options',
+				options: [
+					{ name: 'Accepted', value: 'accepted' },
+					{ name: 'Completed OK', value: 'completedOk' },
+					{ name: 'Completed With Issues', value: 'completedWithIssues' },
+					{ name: 'New', value: 'new' },
+					{ name: 'On The Way', value: 'onTheWay' },
+					{ name: 'Scheduled', value: 'scheduled' },
+					{ name: 'Sent', value: 'sent' },
+					{ name: 'Started', value: 'started' },
+					{ name: 'Suspended', value: 'suspended' },
+					{ name: 'Unscheduled', value: 'unscheduled' },
+				],
+				default: '',
+				description: 'Filter by job status',
+			},
+			{
+				displayName: 'Type ID',
+				name: 'typeId',
+				type: 'string',
+				default: '',
+				description: 'Filter by job type ID',
+			},
+			{
+				displayName: 'Vertical',
+				name: 'vertical',
+				type: 'string',
+				default: '',
+				description: 'Filter by business vertical',
+			},
+		],
+	},
+
+	// ── Get Enriched Job fields ──
+	{
+		displayName: 'Job ID',
+		name: 'jobId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'The numeric ID of the job to retrieve',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['getEnrichedJob'],
+			},
+		},
+	},
+	{
+		displayName: 'Simplify',
+		name: 'simplify',
+		type: 'boolean',
+		default: true,
+		description: 'Whether to return a simplified version of the response instead of the raw data',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['getEnrichedJob'],
+			},
+		},
+	},
+];
