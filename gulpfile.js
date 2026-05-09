@@ -4,8 +4,12 @@ function buildIcons() {
 	return src('nodes/**/*.svg').pipe(dest('dist/nodes'));
 }
 
+function buildCredentialIcons() {
+	return src('credentials/**/*.svg').pipe(dest('dist/credentials'));
+}
+
 function buildCodex() {
 	return src('nodes/**/*.node.json').pipe(dest('dist/nodes'));
 }
 
-exports['build:icons'] = parallel(buildIcons, buildCodex);
+exports['build:icons'] = parallel(buildIcons, buildCredentialIcons, buildCodex);

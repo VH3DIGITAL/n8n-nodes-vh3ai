@@ -798,16 +798,31 @@ export class Vh3Ai implements INodeType {
 						if (simplify) qs.compact = true;
 						const raw = await vh3ProxyGetRequest.call(this, '/invoices/invoice', qs);
 						responseData = [raw];
-					} else if (operation === 'createInvoice') {
-						const currencyCode = this.getNodeParameter('currencyCode', i) as string;
-						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
-						const body: JsonObject = { currencyCode };
-						if (additionalFields.jobId) body.jobId = additionalFields.jobId;
-						if (additionalFields.jobGroupId) body.jobGroupId = additionalFields.jobGroupId;
-						if (additionalFields.contactId) body.contactId = additionalFields.contactId;
-						if (additionalFields.reference) body.reference = additionalFields.reference;
-						const raw = await vh3ListApiRequest.call(this, '/invoices/create', body);
-						responseData = [raw];
+				} else if (operation === 'createInvoice') {
+					const currencyCode = this.getNodeParameter('currencyCode', i) as string;
+					const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+					const body: JsonObject = { currencyCode };
+					if (additionalFields.jobId) body.jobId = additionalFields.jobId;
+					if (additionalFields.jobGroupId) body.jobGroupId = additionalFields.jobGroupId;
+					if (additionalFields.contactId) body.contactId = additionalFields.contactId;
+					if (additionalFields.deliverySiteContactId) body.deliverySiteContactId = additionalFields.deliverySiteContactId;
+					if (additionalFields.reference) body.reference = additionalFields.reference;
+					const createdAt = toUtcDateTime(additionalFields.createdAt);
+					if (createdAt) body.createdAt = createdAt;
+					if (additionalFields.bankAccountId) body.bankAccountId = additionalFields.bankAccountId;
+					if (additionalFields.departmentCodeId) body.departmentCodeId = additionalFields.departmentCodeId;
+					if (additionalFields.nominalCodeId) body.nominalCodeId = additionalFields.nominalCodeId;
+					if (additionalFields.clientNotes) body.clientNotes = additionalFields.clientNotes;
+					if (additionalFields.internalNotes) body.internalNotes = additionalFields.internalNotes;
+					const customFieldsData = this.getNodeParameter('customFields', i, {}) as { values?: Array<{ definitionId: number; value: string }> };
+					if (customFieldsData.values && customFieldsData.values.length > 0) {
+						body.customFields = customFieldsData.values.map((cf) => ({
+							definitionId: cf.definitionId,
+							value: cf.value,
+						})) as unknown as JsonObject;
+					}
+					const raw = await vh3ListApiRequest.call(this, '/invoices/create', body);
+					responseData = [raw];
 					} else if (operation === 'editInvoice') {
 						const invoiceId = this.getNodeParameter('invoiceId', i) as number;
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
