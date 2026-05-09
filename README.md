@@ -144,10 +144,10 @@ The node sets `usableAsTool: true`. n8n auto-generates a Tool variant (**VH3 AI 
 
 ## Deployment & Hosting
 
-| Model                              | Description                                                                                                                                                   |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Managed Hosting by VH3 AI**      | VH3 deploys and hosts the n8n instance at `{customer}.n8n.vh3.ai`. Custom Docker image with VH3 nodes baked in, automated provisioning, backups, and updates. |
-| **BYOI (Bring Your Own Instance)** | Customer runs their own n8n (self-hosted or n8n Cloud), installs `n8n-nodes-vh3ai` via Community Nodes, and gives VH3 an API key for workflow support.        |
+| Model                              | Description                                                                                                                                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Managed Hosting by VH3 AI**      | VH3 deploys and hosts the n8n instance at `{customer}.n8n.vh3.ai`. Runs the standard n8n Docker image from Docker Hub with `n8n-nodes-vh3ai` installed as a community node on startup. Database and config managed via environment variables on DigitalOcean. |
+| **BYOI (Bring Your Own Instance)** | Customer runs their own n8n (self-hosted or n8n Cloud), installs `n8n-nodes-vh3ai` via Community Nodes, and gives VH3 an API key for workflow support.                                                                                   |
 
 ---
 
