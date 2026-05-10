@@ -1667,8 +1667,10 @@ export class Vh3Ai implements INodeType {
 					} else if (operation === 'getEnrichedJob') {
 						const jobId = this.getNodeParameter('jobId', i) as number;
 						const simplify = this.getNodeParameter('simplify', i) as boolean;
+						const includeWorksheets = this.getNodeParameter('includeWorksheets', i, false) as boolean;
 						const qs: Record<string, string | number | boolean> = {};
 						if (simplify) qs.compact = true;
+						if (includeWorksheets) qs.include_worksheets = true;
 						const raw = await vh3FsiGetRequest.call(this, `/jobs/${jobId}`, qs);
 						responseData = [raw];
 					}

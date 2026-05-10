@@ -394,4 +394,17 @@ export const fsiJobsFields: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Include Worksheets',
+		name: 'includeWorksheets',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to include worksheet data in the response',
+		displayOptions: {
+			show: {
+				resource: ['jobFeed'],
+				operation: ['getEnrichedJob'],
+			},
+		},
+	},
 ];
