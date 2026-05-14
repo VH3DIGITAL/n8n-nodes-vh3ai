@@ -4,6 +4,12 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.7.3] — 2026-05-14
+
+### Changed
+
+- **Email › Ingest Email** now routes to `/ingest/email/portal` instead of the legacy `/ingest/email` endpoint. The operation is renamed to **Ingest Portal Email** in the node UI to reflect the new surface area. Input schema and behaviour are identical — this is a drop-in replacement with no workflow migration required.
+
 ## [0.6.5] — 2026-05-08
 
 ### Changed
@@ -167,6 +173,7 @@ Companion release to a sweep across the VH3 AI node and the upstream BigChange A
 
 - CI publish workflow: clear error when `NPM_TOKEN` secret is unset, normalised repo URL, setup-node bumped to 22.
 
+[0.7.3]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.3
 [0.6.5]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.6.5
 [0.6.4]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.6.4
 [0.6.3]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.6.3
