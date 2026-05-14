@@ -19,10 +19,10 @@ export const fsiEmailOperations: INodeProperties[] = [
 				description: 'Classify an incoming email using the AI triage pipeline',
 			},
 			{
-				name: 'Ingest Email',
-				value: 'ingestEmail',
-				action: 'Ingest an email',
-				description: 'Extract structured job data from an FM portal email and resolve entities',
+			name: 'Ingest Portal Email',
+			value: 'ingestEmail',
+			action: 'Ingest a portal email',
+			description: 'Extract structured job data from an FM portal email via the /ingest/email/portal endpoint and resolve entities',
 			},
 			{
 				name: 'List Triage Categories',

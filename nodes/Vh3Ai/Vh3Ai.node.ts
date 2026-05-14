@@ -1612,7 +1612,7 @@ export class Vh3Ai implements INodeType {
 						if (typeIdsRaw.trim()) {
 							body.preferred_type_ids = typeIdsRaw.split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n)) as unknown as JsonObject;
 						}
-						const raw = await vh3FsiPostRequest.call(this, '/ingest/email', body);
+						const raw = await vh3FsiPostRequest.call(this, '/ingest/email/portal', body);
 						responseData = [raw];
 					}
 				}
