@@ -63,7 +63,7 @@ export const fsiSearchFields: INodeProperties[] = [
 		type: 'number',
 		typeOptions: { minValue: 1, maxValue: 100 },
 		default: 10,
-		description: 'Max number of results to return',
+		description: 'Max results to return per entity type (e.g. 10 returns up to 10 contacts, 10 persons, 10 jobs, etc.)',
 		displayOptions: {
 			show: {
 				resource: ['search'],

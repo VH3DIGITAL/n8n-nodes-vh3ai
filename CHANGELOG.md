@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ### Added
 
 - **Search › Autocomplete — `Person` filter type.** `person` is now available in the **Filter by Type** multi-select. This matches the `"type": "person"` values already returned by the API and was previously invisible in the node UI.
+- **Search › Autocomplete — `Limit` description corrected.** The tooltip now accurately states that the limit applies per entity type (the API returns up to N results for each type), not as a global total.
 
 ## [0.7.3] — 2026-05-14
 
