@@ -103,6 +103,8 @@ All operations authenticate using the same API Key and Company ID credentials.
 
 Every BigChange read operation exposes a top-level **Simplify** boolean. When ON, the node sends `compact=true` and the API returns LLM-optimised payloads (empty values stripped, nested structures flattened, custom fields collapsed to a key→value dict).
 
+The **Search › Autocomplete** operation also has a **Simplify** toggle (default ON). This is handled at the node layer — it strips `null`, empty string, and empty array fields from each result and its nested `extra` object before returning data. `false` and `0` are retained as meaningful values.
+
 ### List Invoices / List Quotes — automatic 12-month fallback
 
 BigChange's invoice and quote endpoints reject requests with no filter or date range. When no filter is supplied, the node automatically scopes the query to the last 12 months.
