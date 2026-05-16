@@ -1746,7 +1746,7 @@ export class Vh3Ai implements INodeType {
 										}
 										if (Object.keys(nested).length > 0) out[k] = nested;
 									} else {
-										out[k] = v as JsonObject;
+										out[k] = v as unknown as JsonObject;
 									}
 								}
 								return out;
