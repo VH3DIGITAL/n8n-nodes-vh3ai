@@ -1,6 +1,6 @@
 # VH3 AI — n8n Node: Field Operations Help Guide
 
-**Version:** 0.7.3 | **Support:** support@vh3.ai | **Platform:** [vh3.ai](https://vh3.ai)
+**Version:** 0.7.4 | **Support:** support@vh3.ai | **Platform:** [vh3.ai](https://vh3.ai)
 
 ---
 
@@ -545,4 +545,4 @@ For BigChange platform queries: refer to your BigChange account manager.
 
 ---
 
-*This guide covers `n8n-nodes-vh3ai` v0.7.2. For the latest changes, see the CHANGELOG in the package repository.*
+*This guide covers `n8n-nodes-vh3ai` v0.7.4. For the latest changes, see the CHANGELOG in the package repository.*
