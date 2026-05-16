@@ -1584,23 +1584,34 @@ export class Vh3Ai implements INodeType {
 				else if (resource === 'email') {
 					const attachments = await buildAttachments(this, i);
 
-					if (operation === 'classifyEmail') {
-						const subject = this.getNodeParameter('subject', i) as string;
-						const emailBody = this.getNodeParameter('emailBody', i) as string;
-						const senderAddress = this.getNodeParameter('senderAddress', i) as string;
-						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
-						const body: JsonObject = { subject, email_body: emailBody, sender_address: senderAddress, attachments: attachments as unknown as JsonObject };
-						if (additionalFields.senderName) body.sender_name = additionalFields.senderName;
-						if (additionalFields.timestamp) body.timestamp = additionalFields.timestamp;
-						if (additionalFields.isReply !== undefined) body.is_reply = additionalFields.isReply;
-						if (additionalFields.isForward !== undefined) body.is_forward = additionalFields.isForward;
-						if (additionalFields.sourceRef) body.source_ref = additionalFields.sourceRef;
-						const raw = await vh3FsiPostRequest.call(this, '/triage/classify', body);
-						responseData = [raw];
-					} else if (operation === 'listTriageCategories') {
-						const raw = await vh3FsiGetRequest.call(this, '/triage/categories', {});
-						responseData = Array.isArray(raw) ? raw : [raw];
-					} else if (operation === 'ingestEmail') {
+				if (operation === 'classifyEmail') {
+					const subject = this.getNodeParameter('subject', i) as string;
+					const emailBody = this.getNodeParameter('emailBody', i) as string;
+					const senderAddress = this.getNodeParameter('senderAddress', i) as string;
+					const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+					const body: JsonObject = { subject, email_body: emailBody, sender_address: senderAddress, attachments: attachments as unknown as JsonObject };
+					if (additionalFields.senderName) body.sender_name = additionalFields.senderName;
+					if (additionalFields.timestamp) body.timestamp = additionalFields.timestamp;
+					if (additionalFields.isReply !== undefined) body.is_reply = additionalFields.isReply;
+					if (additionalFields.isForward !== undefined) body.is_forward = additionalFields.isForward;
+					if (additionalFields.sourceRef) body.source_ref = additionalFields.sourceRef;
+					const raw = await vh3FsiPostRequest.call(this, '/triage/classify', body);
+					responseData = [raw];
+				} else if (operation === 'batchClassifyEmail') {
+					const emailsRaw = this.getNodeParameter('emails', i);
+					const emails = typeof emailsRaw === 'string' ? JSON.parse(emailsRaw) : emailsRaw;
+					const raw = await vh3FsiPostRequest.call(this, '/triage/batch', { emails } as unknown as JsonObject);
+					responseData = Array.isArray(raw) ? raw : [raw];
+				} else if (operation === 'listTriageCategories') {
+					const raw = await vh3FsiGetRequest.call(this, '/triage/taxonomy/categories', {});
+					responseData = Array.isArray(raw) ? raw : [raw];
+				} else if (operation === 'listTaxonomyRules') {
+					const phase = this.getNodeParameter('phase', i) as string;
+					const qs: Record<string, string> = {};
+					if (phase) qs.phase = phase;
+					const raw = await vh3FsiGetRequest.call(this, '/triage/taxonomy/rules', qs);
+					responseData = Array.isArray(raw) ? raw : [raw];
+				} else if (operation === 'ingestEmail') {
 						const emailText = this.getNodeParameter('emailText', i) as string;
 						const emailSubject = this.getNodeParameter('emailSubject', i) as string;
 						const emailFrom = this.getNodeParameter('emailFrom', i) as string;

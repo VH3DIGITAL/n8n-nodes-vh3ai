@@ -8,9 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ### Added
 
+- **Email › Batch Classify Emails** (`batchClassifyEmail`). New operation that runs up to 50 emails through the full four-stage triage pipeline in a single call (`POST /triage/batch`). Portal short-circuit and pre-filter hits are resolved instantly (zero LLM tokens); only genuinely novel emails consume a Gemini call. Per-item errors are captured at their index — a failure on one email does not abort the rest of the batch. Accepts a JSON array of email objects; each item must include `subject`, `email_body`, and `sender_address`, with the same optional fields as single-email classify.
+- **Email › List Triage Rules** (`listTaxonomyRules`). New operation that returns the tenant's active routing rules with their full condition/action JSON from the taxonomy database (`GET /triage/taxonomy/rules`). An optional **Phase** selector filters to `pre_classify` (noise filters) or `post_classify` (routing decisions); omit to return all rules.
+- **Email › List Triage Categories** — updated to read from the new taxonomy database endpoint (`GET /triage/taxonomy/categories`), which returns richer per-category data: `category_code`, `display_name`, `default_destination`, `prompt_includes`, and `prompt_excludes`, sorted by priority. The previous `/triage/categories` endpoint is superseded.
 - **Search › Autocomplete — `Person` filter type.** `person` is now available in the **Filter by Type** multi-select. This matches the `"type": "person"` values already returned by the API and was previously invisible in the node UI.
 - **Search › Autocomplete — `Limit` description corrected.** The tooltip now accurately states that the limit applies per entity type (the API returns up to N results for each type), not as a global total.
 - **Search › Autocomplete — `Simplify` toggle.** A new **Simplify** boolean (default `true`) strips null, empty string, and empty array fields from each result — including inside the nested `extra` object — before returning data. Useful when passing results to an LLM or AI agent to reduce token waste.
+
+### Notes
+
+- The hardcoded `_enforce_system_safety` override that previously forced any email containing health/safety keywords to `health_safety_compliance` has been removed from the classification pipeline. Safety is now a configurable routing rule (`safety_override`) stored in the tenant's taxonomy — visible, editable per tenant, and applied through the standard rule engine rather than buried in Python code.
 
 ## [0.7.3] — 2026-05-14
 
@@ -181,6 +188,7 @@ Companion release to a sweep across the VH3 AI node and the upstream BigChange A
 
 - CI publish workflow: clear error when `NPM_TOKEN` secret is unset, normalised repo URL, setup-node bumped to 22.
 
+[0.7.4]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.4
 [0.7.3]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.3
 [0.6.5]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.6.5
 [0.6.4]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.6.4
