@@ -4,6 +4,12 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.7.5] — 2026-05-16
+
+### Fixed
+
+- **Email › Classify Email** — the email body was being sent to the API as `email_body` but the `/triage/classify` endpoint requires the field to be named `body`. All classify calls were returning `400 Missing param: body`. Field name corrected.
+
 ## [0.7.4] — 2026-05-16
 
 ### Added
@@ -188,6 +194,7 @@ Companion release to a sweep across the VH3 AI node and the upstream BigChange A
 
 - CI publish workflow: clear error when `NPM_TOKEN` secret is unset, normalised repo URL, setup-node bumped to 22.
 
+[0.7.5]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.5
 [0.7.4]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.4
 [0.7.3]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.3
 [0.6.5]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.6.5
