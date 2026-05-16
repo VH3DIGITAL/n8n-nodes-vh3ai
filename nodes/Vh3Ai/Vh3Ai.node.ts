@@ -1589,7 +1589,7 @@ export class Vh3Ai implements INodeType {
 					const emailBody = this.getNodeParameter('emailBody', i) as string;
 					const senderAddress = this.getNodeParameter('senderAddress', i) as string;
 					const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
-					const body: JsonObject = { subject, email_body: emailBody, sender_address: senderAddress, attachments: attachments as unknown as JsonObject };
+					const body: JsonObject = { subject, body: emailBody, sender_address: senderAddress, attachments: attachments as unknown as JsonObject };
 					if (additionalFields.senderName) body.sender_name = additionalFields.senderName;
 					if (additionalFields.timestamp) body.timestamp = additionalFields.timestamp;
 					if (additionalFields.isReply !== undefined) body.is_reply = additionalFields.isReply;
