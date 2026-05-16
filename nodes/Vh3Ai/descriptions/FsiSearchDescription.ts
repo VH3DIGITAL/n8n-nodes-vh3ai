@@ -16,7 +16,7 @@ export const fsiSearchOperations: INodeProperties[] = [
 				name: 'Autocomplete',
 				value: 'autocomplete',
 				action: 'Fuzzy autocomplete search',
-				description: 'Quick fuzzy search across customers, engineers, jobs, and sites',
+				description: 'Quick fuzzy search across customers, engineers, jobs, persons, and sites',
 			},
 			{
 				name: 'Search Intake',
@@ -79,6 +79,7 @@ export const fsiSearchFields: INodeProperties[] = [
 			{ name: 'Customer', value: 'customer' },
 			{ name: 'Engineer', value: 'engineer' },
 			{ name: 'Job', value: 'job' },
+			{ name: 'Person', value: 'person' },
 			{ name: 'Site', value: 'site' },
 		],
 		default: [],
