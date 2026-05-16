@@ -91,6 +91,19 @@ export const fsiSearchFields: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Simplify',
+		name: 'simplify',
+		type: 'boolean',
+		default: true,
+		description: 'Whether to return a simplified version of the response instead of the raw data. Removes null, empty string, and empty array fields.',
+		displayOptions: {
+			show: {
+				resource: ['search'],
+				operation: ['autocomplete'],
+			},
+		},
+	},
 
 	// ── Shared semantic search fields (Outcomes + Intake) ────────────
 	{

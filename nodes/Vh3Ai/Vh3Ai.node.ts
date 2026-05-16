@@ -1706,6 +1706,7 @@ export class Vh3Ai implements INodeType {
 						const q = this.getNodeParameter('query', i) as string;
 						const limit = this.getNodeParameter('limit', i) as number;
 						const typeFilter = this.getNodeParameter('typeFilter', i, []) as string[];
+						const simplify = this.getNodeParameter('simplify', i, true) as boolean;
 						const qs: Record<string, string | number> = { q, limit };
 						const raw = await vh3FsiGetRequest.call(this, '/search/autocomplete', qs);
 						let results: JsonObject[];
@@ -1719,6 +1720,26 @@ export class Vh3Ai implements INodeType {
 						if (typeFilter.length > 0) {
 							const allowed = new Set(typeFilter);
 							results = results.filter((item) => allowed.has((item?.type as string) ?? ''));
+						}
+						if (simplify) {
+							const isEmpty = (v: unknown): boolean =>
+								v === null || v === '' || (Array.isArray(v) && v.length === 0);
+							results = results.map((item) => {
+								const out: JsonObject = {};
+								for (const [k, v] of Object.entries(item)) {
+									if (isEmpty(v)) continue;
+									if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+										const nested: JsonObject = {};
+										for (const [nk, nv] of Object.entries(v as Record<string, unknown>)) {
+											if (!isEmpty(nv)) nested[nk] = nv as JsonObject;
+										}
+										if (Object.keys(nested).length > 0) out[k] = nested;
+									} else {
+										out[k] = v as JsonObject;
+									}
+								}
+								return out;
+							});
 						}
 						responseData = results;
 					} else {
