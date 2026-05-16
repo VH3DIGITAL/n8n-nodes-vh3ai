@@ -85,7 +85,7 @@ All operations authenticate using the same API Key and Company ID credentials.
 | **Briefing (VH3 AI)**       | Generate Briefing (engineer pre-visit briefing and call script)                                                                                                                                                                            |
 | **Case (VH3 AI)**           | Create / Get / Update / Search / List Cases · Transition Case (lifecycle status change) · Add Comment · List Activity · List / Add / Remove Case Items · Add / Remove Participants · List Cases for Item (reverse lookup by external item) |
 | **Connie (VH3 AI)**         | Chat · List Sessions · Get Session Messages · Search History                                                                                                                                                                               |
-| **Email (VH3 AI)**          | Classify Email · Ingest Portal Email · List Triage Categories                                                                                                                                                                              |
+| **Email (VH3 AI)**          | Batch Classify Emails · Classify Email · Ingest Portal Email · List Triage Categories · List Triage Rules                                                                                                                                  |
 | **Intelligence (VH3 AI)**   | List Profiles (with **Profiled Only** filter) · Get Profile · Generate Profiles                                                                                                                                                            |
 | **Investigate (VH3 AI)**    | Run Investigation (multi-step hybrid investigation across vector + graph data)                                                                                                                                                             |
 | **Job Feed (VH3 AI)**       | List Job Feed · Get Enriched Job · Aggregate Jobs (metrics with grouping, time-axis control, period-over-period comparison)                                                                                                                |
@@ -102,6 +102,8 @@ All operations authenticate using the same API Key and Company ID credentials.
 ### Simplify switch — LLM-friendly for cost-saving and efficiency
 
 Every BigChange read operation exposes a top-level **Simplify** boolean. When ON, the node sends `compact=true` and the API returns LLM-optimised payloads (empty values stripped, nested structures flattened, custom fields collapsed to a key→value dict).
+
+The **Search › Autocomplete** operation also has a **Simplify** toggle (default ON). This is handled at the node layer — it strips `null`, empty string, and empty array fields from each result and its nested `extra` object before returning data. `false` and `0` are retained as meaningful values.
 
 ### List Invoices / List Quotes — automatic 12-month fallback
 

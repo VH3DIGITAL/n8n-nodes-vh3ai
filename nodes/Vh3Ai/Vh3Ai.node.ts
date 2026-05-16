@@ -1584,23 +1584,34 @@ export class Vh3Ai implements INodeType {
 				else if (resource === 'email') {
 					const attachments = await buildAttachments(this, i);
 
-					if (operation === 'classifyEmail') {
-						const subject = this.getNodeParameter('subject', i) as string;
-						const emailBody = this.getNodeParameter('emailBody', i) as string;
-						const senderAddress = this.getNodeParameter('senderAddress', i) as string;
-						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
-						const body: JsonObject = { subject, email_body: emailBody, sender_address: senderAddress, attachments: attachments as unknown as JsonObject };
-						if (additionalFields.senderName) body.sender_name = additionalFields.senderName;
-						if (additionalFields.timestamp) body.timestamp = additionalFields.timestamp;
-						if (additionalFields.isReply !== undefined) body.is_reply = additionalFields.isReply;
-						if (additionalFields.isForward !== undefined) body.is_forward = additionalFields.isForward;
-						if (additionalFields.sourceRef) body.source_ref = additionalFields.sourceRef;
-						const raw = await vh3FsiPostRequest.call(this, '/triage/classify', body);
-						responseData = [raw];
-					} else if (operation === 'listTriageCategories') {
-						const raw = await vh3FsiGetRequest.call(this, '/triage/categories', {});
-						responseData = Array.isArray(raw) ? raw : [raw];
-					} else if (operation === 'ingestEmail') {
+				if (operation === 'classifyEmail') {
+					const subject = this.getNodeParameter('subject', i) as string;
+					const emailBody = this.getNodeParameter('emailBody', i) as string;
+					const senderAddress = this.getNodeParameter('senderAddress', i) as string;
+					const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+					const body: JsonObject = { subject, email_body: emailBody, sender_address: senderAddress, attachments: attachments as unknown as JsonObject };
+					if (additionalFields.senderName) body.sender_name = additionalFields.senderName;
+					if (additionalFields.timestamp) body.timestamp = additionalFields.timestamp;
+					if (additionalFields.isReply !== undefined) body.is_reply = additionalFields.isReply;
+					if (additionalFields.isForward !== undefined) body.is_forward = additionalFields.isForward;
+					if (additionalFields.sourceRef) body.source_ref = additionalFields.sourceRef;
+					const raw = await vh3FsiPostRequest.call(this, '/triage/classify', body);
+					responseData = [raw];
+				} else if (operation === 'batchClassifyEmail') {
+					const emailsRaw = this.getNodeParameter('emails', i);
+					const emails = typeof emailsRaw === 'string' ? JSON.parse(emailsRaw) : emailsRaw;
+					const raw = await vh3FsiPostRequest.call(this, '/triage/batch', { emails } as unknown as JsonObject);
+					responseData = Array.isArray(raw) ? raw : [raw];
+				} else if (operation === 'listTriageCategories') {
+					const raw = await vh3FsiGetRequest.call(this, '/triage/taxonomy/categories', {});
+					responseData = Array.isArray(raw) ? raw : [raw];
+				} else if (operation === 'listTaxonomyRules') {
+					const phase = this.getNodeParameter('phase', i) as string;
+					const qs: Record<string, string> = {};
+					if (phase) qs.phase = phase;
+					const raw = await vh3FsiGetRequest.call(this, '/triage/taxonomy/rules', qs);
+					responseData = Array.isArray(raw) ? raw : [raw];
+				} else if (operation === 'ingestEmail') {
 						const emailText = this.getNodeParameter('emailText', i) as string;
 						const emailSubject = this.getNodeParameter('emailSubject', i) as string;
 						const emailFrom = this.getNodeParameter('emailFrom', i) as string;
@@ -1706,6 +1717,7 @@ export class Vh3Ai implements INodeType {
 						const q = this.getNodeParameter('query', i) as string;
 						const limit = this.getNodeParameter('limit', i) as number;
 						const typeFilter = this.getNodeParameter('typeFilter', i, []) as string[];
+						const simplify = this.getNodeParameter('simplify', i, true) as boolean;
 						const qs: Record<string, string | number> = { q, limit };
 						const raw = await vh3FsiGetRequest.call(this, '/search/autocomplete', qs);
 						let results: JsonObject[];
@@ -1719,6 +1731,26 @@ export class Vh3Ai implements INodeType {
 						if (typeFilter.length > 0) {
 							const allowed = new Set(typeFilter);
 							results = results.filter((item) => allowed.has((item?.type as string) ?? ''));
+						}
+						if (simplify) {
+							const isEmpty = (v: unknown): boolean =>
+								v === null || v === '' || (Array.isArray(v) && v.length === 0);
+							results = results.map((item) => {
+								const out: JsonObject = {};
+								for (const [k, v] of Object.entries(item)) {
+									if (isEmpty(v)) continue;
+									if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+										const nested: JsonObject = {};
+										for (const [nk, nv] of Object.entries(v as Record<string, unknown>)) {
+											if (!isEmpty(nv)) nested[nk] = nv as JsonObject;
+										}
+										if (Object.keys(nested).length > 0) out[k] = nested;
+									} else {
+										out[k] = v as JsonObject;
+									}
+								}
+								return out;
+							});
 						}
 						responseData = results;
 					} else {

@@ -16,7 +16,7 @@ export const fsiSearchOperations: INodeProperties[] = [
 				name: 'Autocomplete',
 				value: 'autocomplete',
 				action: 'Fuzzy autocomplete search',
-				description: 'Quick fuzzy search across customers, engineers, jobs, and sites',
+				description: 'Quick fuzzy search across customers, engineers, jobs, persons, and sites',
 			},
 			{
 				name: 'Search Intake',
@@ -63,7 +63,7 @@ export const fsiSearchFields: INodeProperties[] = [
 		type: 'number',
 		typeOptions: { minValue: 1, maxValue: 100 },
 		default: 10,
-		description: 'Max number of results to return',
+		description: 'Max results to return per entity type (e.g. 10 returns up to 10 contacts, 10 persons, 10 jobs, etc.)',
 		displayOptions: {
 			show: {
 				resource: ['search'],
@@ -79,10 +79,24 @@ export const fsiSearchFields: INodeProperties[] = [
 			{ name: 'Customer', value: 'customer' },
 			{ name: 'Engineer', value: 'engineer' },
 			{ name: 'Job', value: 'job' },
+			{ name: 'Person', value: 'person' },
 			{ name: 'Site', value: 'site' },
 		],
 		default: [],
 		description: 'Only return autocomplete results whose type matches one of the selected values. Leave empty to return all types.',
+		displayOptions: {
+			show: {
+				resource: ['search'],
+				operation: ['autocomplete'],
+			},
+		},
+	},
+	{
+		displayName: 'Simplify',
+		name: 'simplify',
+		type: 'boolean',
+		default: true,
+		description: 'Whether to return a simplified version of the response instead of the raw data. Removes null, empty string, and empty array fields.',
 		displayOptions: {
 			show: {
 				resource: ['search'],

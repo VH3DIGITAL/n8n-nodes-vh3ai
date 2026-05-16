@@ -13,22 +13,34 @@ export const fsiEmailOperations: INodeProperties[] = [
 		},
 		options: [
 			{
+				name: 'Batch Classify Emails',
+				value: 'batchClassifyEmail',
+				action: 'Batch classify emails',
+				description: 'Run up to 50 emails through the triage pipeline in a single call; portal/pre-filter hits are instant and only novel emails consume LLM tokens',
+			},
+			{
 				name: 'Classify Email',
 				value: 'classifyEmail',
 				action: 'Classify an email',
 				description: 'Classify an incoming email using the AI triage pipeline',
 			},
 			{
-			name: 'Ingest Portal Email',
-			value: 'ingestEmail',
-			action: 'Ingest a portal email',
-			description: 'Extract structured job data from an FM portal email via the /ingest/email/portal endpoint and resolve entities',
+				name: 'Ingest Portal Email',
+				value: 'ingestEmail',
+				action: 'Ingest a portal email',
+				description: 'Extract structured job data from an FM portal email via the /ingest/email/portal endpoint and resolve entities',
 			},
 			{
 				name: 'List Triage Categories',
 				value: 'listTriageCategories',
 				action: 'List triage categories',
-				description: 'Return all available triage categories for email classification',
+				description: 'Return the tenant\'s active triage categories with priority, destination, and prompt rules from the taxonomy database',
+			},
+			{
+				name: 'List Triage Rules',
+				value: 'listTaxonomyRules',
+				action: 'List triage routing rules',
+				description: 'Return the tenant\'s active email routing rules with full condition/action definitions; optionally filter by classification phase',
 			},
 		],
 		default: 'classifyEmail',
@@ -36,6 +48,24 @@ export const fsiEmailOperations: INodeProperties[] = [
 ];
 
 export const fsiEmailFields: INodeProperties[] = [
+	// ══════════════════════════════════════════════════════════════════════
+	// Batch Classify Emails — core fields
+	// ══════════════════════════════════════════════════════════════════════
+	{
+		displayName: 'Emails',
+		name: 'emails',
+		type: 'json',
+		required: true,
+		default: '[]',
+		description: 'Array of email objects to classify (max 50). Each object must include subject, email_body, and sender_address. Optional per-item fields: sender_name, timestamp, is_reply, is_forward, source_ref.',
+		displayOptions: {
+			show: {
+				resource: ['email'],
+				operation: ['batchClassifyEmail'],
+			},
+		},
+	},
+
 	// ══════════════════════════════════════════════════════════════════════
 	// Classify Email — core fields
 	// ══════════════════════════════════════════════════════════════════════
@@ -303,6 +333,28 @@ export const fsiEmailFields: INodeProperties[] = [
 				default: '',
 				description: 'Comma-separated list of preferred job type IDs for extraction weighting (e.g. "12,34,56")',
 			},
+		],
+	},
+
+	// ══════════════════════════════════════════════════════════════════════
+	// List Triage Rules — phase filter
+	// ══════════════════════════════════════════════════════════════════════
+	{
+		displayName: 'Phase',
+		name: 'phase',
+		type: 'options',
+		default: '',
+		description: 'Filter rules by classification phase. Omit to return all rules.',
+		displayOptions: {
+			show: {
+				resource: ['email'],
+				operation: ['listTaxonomyRules'],
+			},
+		},
+		options: [
+			{ name: 'All Phases', value: '' },
+			{ name: 'Pre-Classify (noise filters)', value: 'pre_classify' },
+			{ name: 'Post-Classify (routing decisions)', value: 'post_classify' },
 		],
 	},
 ];
