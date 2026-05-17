@@ -501,6 +501,18 @@ All semantic search operations return one n8n item per result (pre-unwrapped for
 | **Get Forecast** | Returns a forecast for a latitude/longitude with optional timezone and hour range. |
 | **Get Historical** | Returns historical weather for a latitude/longitude over a date range. |
 
+### Users (VH3 AI)
+
+**What it does:** Manage company users — list who's on the team, send invitations, update roles, and remove users. All operations are tenant-scoped via your existing `company_id` and `api_key`.
+
+| Operation | What It Does |
+|---|---|
+| **List Users** | Returns all active (non-archived) users for your company with name, email, username, role, and profile picture. |
+| **List Invites** | Returns all pending (unaccepted) email invitations for the company. |
+| **Invite User** | Sends an invitation email to a new user. Requires the invitee's email, role, company name, and the inviter's name. |
+| **Update User Role** | Changes the role of an existing user (e.g. from `user` to `manager`). |
+| **Delete User** | Soft-deletes (archives) a user. The user record is not permanently removed. |
+
 ---
 
 ## Quick Reference: Common Field Operations Tasks
@@ -545,4 +557,4 @@ For BigChange platform queries: refer to your BigChange account manager.
 
 ---
 
-*This guide covers `n8n-nodes-vh3ai` v0.7.4. For the latest changes, see the CHANGELOG in the package repository.*
+*This guide covers `n8n-nodes-vh3ai` v0.7.6. For the latest changes, see the CHANGELOG in the package repository.*

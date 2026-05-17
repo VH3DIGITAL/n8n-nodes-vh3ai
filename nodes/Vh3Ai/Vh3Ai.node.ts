@@ -20,6 +20,7 @@ import {
 	vh3FsiPostRequest,
 	vh3FsiPatchRequest,
 	vh3FsiDeleteRequest,
+	vh3FsiPutRequest,
 	vh3FsiGetAllPages,
 	buildAttachments,
 } from './GenericFunctions';
@@ -51,6 +52,7 @@ import { fsiWeatherOperations, fsiWeatherFields } from './descriptions/FsiWeathe
 import { fsiIntelligenceOperations, fsiIntelligenceFields } from './descriptions/FsiIntelligenceDescription';
 import { fsiInvestigateOperations, fsiInvestigateFields } from './descriptions/FsiInvestigateDescription';
 import { fsiConnieOperations, fsiConnieFields } from './descriptions/FsiConnieDescription';
+import { fsiUsersOperations, fsiUsersFields } from './descriptions/FsiUsersDescription';
 
 export class Vh3Ai implements INodeType {
 	description: INodeTypeDescription = {
@@ -104,7 +106,8 @@ export class Vh3Ai implements INodeType {
 					{ name: 'Search (VH3 AI)', value: 'search', description: 'Semantic and outcome search across operational data.' },
 					{ name: 'Sentinel (VH3 AI)', value: 'sentinel', description: 'Proactive monitoring — run sentinels, view registry and results.' },
 					{ name: 'Stock (BigChange)', value: 'stock', description: 'Inventory — product categories, stock details, items, movements, and suppliers.' },
-					{ name: 'Vehicle (BigChange)', value: 'vehicles', description: 'Fleet vehicles — read/create/update vehicle records and groups.' },
+					{ name: 'User (VH3 AI)', value: 'users', description: 'User management — list, invite, update role, and delete company users.' },
+				{ name: 'Vehicle (BigChange)', value: 'vehicles', description: 'Fleet vehicles — read/create/update vehicle records and groups.' },
 					{ name: 'Weather (VH3 AI)', value: 'weather', description: 'Weather data for jobs, sites, forecasts, and historical lookups.' },
 					{ name: 'Worksheet (BigChange)', value: 'worksheets', description: 'Mobile-app worksheet/checklist definitions, questions, and submitted answers.' },
 					{ name: 'Worksheet Group (BigChange)', value: 'worksheetGroups', description: 'Folders that organise worksheet definitions.' },
@@ -165,6 +168,8 @@ export class Vh3Ai implements INodeType {
 			...fsiInvestigateFields,
 			...fsiConnieOperations,
 			...fsiConnieFields,
+			...fsiUsersOperations,
+			...fsiUsersFields,
 		],
 	};
 
@@ -181,7 +186,7 @@ export class Vh3Ai implements INodeType {
 		const fsiResources = new Set([
 			'accountReport', 'briefing', 'cases', 'connie', 'email',
 			'intelligence', 'investigate', 'jobFeed', 'pulse', 'reports',
-			'search', 'sentinel', 'weather',
+			'search', 'sentinel', 'users', 'weather',
 		]);
 
 		for (let i = 0; i < items.length; i++) {
@@ -2096,6 +2101,43 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.scope) body.scope = additionalFields.scope;
 						if (additionalFields.typeIds) body.type_ids = typeof additionalFields.typeIds === 'string' ? JSON.parse(additionalFields.typeIds as string) : additionalFields.typeIds;
 						const raw = await vh3FsiPostRequest.call(this, '/intelligence/generate-profiles', body);
+						responseData = [raw];
+					}
+				}
+
+				// ── USERS (FSI) ──────────────────────────────────────────────
+				else if (resource === 'users') {
+					if (operation === 'listUsers') {
+						const raw = await vh3FsiGetRequest.call(this, '/users/list', {});
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'listInvites') {
+						const raw = await vh3FsiGetRequest.call(this, '/users/invites', {});
+						responseData = Array.isArray(raw) ? raw : [raw];
+					} else if (operation === 'inviteUser') {
+						const email = this.getNodeParameter('email', i) as string;
+						const role = this.getNodeParameter('role', i) as string;
+						const companyName = this.getNodeParameter('companyName', i) as string;
+						const inviterName = this.getNodeParameter('inviterName', i) as string;
+						const raw = await vh3FsiPostRequest.call(this, '/users/invite', {
+							email,
+							role,
+							company_name: companyName,
+							inviter_name: inviterName,
+						});
+						responseData = [raw];
+					} else if (operation === 'updateUserRole') {
+						const userId = this.getNodeParameter('userId', i) as string;
+						const role = this.getNodeParameter('role', i) as string;
+						const raw = await vh3FsiPutRequest.call(this, `/users/${userId}/role`, {
+							user_id: userId,
+							role,
+						});
+						responseData = [raw];
+					} else if (operation === 'deleteUser') {
+						const userId = this.getNodeParameter('userId', i) as string;
+						const raw = await vh3FsiDeleteRequest.call(this, `/users/${userId}`, {
+							user_id: userId,
+						});
 						responseData = [raw];
 					}
 				}

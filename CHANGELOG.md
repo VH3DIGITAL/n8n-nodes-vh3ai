@@ -4,6 +4,22 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.7.6] — 2026-05-17
+
+### Added
+
+- **User (VH3 AI)** — new resource with 5 operations for company user management:
+  - **List Users** (`listUsers`) — get all active (non-archived) users for the company (`GET /users/list`).
+  - **List Invites** (`listInvites`) — get all pending (unaccepted) invitations (`GET /users/invites`).
+  - **Invite User** (`inviteUser`) — send an email invitation to join the company (`POST /users/invite`). Requires email, role, company name, and inviter name.
+  - **Update User Role** (`updateUserRole`) — change the role assigned to a user (`PUT /users/{user_id}/role`).
+  - **Delete User** (`deleteUser`) — soft-delete (archive) a user (`DELETE /users/{user_id}`).
+- New `vh3FsiPutRequest` helper in `GenericFunctions.ts` for FSI PUT operations.
+
+### Notes
+
+- User management endpoints are served from the FSI API (`fsiBaseUrl`) using the same `company_id + api_key` authentication as all other VH3 AI resources. No new credential fields required.
+
 ## [0.7.5] — 2026-05-16
 
 ### Fixed

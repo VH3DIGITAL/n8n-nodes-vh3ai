@@ -318,6 +318,41 @@ export async function vh3FsiPatchRequest(
 }
 
 /**
+ * PUT request to the VH3 FSI API.
+ */
+export async function vh3FsiPutRequest(
+	this: IExecuteFunctions,
+	endpoint: string,
+	body: JsonObject,
+): Promise<JsonObject> {
+	const { fsiBaseUrl, company_id, api_key } = await getFsiAuth(this);
+
+	const fullBody = { company_id, api_key, ...body };
+
+	const options: IHttpRequestOptions = {
+		method: 'PUT',
+		url: `${fsiBaseUrl}${endpoint}`,
+		body: JSON.stringify(fullBody),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	};
+
+	try {
+		const response = await this.helpers.httpRequest(options);
+		if (typeof response === 'string') {
+			return JSON.parse(response) as JsonObject;
+		}
+		return response as JsonObject;
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: `FSI API request failed: PUT ${endpoint}`,
+			description: (error as Error).message,
+		});
+	}
+}
+
+/**
  * DELETE request to the VH3 FSI API.
  */
 export async function vh3FsiDeleteRequest(

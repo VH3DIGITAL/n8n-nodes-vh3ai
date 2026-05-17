@@ -93,6 +93,7 @@ All operations authenticate using the same API Key and Company ID credentials.
 | **Report (VH3 AI)**         | Generate Report (accepts `sections` parameter to scope the output) · List Report Sections                                                                                                                                                  |
 | **Search (VH3 AI)**         | Autocomplete · Search Outcomes · Search Intake · Search Intake (Basic)                                                                                                                                                                     |
 | **Sentinel (VH3 AI)**       | Run Sentinels (all or single by ID) · List Sentinel Registry · Get Latest Results                                                                                                                                                          |
+| **User (VH3 AI)**           | List Users · List Invites · Invite User · Update User Role · Delete User                                                                                                                                                                   |
 | **Weather (VH3 AI)**        | Get Weather for Job · Get Weather for Site · Get Forecast · Get Historical                                                                                                                                                                 |
 
 ---
