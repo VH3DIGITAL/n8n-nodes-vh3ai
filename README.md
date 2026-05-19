@@ -70,6 +70,8 @@ All operations authenticate using the same API Key and Company ID credentials.
 | **Worksheet Group (BigChange)**     | List · Get                                                                                                                                                                                                        |
 | **Invoice (BigChange)**             | List Invoices · Get Invoice · Create / Edit Invoice · Cancel Invoice · Mark Invoice Sent / Paid · List Invoice Line Items · Get Invoice Line Item · Create / Delete Invoice Line Item                             |
 | **Quote (BigChange)**               | List Quotes · Get Quote · Create / Edit Quote · Mark Quote Sent / Accepted / Rejected · List Quote Line Items · Get / Create / Edit / Delete Quote Line Item                                                      |
+| **Sales Opportunity (BigChange)**   | List Sales Opportunities · Get Sales Opportunity · Edit Sales Opportunity · List Probabilities · List Stages · List / Get / Create / Edit / Delete Sales Opportunity Line Item                                    |
+| **Purchase Order (BigChange)**      | List Purchase Orders · Get Purchase Order · Create / Edit Purchase Order · List / Get Purchase Order Series · List / Get / Create / Edit / Delete Purchase Order Line Item                                        |
 | **Note (BigChange)**                | List Notes · Get Note · Create / Edit Note · Create Progress Update · List Note Types · Get Note Type                                                                                                             |
 | **Person (BigChange)**              | List Persons · Get Person · Create / Edit Person · List Consent History                                                                                                                                           |
 | **Job Group (BigChange)**           | List Job Groups · Get Job Group · Create / Edit Job Group · Mark Complete · Mark Financially Complete · List Status History                                                                                       |
@@ -106,9 +108,9 @@ Every BigChange read operation exposes a top-level **Simplify** boolean. When ON
 
 The **Search › Autocomplete** operation also has a **Simplify** toggle (default ON). This is handled at the node layer — it strips `null`, empty string, and empty array fields from each result and its nested `extra` object before returning data. `false` and `0` are retained as meaningful values.
 
-### List Invoices / List Quotes — automatic 12-month fallback
+### List Invoices / Quotes / Sales Opportunities / Purchase Orders — automatic 12-month fallback
 
-BigChange's invoice and quote endpoints reject requests with no filter or date range. When no filter is supplied, the node automatically scopes the query to the last 12 months.
+BigChange's finance list endpoints reject requests with no filter or date range. When no filter is supplied, the node automatically scopes the query to the last 12 months.
 
 ### Email operations — attachment support
 

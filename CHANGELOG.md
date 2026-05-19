@@ -4,6 +4,32 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.8.0] — 2026-05-19
+
+### Added
+
+- **Sales Opportunity (BigChange)** — new resource with 10 operations covering the full CRM pipeline:
+  - **List Sales Opportunities** (`/sales_opportunities/list`) — filter by `id[]`, `status[]`, `contactId`, `ownerId`, `reference[]`, `createdAtFrom/To`, or `dueDateFrom/To`. When no filter or date range is supplied, the node automatically scopes the query to the last 12 months (matching the Invoices / Quotes fallback).
+  - **Get Sales Opportunity** (`/sales_opportunities/sales_opportunity`).
+  - **Edit Sales Opportunity** (`/sales_opportunities/edit`, PATCH semantics — omit a field to keep its existing value). Supports stage, probability, owner, status, dates, notes, codes, and custom fields.
+  - **List Probabilities** (`/sales_opportunities/probabilities/list`) — reference data for pipeline weighting.
+  - **List Stages** (`/sales_opportunities/stages/list`) — reference data for pipeline progression.
+  - **List / Get / Create / Edit / Delete Sales Opportunity Line Item** (`/sales_opportunities/line_item/*`).
+- **Purchase Order (BigChange)** — new resource with 11 operations covering the full procurement lifecycle:
+  - **List Purchase Orders** (`/purchase_orders/list`) — filter by `id[]`, `jobId[]`, `jobGroupId[]`, `contactId[]`, `reference[]`, or `createdAtFrom/To`. Same 12-month fallback as Invoices / Quotes.
+  - **Get Purchase Order** (`/purchase_orders/purchase_order`).
+  - **Create Purchase Order** (`/purchase_orders/create`) — `supplierId` required. Optional currency, links to job / job group / contact, delivery site, series, notes, codes, and custom fields.
+  - **Edit Purchase Order** (`/purchase_orders/edit`, PATCH semantics).
+  - **List / Get Purchase Order Series** (`/purchase_orders/series/list`, `/purchase_orders/series`) — numbering sequences (reference data).
+  - **List / Get / Create / Edit / Delete Purchase Order Line Item** (`/purchase_orders/line_item/*`).
+
+### Notes
+
+- Both resources follow the canonical finance contract used by Invoices and Quotes: `{result, status}` with `result.items` / `pageNumber` / `pageSize` / `pageItemCount` on lists, and `result` as the entity on single-record GETs. Pagination, `Return All`, and `Simplify` (compact) toggles behave identically.
+- Optional foreign-key filters on **List Sales Opportunities** (`contactId`, `ownerId`) are only sent when explicitly set to a positive value. This avoids the BigChange 422 returned when these scalar filters are submitted as `0`.
+- Purely additive release — no existing resource, operation, field, credential, or request shape was modified. Existing workflows continue to run unchanged.
+- Authentication is unchanged: both new resources use the same `vh3AiApi` credential (API key + company ID) as every other BigChange resource.
+
 ## [0.7.7] — 2026-05-18
 
 ### Fixed

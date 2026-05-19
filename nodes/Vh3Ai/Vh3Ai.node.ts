@@ -39,6 +39,8 @@ import { jobGroupsOperations, jobGroupsFields } from './descriptions/JobGroupsDe
 import { stockOperations, stockFields } from './descriptions/StockDescription';
 import { referenceDataOperations, referenceDataFields } from './descriptions/ReferenceDataDescription';
 import { quotesOperations, quotesFields } from './descriptions/QuotesDescription';
+import { salesOpportunitiesOperations, salesOpportunitiesFields } from './descriptions/SalesOpportunitiesDescription';
+import { purchaseOrdersOperations, purchaseOrdersFields } from './descriptions/PurchaseOrdersDescription';
 import { fsiAccountReportOperations, fsiAccountReportFields } from './descriptions/FsiAccountReviewDescription';
 import { fsiBriefingOperations, fsiBriefingFields } from './descriptions/FsiBriefingDescription';
 import { fsiEmailOperations, fsiEmailFields } from './descriptions/FsiEmailDescription';
@@ -99,10 +101,12 @@ export class Vh3Ai implements INodeType {
 					{ name: 'Note (BigChange)', value: 'notes', description: 'Notes, tasks, and progress updates attached to jobs/contacts/persons.' },
 					{ name: 'Person (BigChange)', value: 'persons', description: 'Individual people attached to a contact (e.g. site contacts). Includes consent history.' },
 					{ name: 'Pulse (VH3 AI)', value: 'pulse', description: 'Operational pulse dashboard for your company.' },
+					{ name: 'Purchase Order (BigChange)', value: 'purchaseOrders', description: 'Purchase orders and their line items — read, create, edit; manage PO series (numbering).' },
 					{ name: 'Quote (BigChange)', value: 'quotes', description: 'Sales quotes and their line items — read, create, edit, mark sent/accepted/rejected.' },
 					{ name: 'Reference Data (BigChange)', value: 'referenceData', description: 'Lookup tables — department codes and nominal (accounting) codes.' },
 					{ name: 'Report (VH3 AI)', value: 'reports', description: 'Generate operational reports (daily, weekly, monthly).' },
 					{ name: 'Resource / Engineer (BigChange)', value: 'resources', description: 'Engineers/technicians (the field workforce) and their groups.' },
+					{ name: 'Sales Opportunity (BigChange)', value: 'salesOpportunities', description: 'Sales opportunities (CRM pipeline) — read, edit, manage line items; list probabilities & stages.' },
 					{ name: 'Search (VH3 AI)', value: 'search', description: 'Semantic and outcome search across operational data.' },
 					{ name: 'Sentinel (VH3 AI)', value: 'sentinel', description: 'Proactive monitoring — run sentinels, view registry and results.' },
 					{ name: 'Stock (BigChange)', value: 'stock', description: 'Inventory — product categories, stock details, items, movements, and suppliers.' },
@@ -136,6 +140,10 @@ export class Vh3Ai implements INodeType {
 			...personsFields,
 			...quotesOperations,
 			...quotesFields,
+			...salesOpportunitiesOperations,
+			...salesOpportunitiesFields,
+			...purchaseOrdersOperations,
+			...purchaseOrdersFields,
 			...jobGroupsOperations,
 			...jobGroupsFields,
 			...stockOperations,
@@ -1090,6 +1098,374 @@ export class Vh3Ai implements INodeType {
 					} else if (operation === 'markQuoteRejected') {
 						const quoteId = this.getNodeParameter('quoteId', i) as number;
 						const raw = await vh3ListApiRequest.call(this, '/quotes/mark_rejected', { quoteId });
+						responseData = [raw];
+					}
+				}
+
+				// ── SALES OPPORTUNITIES ───────────────────────────────────
+				else if (resource === 'salesOpportunities') {
+					if (operation === 'listSalesOpportunities') {
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = {};
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (additionalFields.sortBy) body.sortBy = additionalFields.sortBy;
+						if (additionalFields.direction) body.direction = additionalFields.direction;
+						if (additionalFields.id) body.id = parseIds(additionalFields.id);
+						if (additionalFields.status) body.status = parseTexts(additionalFields.status);
+						if (typeof additionalFields.contactId === 'number' && additionalFields.contactId > 0) {
+							body.contactId = additionalFields.contactId;
+						}
+						if (typeof additionalFields.ownerId === 'number' && additionalFields.ownerId > 0) {
+							body.ownerId = additionalFields.ownerId;
+						}
+						if (additionalFields.reference) body.reference = parseTexts(additionalFields.reference);
+						const soCreatedAtFrom = toUtcDateTime(additionalFields.createdAtFrom);
+						if (soCreatedAtFrom) body.createdAtFrom = soCreatedAtFrom;
+						const soCreatedAtTo = toUtcDateTime(additionalFields.createdAtTo);
+						if (soCreatedAtTo) body.createdAtTo = soCreatedAtTo;
+						const soDueDateFrom = toUtcDateTime(additionalFields.dueDateFrom);
+						if (soDueDateFrom) body.dueDateFrom = soDueDateFrom;
+						const soDueDateTo = toUtcDateTime(additionalFields.dueDateTo);
+						if (soDueDateTo) body.dueDateTo = soDueDateTo;
+						// BigChange requires at least one filter or date range. If caller
+						// supplied neither, default to a 12-month createdAt window ending now.
+						const hasSoFilter =
+							body.id !== undefined ||
+							body.status !== undefined ||
+							body.contactId !== undefined ||
+							body.ownerId !== undefined ||
+							body.reference !== undefined;
+						const hasSoDateRange =
+							body.createdAtFrom || body.createdAtTo || body.dueDateFrom || body.dueDateTo;
+						if (!hasSoFilter && !hasSoDateRange) {
+							const range = defaultCreatedAtRange(12);
+							body.createdAtFrom = range.createdAtFrom;
+							body.createdAtTo = range.createdAtTo;
+						}
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/sales_opportunities/list', body);
+						} else {
+							body.pageSize = this.getNodeParameter('pageSize', i) as number;
+							body.pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/list', body);
+							responseData = extractItems(raw).items;
+						}
+					} else if (operation === 'getSalesOpportunity') {
+						const salesOpportunityId = this.getNodeParameter('salesOpportunityId', i) as number;
+						const simplify = this.getNodeParameter('simplify', i, false) as boolean;
+						const qs: Record<string, string | number | boolean> = { salesOpportunityId };
+						if (simplify) qs.compact = true;
+						const raw = await vh3ProxyGetRequest.call(this, '/sales_opportunities/sales_opportunity', qs);
+						responseData = [raw];
+					} else if (operation === 'editSalesOpportunity') {
+						const salesOpportunityId = this.getNodeParameter('salesOpportunityId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { salesOpportunityId };
+						if (additionalFields.contactId) body.contactId = additionalFields.contactId;
+						if (additionalFields.ownerId) body.ownerId = additionalFields.ownerId;
+						if (additionalFields.stageId) body.stageId = additionalFields.stageId;
+						if (additionalFields.probabilityId) body.probabilityId = additionalFields.probabilityId;
+						if (additionalFields.status) body.status = additionalFields.status;
+						if (additionalFields.reference) body.reference = additionalFields.reference;
+						if (additionalFields.nominalCodeId) body.nominalCodeId = additionalFields.nominalCodeId;
+						if (additionalFields.departmentCodeId) body.departmentCodeId = additionalFields.departmentCodeId;
+						if (additionalFields.clientNotes) body.clientNotes = additionalFields.clientNotes;
+						if (additionalFields.internalNotes) body.internalNotes = additionalFields.internalNotes;
+						const soDueDate = toUtcDateTime(additionalFields.dueDate);
+						if (soDueDate) body.dueDate = soDueDate;
+						const customFieldsData = this.getNodeParameter('customFields', i, {}) as {
+							values?: Array<{ definitionId: number; value: string }>;
+						};
+						if (customFieldsData.values && customFieldsData.values.length > 0) {
+							body.customFields = customFieldsData.values.map((cf) => ({
+								definitionId: cf.definitionId,
+								value: cf.value,
+							})) as unknown as JsonObject;
+						}
+						const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/edit', body);
+						responseData = [raw];
+					} else if (operation === 'listSalesOpportunityProbabilities') {
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const body: JsonObject = {};
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/sales_opportunities/probabilities/list', body);
+						} else {
+							body.pageSize = this.getNodeParameter('pageSize', i) as number;
+							body.pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/probabilities/list', body);
+							responseData = extractItems(raw).items;
+						}
+					} else if (operation === 'listSalesOpportunityStages') {
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const body: JsonObject = {};
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/sales_opportunities/stages/list', body);
+						} else {
+							body.pageSize = this.getNodeParameter('pageSize', i) as number;
+							body.pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/stages/list', body);
+							responseData = extractItems(raw).items;
+						}
+					} else if (operation === 'listSalesOpportunityLineItems') {
+						const salesOpportunityId = this.getNodeParameter('salesOpportunityId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const body: JsonObject = { salesOpportunityId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/sales_opportunities/line_item/list', body);
+						} else {
+							body.pageSize = this.getNodeParameter('pageSize', i) as number;
+							body.pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/line_item/list', body);
+							responseData = extractItems(raw).items;
+						}
+					} else if (operation === 'getSalesOpportunityLineItem') {
+						const salesOpportunityId = this.getNodeParameter('salesOpportunityId', i) as number;
+						const lineItemId = this.getNodeParameter('lineItemId', i) as number;
+						const simplify = this.getNodeParameter('simplify', i, false) as boolean;
+						const qs: Record<string, string | number | boolean> = { salesOpportunityId, lineItemId };
+						if (simplify) qs.compact = true;
+						const raw = await vh3ProxyGetRequest.call(this, '/sales_opportunities/line_item', qs);
+						responseData = [raw];
+					} else if (operation === 'createSalesOpportunityLineItem') {
+						const salesOpportunityId = this.getNodeParameter('salesOpportunityId', i) as number;
+						const contactId = this.getNodeParameter('contactId', i) as number;
+						const description = this.getNodeParameter('description', i) as string;
+						const quantity = this.getNodeParameter('quantity', i) as number;
+						const unitCost = this.getNodeParameter('unitCost', i) as number;
+						const unitSellingPrice = this.getNodeParameter('unitSellingPrice', i) as number;
+						const taxId = this.getNodeParameter('taxId', i) as number;
+						const nominalCodeId = this.getNodeParameter('nominalCodeId', i) as number;
+						const departmentCodeId = this.getNodeParameter('departmentCodeId', i) as number;
+						const body: JsonObject = {
+							salesOpportunityId,
+							contactId,
+							description,
+							quantity,
+							unitCost,
+							unitSellingPrice,
+							taxId,
+							nominalCodeId,
+							departmentCodeId,
+						};
+						const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/line_item/create', body);
+						responseData = [raw];
+					} else if (operation === 'editSalesOpportunityLineItem') {
+						const salesOpportunityId = this.getNodeParameter('salesOpportunityId', i) as number;
+						const lineItemId = this.getNodeParameter('lineItemId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { salesOpportunityId, lineItemId };
+						if (additionalFields.description) body.description = additionalFields.description;
+						if (typeof additionalFields.quantity === 'number') body.quantity = additionalFields.quantity;
+						if (typeof additionalFields.unitCost === 'number') body.unitCost = additionalFields.unitCost;
+						if (typeof additionalFields.unitSellingPrice === 'number') {
+							body.unitSellingPrice = additionalFields.unitSellingPrice;
+						}
+						if (additionalFields.taxId) body.taxId = additionalFields.taxId;
+						if (additionalFields.nominalCodeId) body.nominalCodeId = additionalFields.nominalCodeId;
+						if (additionalFields.departmentCodeId) body.departmentCodeId = additionalFields.departmentCodeId;
+						const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/line_item/edit', body);
+						responseData = [raw];
+					} else if (operation === 'deleteSalesOpportunityLineItem') {
+						const salesOpportunityId = this.getNodeParameter('salesOpportunityId', i) as number;
+						const lineItemId = this.getNodeParameter('lineItemId', i) as number;
+						const raw = await vh3ListApiRequest.call(this, '/sales_opportunities/line_item/delete', {
+							salesOpportunityId,
+							lineItemId,
+						});
+						responseData = [raw];
+					}
+				}
+
+				// ── PURCHASE ORDERS ───────────────────────────────────────
+				else if (resource === 'purchaseOrders') {
+					if (operation === 'listPurchaseOrders') {
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = {};
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (additionalFields.sortBy) body.sortBy = additionalFields.sortBy;
+						if (additionalFields.direction) body.direction = additionalFields.direction;
+						if (additionalFields.id) body.id = parseIds(additionalFields.id);
+						if (additionalFields.jobId) body.jobId = parseIds(additionalFields.jobId);
+						if (additionalFields.jobGroupId) body.jobGroupId = parseIds(additionalFields.jobGroupId);
+						if (additionalFields.contactId) body.contactId = parseIds(additionalFields.contactId);
+						if (additionalFields.reference) body.reference = parseTexts(additionalFields.reference);
+						const poCreatedAtFrom = toUtcDateTime(additionalFields.createdAtFrom);
+						if (poCreatedAtFrom) body.createdAtFrom = poCreatedAtFrom;
+						const poCreatedAtTo = toUtcDateTime(additionalFields.createdAtTo);
+						if (poCreatedAtTo) body.createdAtTo = poCreatedAtTo;
+						// BigChange requires at least one filter or date range. If caller
+						// supplied neither, default to a 12-month window ending now.
+						const hasPoFilter =
+							body.id !== undefined ||
+							body.jobId !== undefined ||
+							body.jobGroupId !== undefined ||
+							body.contactId !== undefined ||
+							body.reference !== undefined;
+						const hasPoDateRange = body.createdAtFrom || body.createdAtTo;
+						if (!hasPoFilter && !hasPoDateRange) {
+							const range = defaultCreatedAtRange(12);
+							body.createdAtFrom = range.createdAtFrom;
+							body.createdAtTo = range.createdAtTo;
+						}
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/purchase_orders/list', body);
+						} else {
+							body.pageSize = this.getNodeParameter('pageSize', i) as number;
+							body.pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							const raw = await vh3ListApiRequest.call(this, '/purchase_orders/list', body);
+							responseData = extractItems(raw).items;
+						}
+					} else if (operation === 'getPurchaseOrder') {
+						const purchaseOrderId = this.getNodeParameter('purchaseOrderId', i) as number;
+						const simplify = this.getNodeParameter('simplify', i, false) as boolean;
+						const qs: Record<string, string | number | boolean> = { purchaseOrderId };
+						if (simplify) qs.compact = true;
+						const raw = await vh3ProxyGetRequest.call(this, '/purchase_orders/purchase_order', qs);
+						responseData = [raw];
+					} else if (operation === 'createPurchaseOrder') {
+						const supplierId = this.getNodeParameter('supplierId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { supplierId };
+						if (additionalFields.currencyCode) body.currencyCode = additionalFields.currencyCode;
+						if (additionalFields.jobId) body.jobId = additionalFields.jobId;
+						if (additionalFields.jobGroupId) body.jobGroupId = additionalFields.jobGroupId;
+						if (additionalFields.contactId) body.contactId = additionalFields.contactId;
+						if (additionalFields.deliverySiteContactId) {
+							body.deliverySiteContactId = additionalFields.deliverySiteContactId;
+						}
+						if (additionalFields.reference) body.reference = additionalFields.reference;
+						if (additionalFields.seriesId) body.seriesId = additionalFields.seriesId;
+						const poCreatedAt = toUtcDateTime(additionalFields.createdAt);
+						if (poCreatedAt) body.createdAt = poCreatedAt;
+						if (additionalFields.departmentCodeId) body.departmentCodeId = additionalFields.departmentCodeId;
+						if (additionalFields.nominalCodeId) body.nominalCodeId = additionalFields.nominalCodeId;
+						if (additionalFields.clientNotes) body.clientNotes = additionalFields.clientNotes;
+						if (additionalFields.internalNotes) body.internalNotes = additionalFields.internalNotes;
+						const customFieldsData = this.getNodeParameter('customFields', i, {}) as {
+							values?: Array<{ definitionId: number; value: string }>;
+						};
+						if (customFieldsData.values && customFieldsData.values.length > 0) {
+							body.customFields = customFieldsData.values.map((cf) => ({
+								definitionId: cf.definitionId,
+								value: cf.value,
+							})) as unknown as JsonObject;
+						}
+						const raw = await vh3ListApiRequest.call(this, '/purchase_orders/create', body);
+						responseData = [raw];
+					} else if (operation === 'editPurchaseOrder') {
+						const purchaseOrderId = this.getNodeParameter('purchaseOrderId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { purchaseOrderId };
+						if (additionalFields.deliverySiteContactId) {
+							body.deliverySiteContactId = additionalFields.deliverySiteContactId;
+						}
+						if (additionalFields.reference) body.reference = additionalFields.reference;
+						if (additionalFields.nominalCodeId) body.nominalCodeId = additionalFields.nominalCodeId;
+						if (additionalFields.departmentCodeId) body.departmentCodeId = additionalFields.departmentCodeId;
+						if (additionalFields.clientNotes) body.clientNotes = additionalFields.clientNotes;
+						if (additionalFields.internalNotes) body.internalNotes = additionalFields.internalNotes;
+						const customFieldsData = this.getNodeParameter('customFields', i, {}) as {
+							values?: Array<{ definitionId: number; value: string }>;
+						};
+						if (customFieldsData.values && customFieldsData.values.length > 0) {
+							body.customFields = customFieldsData.values.map((cf) => ({
+								definitionId: cf.definitionId,
+								value: cf.value,
+							})) as unknown as JsonObject;
+						}
+						const raw = await vh3ListApiRequest.call(this, '/purchase_orders/edit', body);
+						responseData = [raw];
+					} else if (operation === 'listPurchaseOrderSeries') {
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const body: JsonObject = {};
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/purchase_orders/series/list', body);
+						} else {
+							body.pageSize = this.getNodeParameter('pageSize', i) as number;
+							body.pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							const raw = await vh3ListApiRequest.call(this, '/purchase_orders/series/list', body);
+							responseData = extractItems(raw).items;
+						}
+					} else if (operation === 'getPurchaseOrderSeries') {
+						const seriesId = this.getNodeParameter('seriesId', i) as number;
+						const simplify = this.getNodeParameter('simplify', i, false) as boolean;
+						const qs: Record<string, string | number | boolean> = { seriesId };
+						if (simplify) qs.compact = true;
+						const raw = await vh3ProxyGetRequest.call(this, '/purchase_orders/series', qs);
+						responseData = [raw];
+					} else if (operation === 'listPurchaseOrderLineItems') {
+						const purchaseOrderId = this.getNodeParameter('purchaseOrderId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const body: JsonObject = { purchaseOrderId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/purchase_orders/line_item/list', body);
+						} else {
+							body.pageSize = this.getNodeParameter('pageSize', i) as number;
+							body.pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							const raw = await vh3ListApiRequest.call(this, '/purchase_orders/line_item/list', body);
+							responseData = extractItems(raw).items;
+						}
+					} else if (operation === 'getPurchaseOrderLineItem') {
+						const purchaseOrderId = this.getNodeParameter('purchaseOrderId', i) as number;
+						const lineItemId = this.getNodeParameter('lineItemId', i) as number;
+						const simplify = this.getNodeParameter('simplify', i, false) as boolean;
+						const qs: Record<string, string | number | boolean> = { purchaseOrderId, lineItemId };
+						if (simplify) qs.compact = true;
+						const raw = await vh3ProxyGetRequest.call(this, '/purchase_orders/line_item', qs);
+						responseData = [raw];
+					} else if (operation === 'createPurchaseOrderLineItem') {
+						const purchaseOrderId = this.getNodeParameter('purchaseOrderId', i) as number;
+						const contactId = this.getNodeParameter('contactId', i) as number;
+						const description = this.getNodeParameter('description', i) as string;
+						const quantity = this.getNodeParameter('quantity', i) as number;
+						const unitCost = this.getNodeParameter('unitCost', i) as number;
+						const unitSellingPrice = this.getNodeParameter('unitSellingPrice', i) as number;
+						const taxId = this.getNodeParameter('taxId', i) as number;
+						const nominalCodeId = this.getNodeParameter('nominalCodeId', i) as number;
+						const departmentCodeId = this.getNodeParameter('departmentCodeId', i) as number;
+						const body: JsonObject = {
+							purchaseOrderId,
+							contactId,
+							description,
+							quantity,
+							unitCost,
+							unitSellingPrice,
+							taxId,
+							nominalCodeId,
+							departmentCodeId,
+						};
+						const raw = await vh3ListApiRequest.call(this, '/purchase_orders/line_item/create', body);
+						responseData = [raw];
+					} else if (operation === 'editPurchaseOrderLineItem') {
+						const purchaseOrderId = this.getNodeParameter('purchaseOrderId', i) as number;
+						const lineItemId = this.getNodeParameter('lineItemId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { purchaseOrderId, lineItemId };
+						if (additionalFields.description) body.description = additionalFields.description;
+						if (typeof additionalFields.quantity === 'number') body.quantity = additionalFields.quantity;
+						if (typeof additionalFields.unitCost === 'number') body.unitCost = additionalFields.unitCost;
+						if (typeof additionalFields.unitSellingPrice === 'number') {
+							body.unitSellingPrice = additionalFields.unitSellingPrice;
+						}
+						if (additionalFields.taxId) body.taxId = additionalFields.taxId;
+						if (additionalFields.nominalCodeId) body.nominalCodeId = additionalFields.nominalCodeId;
+						if (additionalFields.departmentCodeId) body.departmentCodeId = additionalFields.departmentCodeId;
+						const raw = await vh3ListApiRequest.call(this, '/purchase_orders/line_item/edit', body);
+						responseData = [raw];
+					} else if (operation === 'deletePurchaseOrderLineItem') {
+						const purchaseOrderId = this.getNodeParameter('purchaseOrderId', i) as number;
+						const lineItemId = this.getNodeParameter('lineItemId', i) as number;
+						const raw = await vh3ListApiRequest.call(this, '/purchase_orders/line_item/delete', {
+							purchaseOrderId,
+							lineItemId,
+						});
 						responseData = [raw];
 					}
 				}
