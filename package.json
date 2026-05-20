@@ -25,10 +25,13 @@
 		"build": "tsc && gulp build:icons",
 		"dev": "tsc --watch",
 		"format": "prettier nodes credentials --write",
-		"lint": "eslint nodes/**/*.ts credentials/**/*.ts",
+		"lint": "eslint nodes/**/*.ts credentials/**/*.ts package.json",
+		"lint:manifest": "node scripts/validate-package-manifest.mjs",
+		"lint:package": "eslint package.json",
+		"lint:n8n": "npm run lint && npm run lint:manifest && npm run lint:package",
 		"lintfix": "eslint nodes/**/*.ts credentials/**/*.ts --fix",
 		"test": "jest",
-		"prepublishOnly": "npm run build && npm run lint"
+		"prepublishOnly": "npm run build && npm run lint:n8n"
 	},
 	"files": [
 		"dist"

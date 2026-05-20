@@ -13,7 +13,8 @@ removed (or kept for reference).
 - [x] No `process.env` or filesystem access in node code
 - [x] TypeScript with proper `NodeApiError` / `NodeOperationError` handling
 - [x] All UI text and documentation in English
-- [x] Linter passes — `npx @n8n/scan-community-package n8n-nodes-vh3ai@0.6.4` confirmed
+- [x] Linter passes — `npm run lint:n8n` (ESLint + manifest validation) and `npx @n8n/scan-community-package n8n-nodes-vh3ai@0.8.1` confirmed
+- [x] `n8n.n8nNodesApiVersion` is a positive integer (`1`, not `1.1`) — required by n8n Cloud verification
 - [x] `package.json` contains `n8n-community-node-package` keyword
 - [x] `package.json` n8n attribute lists nodes and credentials
 - [x] Credentials test endpoint defined (`Vh3AiApi.credentials.ts` → `test`)
@@ -130,7 +131,8 @@ node" pattern in the verification guidelines. Specifically:
 - ✅ No `process.env` or filesystem access.
 - ✅ TypeScript with `NodeApiError` / `NodeOperationError` error handling.
 - ✅ English-only UI and documentation.
-- ✅ Passes `npx @n8n/scan-community-package n8n-nodes-vh3ai`.
+- ✅ Passes `npm run lint:n8n` and `npx @n8n/scan-community-package n8n-nodes-vh3ai@<version>`.
+- ✅ `n8n.n8nNodesApiVersion` is integer `1` (not float `1.1`).
 
 **Maintenance commitment**
 

@@ -53,7 +53,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run lint
+      - run: npm run lint:n8n
 
       - run: npm run build
 
@@ -66,3 +66,6 @@ jobs:
           npm publish --provenance --access public
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Scan published package (n8n Cloud verification)
+        run: npx @n8n/scan-community-package "n8n-nodes-vh3ai@$(node -p "require('./package.json').version")"
