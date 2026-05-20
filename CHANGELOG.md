@@ -4,6 +4,12 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.8.1] — 2026-05-20
+
+### Fixed
+
+- **package.json** — set `n8n.n8nNodesApiVersion` to `1` (was `1.1`). n8n Cloud verification requires a positive integer; no node or credential code changed.
+
 ## [0.8.0] — 2026-05-19
 
 ### Added
