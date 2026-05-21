@@ -4,6 +4,22 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.9.0] — 2026-05-21
+
+### Added
+
+- **Job Feed › List Account Job Feed** (`listAccountJobFeed`) — new operation on the existing Job Feed (VH3 AI) resource. Paginated job feed scoped to a parent account and all its children via the `HAS_PARENT` graph hierarchy. Pass any contact ID (parent or child) and receive jobs for the entire account tree. Supports the same filters as List Job Feed (status, result, resource, type, category) plus full date-range controls.
+- **Job Feed › List Job Feed** — added four new optional filters:
+  - **Date From** / **Date To** — ISO date/datetime window to scope the feed.
+  - **Date Field** — choose which timestamp the date window applies to (`createdAt`, `plannedStartAt`, `plannedEndAt`, `actualStartAt`, `actualEndAt`).
+  - **Direction** — sort direction on createdAt (`asc` / `desc`).
+
+### Notes
+
+- Purely additive release — no existing operations, fields, credentials, or request shapes were modified. Existing workflows continue to run unchanged.
+- Both operations use the existing `jobFeed` resource value; no new resource dropdown entry or `fsiResources` Set change was needed.
+- Zero/empty optional filters are not sent to the API (guarded by truthiness checks), preventing accidental 422s from the upstream.
+
 ## [0.8.1] — 2026-05-20
 
 ### Fixed
@@ -248,6 +264,11 @@ Companion release to a sweep across the VH3 AI node and the upstream BigChange A
 
 - CI publish workflow: clear error when `NPM_TOKEN` secret is unset, normalised repo URL, setup-node bumped to 22.
 
+[0.9.0]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.9.0
+[0.8.1]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.8.1
+[0.8.0]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.8.0
+[0.7.7]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.7
+[0.7.6]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.6
 [0.7.5]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.5
 [0.7.4]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.4
 [0.7.3]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.7.3

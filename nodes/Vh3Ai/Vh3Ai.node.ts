@@ -2046,6 +2046,10 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.categoryId) qs.category_id = additionalFields.categoryId as number;
 						if (additionalFields.status) qs.status = additionalFields.status as string;
 						if (additionalFields.result) qs.result = additionalFields.result as string;
+						if (additionalFields.dateFrom) qs.date_from = additionalFields.dateFrom as string;
+						if (additionalFields.dateTo) qs.date_to = additionalFields.dateTo as string;
+						if (additionalFields.dateField) qs.date_field = additionalFields.dateField as string;
+						if (additionalFields.direction) qs.direction = additionalFields.direction as string;
 						if (returnAll) {
 							responseData = await vh3FsiGetAllPages.call(this, '/jobs/feed', qs, 'jobs');
 						} else {
@@ -2054,6 +2058,32 @@ export class Vh3Ai implements INodeType {
 							qs.page_size = pageSize;
 							qs.page_number = pageNumber;
 							const raw = await vh3FsiGetRequest.call(this, '/jobs/feed', qs);
+							responseData = (Array.isArray(raw.jobs) ? raw.jobs : []) as JsonObject[];
+						}
+					} else if (operation === 'listAccountJobFeed') {
+						const contactId = this.getNodeParameter('contactId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+						const simplify = this.getNodeParameter('simplify', i) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const qs: Record<string, string | number | boolean> = { contact_id: contactId };
+						if (simplify) qs.compact = true;
+						if (additionalFields.resourceId) qs.resource_id = additionalFields.resourceId as number;
+						if (additionalFields.typeId) qs.type_id = additionalFields.typeId as number;
+						if (additionalFields.categoryId) qs.category_id = additionalFields.categoryId as number;
+						if (additionalFields.status) qs.status = additionalFields.status as string;
+						if (additionalFields.result) qs.result = additionalFields.result as string;
+						if (additionalFields.dateFrom) qs.date_from = additionalFields.dateFrom as string;
+						if (additionalFields.dateTo) qs.date_to = additionalFields.dateTo as string;
+						if (additionalFields.dateField) qs.date_field = additionalFields.dateField as string;
+						if (additionalFields.direction) qs.direction = additionalFields.direction as string;
+						if (returnAll) {
+							responseData = await vh3FsiGetAllPages.call(this, '/jobs/feed/account', qs, 'jobs');
+						} else {
+							const pageSize = this.getNodeParameter('pageSize', i) as number;
+							const pageNumber = this.getNodeParameter('pageNumber', i) as number;
+							qs.page_size = pageSize;
+							qs.page_number = pageNumber;
+							const raw = await vh3FsiGetRequest.call(this, '/jobs/feed/account', qs);
 							responseData = (Array.isArray(raw.jobs) ? raw.jobs : []) as JsonObject[];
 						}
 					} else if (operation === 'getEnrichedJob') {
