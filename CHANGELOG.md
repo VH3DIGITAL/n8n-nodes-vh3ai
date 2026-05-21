@@ -4,6 +4,10 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.9.2] — 2026-05-21
+
+Republish of the 0.9.1 release set after a publish-pipeline retag conflict on npm. Contents identical to the intended 0.9.1 — no behavioural difference between 0.9.1 (npm) and 0.9.2.
+
 ## [0.9.1] — 2026-05-21
 
 ### Added
@@ -269,6 +273,7 @@ Companion release to a sweep across the VH3 AI node and the upstream BigChange A
 
 - CI publish workflow: clear error when `NPM_TOKEN` secret is unset, normalised repo URL, setup-node bumped to 22.
 
+[0.9.2]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.9.2
 [0.9.1]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.9.1
 [0.8.1]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.8.1
 [0.8.0]: https://github.com/VH3DIGITAL/n8n-nodes-vh3ai/releases/tag/v0.8.0
