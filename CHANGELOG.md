@@ -4,6 +4,24 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.0] — 2026-06-06
+
+Early release of the full BigChange Web Services surface area.
+
+### Added
+
+- **21 new Web Services resources** covering the full BigChange Web Services API — jobs, contacts, assets, financial, stock, tracking, resources, contracts, and more. Over 250 operations are now available under the `(Web Services)` label in the resource dropdown.
+- **Response unwrapping** — Web Services responses are automatically unwrapped from the `result.Result` envelope so each record appears as a separate n8n item.
+- **Enriched field descriptions** — parameter hints, required/optional flags, and date-picker fields sourced from BigChange developer documentation.
+- **Additional Fields pattern** — optional parameters are grouped behind "Add Field" to keep the UI clean. Only required fields appear by default.
+- **ID/Ref pair detection** — endpoints that accept either an ID or a Reference automatically mark both as optional with a guidance hint.
+
+### Notes
+
+- This is an **early release**. Some operations may have incomplete parameter coverage where the upstream API spec is sparse. Parameter descriptions will continue to improve in subsequent releases.
+- Web Services and BigChange REST proxy are **separate API surfaces** on the same credential. They share the same API key but differ on URL prefix, parameter casing, date format, and response shape.
+- Existing `(BigChange)` and `(VH3 AI)` resources are unchanged.
+
 ## [0.9.2] — 2026-05-21
 
 Republish of the 0.9.1 release set after a publish-pipeline retag conflict on npm. Contents identical to the intended 0.9.1 — no behavioural difference between 0.9.1 (npm) and 0.9.2.

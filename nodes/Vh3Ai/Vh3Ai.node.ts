@@ -23,6 +23,11 @@ import {
 	vh3FsiPutRequest,
 	vh3FsiGetAllPages,
 	buildAttachments,
+	omitEmptyWsParams,
+	toWebServicesDateTime,
+	vh3WebServicesGetRequest,
+	vh3WebServicesPostRequest,
+	extractWsItems,
 } from './GenericFunctions';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
@@ -55,6 +60,27 @@ import { fsiIntelligenceOperations, fsiIntelligenceFields } from './descriptions
 import { fsiInvestigateOperations, fsiInvestigateFields } from './descriptions/FsiInvestigateDescription';
 import { fsiConnieOperations, fsiConnieFields } from './descriptions/FsiConnieDescription';
 import { fsiUsersOperations, fsiUsersFields } from './descriptions/FsiUsersDescription';
+import { wsJobsOperations, wsJobsFields, wsJobsRoutes } from './descriptions/WebServicesJobsGeneratedDescription';
+import { wsAssetChecksOperations, wsAssetChecksFields, wsAssetChecksRoutes } from './descriptions/WebServicesAssetChecksDescription';
+import { wsAssetsOperations, wsAssetsFields, wsAssetsRoutes } from './descriptions/WebServicesAssetsDescription';
+import { wsAttachmentsOperations, wsAttachmentsFields, wsAttachmentsRoutes } from './descriptions/WebServicesAttachmentsDescription';
+import { wsContactNotesOperations, wsContactNotesFields, wsContactNotesRoutes } from './descriptions/WebServicesContactNotesDescription';
+import { wsContactsOperations, wsContactsFields, wsContactsRoutes } from './descriptions/WebServicesContactsDescription';
+import { wsContractsOperations, wsContractsFields, wsContractsRoutes } from './descriptions/WebServicesContractsDescription';
+import { wsCustomFieldsOperations, wsCustomFieldsFields, wsCustomFieldsRoutes } from './descriptions/WebServicesCustomFieldsDescription';
+import { wsExpensesOperations, wsExpensesFields, wsExpensesRoutes } from './descriptions/WebServicesExpensesDescription';
+import { wsFinancialOperations, wsFinancialFields, wsFinancialRoutes } from './descriptions/WebServicesFinancialDescription';
+import { wsMessagingOperations, wsMessagingFields, wsMessagingRoutes } from './descriptions/WebServicesMessagingDescription';
+import { wsReportsOperations, wsReportsFields, wsReportsRoutes } from './descriptions/WebServicesReportsDescription';
+import { wsResourcesOperations, wsResourcesFields, wsResourcesRoutes } from './descriptions/WebServicesResourcesDescription';
+import { wsRoutesOperations, wsRoutesFields, wsRoutesRoutes } from './descriptions/WebServicesRoutesDescription';
+import { wsSalesOpportunitiesOperations, wsSalesOpportunitiesFields, wsSalesOpportunitiesRoutes } from './descriptions/WebServicesSalesOpportunitiesDescription';
+import { wsStockOperations, wsStockFields, wsStockRoutes } from './descriptions/WebServicesStockDescription';
+import { wsTagsOperations, wsTagsFields, wsTagsRoutes } from './descriptions/WebServicesTagsDescription';
+import { wsTrackingOperations, wsTrackingFields, wsTrackingRoutes } from './descriptions/WebServicesTrackingDescription';
+import { wsWebUsersOperations, wsWebUsersFields, wsWebUsersRoutes } from './descriptions/WebServicesWebUsersDescription';
+import { wsWorkflowOperations, wsWorkflowFields, wsWorkflowRoutes } from './descriptions/WebServicesWorkflowDescription';
+import { wsWorksheetsOperations, wsWorksheetsFields, wsWorksheetsRoutes } from './descriptions/WebServicesWorksheetsDescription';
 
 export class Vh3Ai implements INodeType {
 	description: INodeTypeDescription = {
@@ -86,18 +112,29 @@ export class Vh3Ai implements INodeType {
 				noDataExpression: true,
 				options: [
 					{ name: 'Account Report (VH3 AI)', value: 'accountReport', description: 'Generate monthly account review reports for a contact.' },
+					{ name: 'Asset (Web Services)', value: 'wsAssets', description: 'BigChange Web Services asset management — CRUD, transfers, and audits.' },
+					{ name: 'Asset Check (Web Services)', value: 'wsAssetChecks', description: 'BigChange Web Services asset check retrieval and defect updates.' },
+					{ name: 'Attachment (Web Services)', value: 'wsAttachments', description: 'BigChange Web Services attachment retrieval and deletion.' },
 					{ name: 'Briefing (VH3 AI)', value: 'briefing', description: 'Generate pre-job intelligence briefings.' },
 					{ name: 'Case (VH3 AI)', value: 'cases', description: 'Case management — create, update, transition, comment, link items and participants.' },
 					{ name: 'Connie (VH3 AI)', value: 'connie', description: 'Conversational AI assistant — chat, sessions, and history search.' },
 					{ name: 'Contact (BigChange)', value: 'contacts', description: 'Customers and sites — companies, addresses, locations.' },
+					{ name: 'Contact (Web Services)', value: 'wsContacts', description: 'BigChange Web Services contact management — search, create, update, groups, and flags.' },
+					{ name: 'Contact Note (Web Services)', value: 'wsContactNotes', description: 'BigChange Web Services contact notes — list, create, update, and delete.' },
+					{ name: 'Contract (Web Services)', value: 'wsContracts', description: 'BigChange Web Services contract management.' },
+					{ name: 'Custom Field (Web Services)', value: 'wsCustomFields', description: 'BigChange Web Services custom field definitions and values.' },
 					{ name: 'Email (VH3 AI)', value: 'email', description: 'Email triage — classify, ingest, and list triage categories.' },
+					{ name: 'Expense (Web Services)', value: 'wsExpenses', description: 'BigChange Web Services expense management — create, list, approve.' },
+					{ name: 'Financial (Web Services)', value: 'wsFinancial', description: 'BigChange Web Services financial documents, invoices, payments, and tax.' },
 					{ name: 'Intelligence (VH3 AI)', value: 'intelligence', description: 'Job type profiling — list, get, and generate intelligence profiles.' },
 					{ name: 'Investigate (VH3 AI)', value: 'investigate', description: 'Run investigative queries against operational data.' },
 					{ name: 'Invoice (BigChange)', value: 'invoices', description: 'Sales invoices and their line items — read, create, edit, mark sent/paid, cancel.' },
 					{ name: 'Job (BigChange)', value: 'jobs', description: 'Field service jobs — CRUD, schedule, start, set result, cancel; manage constraints and stock.' },
 					{ name: 'Job Feed (VH3 AI)', value: 'jobFeed', description: 'Enriched job feed with aggregation and analytics.' },
 					{ name: 'Job Group (BigChange)', value: 'jobGroups', description: 'Linked sets of jobs (e.g. multi-visit projects) and their status history.' },
+					{ name: 'Job (Web Services)', value: 'wsJobs', description: 'BigChange Web Services jobs API — list, get, cancel, and status history.' },
 					{ name: 'Job Type (BigChange)', value: 'jobTypes', description: 'Job type definitions (templates) — schemas for installation/repair/maintenance.' },
+					{ name: 'Messaging (Web Services)', value: 'wsMessaging', description: 'Send messages via BigChange Web Services.' },
 					{ name: 'Note (BigChange)', value: 'notes', description: 'Notes, tasks, and progress updates attached to jobs/contacts/persons.' },
 					{ name: 'Person (BigChange)', value: 'persons', description: 'Individual people attached to a contact (e.g. site contacts). Includes consent history.' },
 					{ name: 'Pulse (VH3 AI)', value: 'pulse', description: 'Operational pulse dashboard for your company.' },
@@ -105,15 +142,25 @@ export class Vh3Ai implements INodeType {
 					{ name: 'Quote (BigChange)', value: 'quotes', description: 'Sales quotes and their line items — read, create, edit, mark sent/accepted/rejected.' },
 					{ name: 'Reference Data (BigChange)', value: 'referenceData', description: 'Lookup tables — department codes and nominal (accounting) codes.' },
 					{ name: 'Report (VH3 AI)', value: 'reports', description: 'Generate operational reports (daily, weekly, monthly).' },
+					{ name: 'Report (Web Services)', value: 'wsReports', description: 'BigChange Web Services report queries and exports.' },
 					{ name: 'Resource / Engineer (BigChange)', value: 'resources', description: 'Engineers/technicians (the field workforce) and their groups.' },
+					{ name: 'Resource (Web Services)', value: 'wsResources', description: 'BigChange Web Services resource/engineer management — availability, skills, groups, GPS.' },
+					{ name: 'Route (Web Services)', value: 'wsRoutes', description: 'BigChange Web Services route planning and optimisation.' },
 					{ name: 'Sales Opportunity (BigChange)', value: 'salesOpportunities', description: 'Sales opportunities (CRM pipeline) — read, edit, manage line items; list probabilities & stages.' },
+					{ name: 'Sales Opportunity (Web Services)', value: 'wsSalesOpportunities', description: 'BigChange Web Services sales opportunity management.' },
 					{ name: 'Search (VH3 AI)', value: 'search', description: 'Semantic and outcome search across operational data.' },
 					{ name: 'Sentinel (VH3 AI)', value: 'sentinel', description: 'Proactive monitoring — run sentinels, view registry and results.' },
 					{ name: 'Stock (BigChange)', value: 'stock', description: 'Inventory — product categories, stock details, items, movements, and suppliers.' },
+					{ name: 'Stock (Web Services)', value: 'wsStock', description: 'BigChange Web Services stock/inventory management.' },
+					{ name: 'Tag (Web Services)', value: 'wsTags', description: 'BigChange Web Services tagging — assign, remove, and list tags on entities.' },
+					{ name: 'Tracking (Web Services)', value: 'wsTracking', description: 'BigChange Web Services GPS tracking and location data.' },
 					{ name: 'User (VH3 AI)', value: 'users', description: 'User management — list, invite, update role, and delete company users.' },
-				{ name: 'Vehicle (BigChange)', value: 'vehicles', description: 'Fleet vehicles — read/create/update vehicle records and groups.' },
+					{ name: 'Vehicle (BigChange)', value: 'vehicles', description: 'Fleet vehicles — read/create/update vehicle records and groups.' },
 					{ name: 'Weather (VH3 AI)', value: 'weather', description: 'Weather data for jobs, sites, forecasts, and historical lookups.' },
+					{ name: 'Web User (Web Services)', value: 'wsWebUsers', description: 'BigChange Web Services web user/portal management.' },
+					{ name: 'Workflow (Web Services)', value: 'wsWorkflow', description: 'BigChange Web Services workflow triggers and actions.' },
 					{ name: 'Worksheet (BigChange)', value: 'worksheets', description: 'Mobile-app worksheet/checklist definitions, questions, and submitted answers.' },
+					{ name: 'Worksheet (Web Services)', value: 'wsWorksheets', description: 'BigChange Web Services worksheet data retrieval.' },
 					{ name: 'Worksheet Group (BigChange)', value: 'worksheetGroups', description: 'Folders that organise worksheet definitions.' },
 				],
 				default: 'jobs',
@@ -178,6 +225,48 @@ export class Vh3Ai implements INodeType {
 			...fsiConnieFields,
 			...fsiUsersOperations,
 			...fsiUsersFields,
+			...wsJobsOperations,
+			...wsJobsFields,
+			...wsAssetChecksOperations,
+			...wsAssetChecksFields,
+			...wsAssetsOperations,
+			...wsAssetsFields,
+			...wsAttachmentsOperations,
+			...wsAttachmentsFields,
+			...wsContactNotesOperations,
+			...wsContactNotesFields,
+			...wsContactsOperations,
+			...wsContactsFields,
+			...wsContractsOperations,
+			...wsContractsFields,
+			...wsCustomFieldsOperations,
+			...wsCustomFieldsFields,
+			...wsExpensesOperations,
+			...wsExpensesFields,
+			...wsFinancialOperations,
+			...wsFinancialFields,
+			...wsMessagingOperations,
+			...wsMessagingFields,
+			...wsReportsOperations,
+			...wsReportsFields,
+			...wsResourcesOperations,
+			...wsResourcesFields,
+			...wsRoutesOperations,
+			...wsRoutesFields,
+			...wsSalesOpportunitiesOperations,
+			...wsSalesOpportunitiesFields,
+			...wsStockOperations,
+			...wsStockFields,
+			...wsTagsOperations,
+			...wsTagsFields,
+			...wsTrackingOperations,
+			...wsTrackingFields,
+			...wsWebUsersOperations,
+			...wsWebUsersFields,
+			...wsWorkflowOperations,
+			...wsWorkflowFields,
+			...wsWorksheetsOperations,
+			...wsWorksheetsFields,
 		],
 	};
 
@@ -196,6 +285,34 @@ export class Vh3Ai implements INodeType {
 			'intelligence', 'investigate', 'jobFeed', 'pulse', 'reports',
 			'search', 'sentinel', 'users', 'weather',
 		]);
+
+		const wsRoutesLookup: Record<string, Record<string, {
+			path: string;
+			method: string;
+			params: Array<{ camelName: string; apiName: string; type: string; default: string | number | boolean }>;
+		}>> = {
+			wsJobs: wsJobsRoutes,
+			wsAssetChecks: wsAssetChecksRoutes,
+			wsAssets: wsAssetsRoutes,
+			wsAttachments: wsAttachmentsRoutes,
+			wsContactNotes: wsContactNotesRoutes,
+			wsContacts: wsContactsRoutes,
+			wsContracts: wsContractsRoutes,
+			wsCustomFields: wsCustomFieldsRoutes,
+			wsExpenses: wsExpensesRoutes,
+			wsFinancial: wsFinancialRoutes,
+			wsMessaging: wsMessagingRoutes,
+			wsReports: wsReportsRoutes,
+			wsResources: wsResourcesRoutes,
+			wsRoutes: wsRoutesRoutes,
+			wsSalesOpportunities: wsSalesOpportunitiesRoutes,
+			wsStock: wsStockRoutes,
+			wsTags: wsTagsRoutes,
+			wsTracking: wsTrackingRoutes,
+			wsWebUsers: wsWebUsersRoutes,
+			wsWorkflow: wsWorkflowRoutes,
+			wsWorksheets: wsWorksheetsRoutes,
+		};
 
 		for (let i = 0; i < items.length; i++) {
 			try {
@@ -2545,6 +2662,31 @@ export class Vh3Ai implements INodeType {
 							user_id: userId,
 						});
 						responseData = [raw];
+					}
+				}
+
+				// ── WEB SERVICES (all resources via generic route dispatch) ──
+				else if (wsRoutesLookup[resource]) {
+					const routes = wsRoutesLookup[resource];
+					const route = routes[operation];
+					if (route) {
+						const params: Record<string, string | number | boolean | undefined | null> = {};
+						const additional = this.getNodeParameter('additionalFields', i, {}) as Record<string, string | number | boolean | undefined | null>;
+						for (const p of route.params) {
+							let val = (additional[p.camelName] ?? this.getNodeParameter(p.camelName, i, p.default)) as string | number | boolean | undefined;
+							if (p.type === 'dateTime' && typeof val === 'string' && val) {
+								val = toWebServicesDateTime(val);
+							}
+							params[p.apiName] = val ?? null;
+						}
+						const cleaned = omitEmptyWsParams(params);
+						if (route.method === 'get') {
+							const raw = await vh3WebServicesGetRequest.call(this, route.path, cleaned);
+							responseData = extractWsItems(raw);
+						} else {
+							const raw = await vh3WebServicesPostRequest.call(this, route.path, cleaned as JsonObject);
+							responseData = extractWsItems(raw);
+						}
 					}
 				}
 
