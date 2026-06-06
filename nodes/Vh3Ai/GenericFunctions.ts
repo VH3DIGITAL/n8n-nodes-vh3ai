@@ -208,6 +208,130 @@ export async function vh3ListApiRequestAllPages(
 	return allItems;
 }
 
+// ── Web Services API helpers ──────────────────────────────────────────────────
+
+export const WEBSERVICES_API_PREFIX = '/api:U8zIv3U8';
+
+/**
+ * Strip null, undefined, and empty-string values from a Web Services params
+ * object. Keeps 0 and false because those are meaningful filter values.
+ */
+export function omitEmptyWsParams(
+	obj: Record<string, string | number | boolean | undefined | null>,
+): Record<string, string | number | boolean> {
+	return Object.fromEntries(
+		Object.entries(obj).filter(([, v]) => v !== null && v !== undefined && v !== ''),
+	) as Record<string, string | number | boolean>;
+}
+
+/**
+ * Convert any date/datetime input into the BigChange Web Services date format:
+ * 'yyyy-MM-dd HH:mm:ss'. Returns undefined for empty or unparseable input.
+ *
+ * For strings: normalises ISO 8601 (strips T separator, trailing Z, and
+ * milliseconds). Strings that carry no timezone info are returned as-is
+ * after normalisation (n8n datetime fields already in WS format pass through).
+ * Date objects and epoch numbers are formatted in UTC.
+ */
+export function toWebServicesDateTime(value: unknown): string | undefined {
+	if (value === undefined || value === null || value === '') return undefined;
+
+	if (typeof value === 'string') {
+		// Fast path: normalise ISO 8601 → WS format by string manipulation only.
+		// This preserves the original "wall clock" time for timezone-less inputs.
+		const normalised = value
+			.replace('T', ' ')
+			.replace(/\.\d+Z?$/, '')
+			.replace(/Z$/, '')
+			.trim();
+		if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(normalised)) {
+			return normalised;
+		}
+		// Strings with explicit timezone offsets (e.g. +01:00) fall through to
+		// Date parsing so the offset is respected and output is UTC.
+	}
+
+	const d = value instanceof Date ? value : new Date(value as string | number);
+	if (isNaN(d.getTime())) return undefined;
+	const pad = (n: number) => String(n).padStart(2, '0');
+	return (
+		`${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +
+		`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`
+	);
+}
+
+/**
+ * Make an authenticated GET request to the VH3 Web Services API.
+ * Response is returned raw — do not call extractItems() on the result.
+ */
+export async function vh3WebServicesGetRequest(
+	this: IExecuteFunctions,
+	endpoint: string,
+	qs: Record<string, string | number | boolean>,
+): Promise<JsonObject> {
+	const credentials = await this.getCredentials('vh3AiApi');
+	const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
+
+	const options: IHttpRequestOptions = {
+		method: 'GET',
+		url: `${baseUrl}${WEBSERVICES_API_PREFIX}${endpoint}`,
+		qs,
+		json: true,
+	};
+
+	try {
+		return (await this.helpers.httpRequestWithAuthentication.call(
+			this,
+			'vh3AiApi',
+			options,
+		)) as JsonObject;
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: `Web Services API request failed: GET ${endpoint}`,
+			description: (error as Error).message,
+		});
+	}
+}
+
+/**
+ * Make an authenticated POST request to the VH3 Web Services API.
+ * Response is returned raw — do not call extractItems() on the result.
+ */
+export async function vh3WebServicesPostRequest(
+	this: IExecuteFunctions,
+	endpoint: string,
+	body: JsonObject,
+): Promise<JsonObject> {
+	const credentials = await this.getCredentials('vh3AiApi');
+	const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
+
+	const options: IHttpRequestOptions = {
+		method: 'POST',
+		url: `${baseUrl}${WEBSERVICES_API_PREFIX}${endpoint}`,
+		body: JSON.stringify(body),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	};
+
+	try {
+		const response = await this.helpers.httpRequestWithAuthentication.call(
+			this,
+			'vh3AiApi',
+			options,
+		);
+		if (typeof response === 'string') {
+			return JSON.parse(response) as JsonObject;
+		}
+		return response as JsonObject;
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: `Web Services API request failed: POST ${endpoint}`,
+			description: (error as Error).message,
+		});
+	}
+}
+
 // ── FSI (Field Service Intelligence) API helpers ─────────────────────────────
 
 async function getFsiAuth(context: IExecuteFunctions) {
