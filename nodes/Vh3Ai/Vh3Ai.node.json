@@ -6,12 +6,12 @@
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": "https://vh3.ai/docs"
+				"url": "https://docs.vh3.ai"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": "https://vh3.ai/docs"
+				"url": "https://docs.vh3.ai"
 			}
 		]
 	},
@@ -21,6 +21,8 @@
 		"FSI",
 		"intelligence",
 		"BigChange",
+		"BigChange WS",
+		"Web Services",
 		"job feed",
 		"report",
 		"enriched job",

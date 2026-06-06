@@ -12,3 +12,7 @@ dist/
 
 # OS
 Thumbs.db
+
+# Local reference docs (not published)
+bigchange-ws-docs/
+scripts/bigchange-enrichment.json
