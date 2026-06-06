@@ -332,6 +332,20 @@ export async function vh3WebServicesPostRequest(
 	}
 }
 
+/**
+ * Unwrap a Web Services response envelope into an array of items.
+ * WS responses follow: { result: { Code, Result: [...] } } or { result: { Code, Result: {} } }.
+ * Falls back to returning the raw object as a single item if the shape doesn't match.
+ */
+export function extractWsItems(raw: JsonObject): JsonObject[] {
+	const result = raw?.result as JsonObject | undefined;
+	if (!result) return [raw];
+	const inner = result.Result;
+	if (Array.isArray(inner)) return inner as JsonObject[];
+	if (inner && typeof inner === 'object') return [inner as JsonObject];
+	return [raw];
+}
+
 // ── FSI (Field Service Intelligence) API helpers ─────────────────────────────
 
 async function getFsiAuth(context: IExecuteFunctions) {

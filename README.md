@@ -2,7 +2,7 @@
 
 Community node for [n8n](https://n8n.io/) that integrates with the [VH3 AI](https://vh3.ai) field service management platform.
 
-This package provides a single unified node (**VH3 AI**) that combines both BigChange API operations and VH3 AI intelligence features under one credential type. Resources are clearly labelled "(BigChange)" or "(VH3 AI)" in the dropdown.
+This package provides a single unified node (**VH3 AI**) that combines BigChange API operations, BigChange Web Services, and VH3 AI intelligence features under one credential type. Resources are clearly labelled `(BigChange)`, `(Web Services)`, or `(VH3 AI)` in the dropdown.
 
 The node is marked `usableAsTool: true` so it can be called directly by n8n AI agents.
 
@@ -58,7 +58,9 @@ All operations authenticate using the same API Key and Company ID credentials.
 
 ## Resources & Operations
 
-### BigChange API Resources
+### BigChange API Resources (`(BigChange)`)
+
+These resources talk to the BigChange REST proxy (`/api:YdihQNr3`). Parameters are **camelCase**. Responses use the `extractItems()` envelope and support **Return All** auto-pagination.
 
 | Resource                | Operations                                                                                                                                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -79,7 +81,39 @@ All operations authenticate using the same API Key and Company ID credentials.
 | **Reference Data (BigChange)**      | List Department Codes · Get Department Code · List Nominal Codes · Get Nominal Code                                                                                                                               |
 | **Job Type (BigChange)**            | List Job Types · Get Job Type                                                                                                                                                                                     |
 
-### VH3 AI Intelligence Resources
+### BigChange Web Services Resources (`(Web Services)`)
+
+These resources talk to the legacy BigChange Web Services API (`/api:U8zIv3U8`). Parameters are **PascalCase**. Dates use `yyyy-MM-dd HH:mm:ss` format. Responses are returned raw — there is no envelope unwrapping or auto-pagination.
+
+> **When to use Web Services vs BigChange REST proxy:** some entities (jobs, contacts, stock) exist on both surfaces. Use `(BigChange)` for the modern REST contract with envelope pagination and camelCase params. Use `(Web Services)` for legacy Web Services fields, endpoints, or date handling not available via the REST proxy.
+
+> **`/jobs/job` parameter collision:** `Job (BigChange)` › Get Job by ID uses query key `id`; `Job (Web Services)` › Get Job uses `JobId` / `JobRef`. These are different endpoints on different URL prefixes.
+
+| Resource | Ops | Highlights |
+| --- | ---:| --- |
+| **Asset (Web Services)** | 10 | CRUD, transfers, audits |
+| **Asset Check (Web Services)** | 2 | Check retrieval, defect updates |
+| **Attachment (Web Services)** | 2 | Retrieval and deletion |
+| **Contact (Web Services)** | 27 | Search, create, update, groups, flags, consent |
+| **Contact Note (Web Services)** | 9 | List, create, update, delete |
+| **Contract (Web Services)** | 8 | Contract management |
+| **Custom Field (Web Services)** | 5 | Field definitions and values |
+| **Expense (Web Services)** | 5 | Create, list, approve |
+| **Financial (Web Services)** | 42 | Documents, invoices, payments, tax |
+| **Job (Web Services)** | 58 | 5 hand-crafted + 53 generated (schedule, stock, waypoints, recurrence, cards, etc.) |
+| **Messaging (Web Services)** | 1 | Send messages |
+| **Report (Web Services)** | 7 | Report queries and exports |
+| **Resource (Web Services)** | 24 | Availability, skills, groups, GPS |
+| **Route (Web Services)** | 6 | Route planning and optimisation |
+| **Sales Opportunity (Web Services)** | 8 | Opportunity management |
+| **Stock (Web Services)** | 19 | Inventory management |
+| **Tag (Web Services)** | 5 | Assign, remove, list tags |
+| **Tracking (Web Services)** | 4 | GPS tracking and location data |
+| **Web User (Web Services)** | 5 | Portal user management |
+| **Workflow (Web Services)** | 1 | Workflow triggers and actions |
+| **Worksheet (Web Services)** | 1 | Worksheet data retrieval |
+
+### VH3 AI Intelligence Resources (`(VH3 AI)`)
 
 | Resource           | Operations                                                                                                                                                                                                                                 |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -128,6 +162,18 @@ Deterministic checks (no LLM cost) against your VH3 AI platform fee. Available s
 
 ## Architecture & Patterns
 
+### Three API surfaces
+
+The node exposes three distinct API transports under one credential:
+
+| Surface | URL prefix | Param casing | Date format | Response handling |
+| ------- | ---------- | ------------ | ----------- | ----------------- |
+| `(BigChange)` REST proxy | `/api:YdihQNr3` | camelCase | ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`) | `extractItems()` envelope unwrap, auto-pagination |
+| `(Web Services)` legacy | `/api:U8zIv3U8` | PascalCase | `yyyy-MM-dd HH:mm:ss` | raw response, no envelope helper |
+| `(VH3 AI)` intelligence | `/api:6q5N0phZ` + FSI | camelCase / snake_case | ISO 8601 | per-endpoint |
+
+Do **not** mix helpers across surfaces. Use `vh3ListApiRequest` / `extractItems` for BigChange REST; `vh3WebServicesGetRequest` / `vh3WebServicesPostRequest` for Web Services; `vh3FsiGetRequest` etc. for VH3 AI.
+
 ### Parameter casing
 
 The n8n UI uses **camelCase** field names. The handlers map these to the appropriate API parameter format before sending.
@@ -135,6 +181,7 @@ The n8n UI uses **camelCase** field names. The handlers map these to the appropr
 ### Response normalisation
 
 - **BigChange**: `extractItems()` unwraps the three known envelope shapes into a flat item array.
+- **Web Services**: raw response returned as-is. Consumers inspect the payload structure directly.
 - **VH3 AI**: semantic search and autocomplete responses are unwrapped to per-hit / per-result items.
 
 ### Auto-pagination
