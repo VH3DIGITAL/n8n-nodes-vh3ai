@@ -4,6 +4,10 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.1] — 2026-06-06
+
+Hotfix release — reverts to v0.9.2 functionality. v0.10.0 introduced a node description size that prevented loading on some n8n instances. Web Services features will return in a future release with a lighter footprint.
+
 ## [0.9.2] — 2026-05-21
 
 Republish of the 0.9.1 release set after a publish-pipeline retag conflict on npm. Contents identical to the intended 0.9.1 — no behavioural difference between 0.9.1 (npm) and 0.9.2.

@@ -12,3 +12,6 @@ dist/
 
 # OS
 Thumbs.db
+bigchange-ws-docs/
+scripts/bigchange-enrichment.json
+.understand-anything/
