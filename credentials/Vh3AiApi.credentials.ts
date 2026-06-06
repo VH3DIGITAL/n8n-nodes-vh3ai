@@ -10,13 +10,13 @@ export class Vh3AiApi implements ICredentialType {
 
 	displayName = 'VH3 AI API';
 
-	documentationUrl = 'https://vh3.ai/docs';
+	documentationUrl = 'https://docs.vh3.ai';
 
 	icon = 'file:vh3ai.svg' as const;
 
 	properties: INodeProperties[] = [
 		{
-			displayName: 'New to VH3 AI? <a href="https://vh3.ai/signup/register" target="_blank">Sign up here</a> to create your account and get an API key. Documentation available at <a href="https://vh3.ai/docs" target="_blank">vh3.ai/docs</a>.',
+			displayName: 'New to VH3 AI? <a href="https://vh3.ai/signup/register" target="_blank">Sign up here</a> to create your account and get an API key. Documentation available at <a href="https://docs.vh3.ai" target="_blank">docs.vh3.ai</a>.',
 			name: 'signupNotice',
 			type: 'notice',
 			default: '',
