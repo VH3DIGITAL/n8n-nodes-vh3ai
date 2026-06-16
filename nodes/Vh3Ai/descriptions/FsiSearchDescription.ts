@@ -30,14 +30,26 @@ export const fsiSearchOperations: INodeProperties[] = [
 				action: 'Search intake descriptions (basic)',
 				description: 'Search intake descriptions without graph enrichment',
 			},
-			{
-				name: 'Search Outcomes',
-				value: 'searchOutcomes',
-				action: 'Search job outcomes',
-				description: 'Search job outcome and diagnostic summaries',
-			},
-		],
-		default: 'autocomplete',
+		{
+			name: 'Search Outcomes',
+			value: 'searchOutcomes',
+			action: 'Search job outcomes',
+			description: 'Search job outcome and diagnostic summaries',
+		},
+		{
+			name: 'Search Summary Sections',
+			value: 'searchSummarySections',
+			action: 'Search customer summary knowledge base',
+			description: 'Semantic hybrid search across CustomerSummary knowledge base sections for one or all customers',
+		},
+		{
+			name: 'Get Summary By Contact',
+			value: 'getSummaryByContact',
+			action: 'Get full customer summary for a contact',
+			description: 'Retrieve all stored CustomerSummary sections for a single contact in one call',
+		},
+	],
+	default: 'autocomplete',
 	},
 ];
 
@@ -200,5 +212,97 @@ export const fsiSearchFields: INodeProperties[] = [
 				description: 'Filter by job type ID',
 			},
 		],
+	},
+
+	// ── Search Summary Sections ──────────────────────────────────────────────
+	{
+		displayName: 'Query',
+		name: 'query',
+		type: 'string',
+		typeOptions: { rows: 3 },
+		required: true,
+		default: '',
+		description: 'Natural-language search query',
+		displayOptions: {
+			show: {
+				resource: ['search'],
+				operation: ['searchSummarySections'],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['search'],
+				operation: ['searchSummarySections'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Contact ID',
+				name: 'contactId',
+				type: 'string',
+				default: '',
+				description: 'Scope results to a single customer contact ID',
+			},
+			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				typeOptions: { minValue: 1, maxValue: 100 },
+				default: 10,
+				description: 'Maximum number of results to return',
+			},
+			{
+				displayName: 'Section Key',
+				name: 'sectionKey',
+				type: 'options',
+				options: [
+					{ name: 'Communication Summary', value: 'communication_summary' },
+					{ name: 'Customer Overview', value: 'customer_overview' },
+					{ name: 'Job History Patterns', value: 'job_history_patterns' },
+					{ name: 'Key Analyses', value: 'key_analyses' },
+					{ name: 'Operational Performance', value: 'operational_performance' },
+					{ name: 'Risk & Opportunity', value: 'risk_opportunity' },
+					{ name: 'Systems & Equipment', value: 'systems_equipment' },
+				],
+				default: '',
+				description: 'Scope the search to a specific knowledge section. Leave unset to search across all sections.',
+			},
+		],
+	},
+
+	// ── Get Summary By Contact ───────────────────────────────────────────────
+	{
+		displayName: 'Contact ID',
+		name: 'contactId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'The contact ID whose stored CustomerSummary to retrieve',
+		displayOptions: {
+			show: {
+				resource: ['search'],
+				operation: ['getSummaryByContact'],
+			},
+		},
+	},
+	{
+		displayName: 'Full Report',
+		name: 'fullReport',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to include an assembled fullReport markdown string in the response',
+		displayOptions: {
+			show: {
+				resource: ['search'],
+				operation: ['getSummaryByContact'],
+			},
+		},
 	},
 ];

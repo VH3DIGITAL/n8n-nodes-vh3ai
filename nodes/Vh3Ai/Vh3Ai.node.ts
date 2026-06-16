@@ -2187,7 +2187,7 @@ export class Vh3Ai implements INodeType {
 							});
 						}
 						responseData = results;
-					} else {
+					} else if (operation === 'searchOutcomes' || operation === 'searchIntake' || operation === 'searchIntakeBasic') {
 						const endpoint = operation === 'searchOutcomes'
 							? '/search/outcomes'
 							: operation === 'searchIntakeBasic'
@@ -2245,6 +2245,32 @@ export class Vh3Ai implements INodeType {
 							});
 						}
 						responseData = results;
+
+					} else if (operation === 'searchSummarySections') {
+						const query = this.getNodeParameter('query', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const body: JsonObject = { query };
+						if (additionalFields.limit)      body.limit = additionalFields.limit;
+						if (additionalFields.contactId)  body.contact_id = additionalFields.contactId;
+						if (additionalFields.sectionKey) body.section_key = additionalFields.sectionKey;
+						const raw = await vh3FsiPostRequest.call(this, '/search/summary-sections', body);
+						responseData = Array.isArray((raw as JsonObject).hits)
+							? ((raw as JsonObject).hits as unknown as JsonObject[])
+							: [raw];
+
+					} else if (operation === 'getSummaryByContact') {
+						const credentials = await this.getCredentials('vh3AiApi');
+						const companyId = credentials.companyId as string;
+						const contactId = this.getNodeParameter('contactId', i) as string;
+						const fullReport = this.getNodeParameter('fullReport', i, false) as boolean;
+						const qs: Record<string, string | number | boolean> = {};
+						if (fullReport) qs.full_report = true;
+						const raw = await vh3FsiGetRequest.call(
+							this,
+							`/search/summary-sections/by-contact/${companyId}/${contactId}`,
+							qs,
+						);
+						responseData = [raw];
 					}
 				}
 
