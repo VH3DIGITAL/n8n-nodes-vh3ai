@@ -23,6 +23,11 @@ import {
 	vh3FsiPutRequest,
 	vh3FsiGetAllPages,
 	buildAttachments,
+	toWebServicesDateTime,
+	vh3WebServicesGetRequest,
+	vh3WebServicesPostRequest,
+	omitEmptyWsParams,
+	extractWsItems,
 } from './GenericFunctions';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
@@ -55,6 +60,9 @@ import { fsiIntelligenceOperations, fsiIntelligenceFields } from './descriptions
 import { fsiInvestigateOperations, fsiInvestigateFields } from './descriptions/FsiInvestigateDescription';
 import { fsiConnieOperations, fsiConnieFields } from './descriptions/FsiConnieDescription';
 import { fsiUsersOperations, fsiUsersFields } from './descriptions/FsiUsersDescription';
+import { wsAttachmentsOperations, wsAttachmentsFields, wsAttachmentsRoutes } from './descriptions/WebServicesAttachmentsDescription';
+import { wsReportsOperations, wsReportsFields, wsReportsRoutes } from './descriptions/WebServicesReportsDescription';
+import { wsTrackingOperations, wsTrackingFields, wsTrackingRoutes } from './descriptions/WebServicesTrackingDescription';
 
 export class Vh3Ai implements INodeType {
 	description: INodeTypeDescription = {
@@ -86,6 +94,7 @@ export class Vh3Ai implements INodeType {
 				noDataExpression: true,
 				options: [
 					{ name: 'Account Report (VH3 AI)', value: 'accountReport', description: 'Generate monthly account review reports for a contact.' },
+					{ name: 'Attachment (Web Services)', value: 'wsAttachments', description: 'Retrieve and list attachments for BigChange entities.' },
 					{ name: 'Briefing (VH3 AI)', value: 'briefing', description: 'Generate pre-job intelligence briefings.' },
 					{ name: 'Case (VH3 AI)', value: 'cases', description: 'Case management — create, update, transition, comment, link items and participants.' },
 					{ name: 'Connie (VH3 AI)', value: 'connie', description: 'Conversational AI assistant — chat, sessions, and history search.' },
@@ -105,11 +114,13 @@ export class Vh3Ai implements INodeType {
 					{ name: 'Quote (BigChange)', value: 'quotes', description: 'Sales quotes and their line items — read, create, edit, mark sent/accepted/rejected.' },
 					{ name: 'Reference Data (BigChange)', value: 'referenceData', description: 'Lookup tables — department codes and nominal (accounting) codes.' },
 					{ name: 'Report (VH3 AI)', value: 'reports', description: 'Generate operational reports (daily, weekly, monthly).' },
+					{ name: 'Report (Web Services)', value: 'wsReports', description: 'BigChange Web Services driver/vehicle performance and infringement reports.' },
 					{ name: 'Resource / Engineer (BigChange)', value: 'resources', description: 'Engineers/technicians (the field workforce) and their groups.' },
 					{ name: 'Sales Opportunity (BigChange)', value: 'salesOpportunities', description: 'Sales opportunities (CRM pipeline) — read, edit, manage line items; list probabilities & stages.' },
 					{ name: 'Search (VH3 AI)', value: 'search', description: 'Semantic and outcome search across operational data.' },
 					{ name: 'Sentinel (VH3 AI)', value: 'sentinel', description: 'Proactive monitoring — run sentinels, view registry and results.' },
 					{ name: 'Stock (BigChange)', value: 'stock', description: 'Inventory — product categories, stock details, items, movements, and suppliers.' },
+					{ name: 'Tracking (Web Services)', value: 'wsTracking', description: 'GPS tracking — journeys, live positions, and odometer readings.' },
 					{ name: 'User (VH3 AI)', value: 'users', description: 'User management — list, invite, update role, and delete company users.' },
 				{ name: 'Vehicle (BigChange)', value: 'vehicles', description: 'Fleet vehicles — read/create/update vehicle records and groups.' },
 					{ name: 'Weather (VH3 AI)', value: 'weather', description: 'Weather data for jobs, sites, forecasts, and historical lookups.' },
@@ -178,6 +189,12 @@ export class Vh3Ai implements INodeType {
 			...fsiConnieFields,
 			...fsiUsersOperations,
 			...fsiUsersFields,
+			...wsAttachmentsOperations,
+			...wsAttachmentsFields,
+			...wsReportsOperations,
+			...wsReportsFields,
+			...wsTrackingOperations,
+			...wsTrackingFields,
 		],
 	};
 
@@ -196,6 +213,12 @@ export class Vh3Ai implements INodeType {
 			'intelligence', 'investigate', 'jobFeed', 'pulse', 'reports',
 			'search', 'sentinel', 'users', 'weather',
 		]);
+
+		const wsRoutesLookup: Record<string, Record<string, { path: string; method: string; params: Array<{ camelName: string; apiName: string; type: string; default: string | number | boolean }> }>> = {
+			wsAttachments: wsAttachmentsRoutes,
+			wsReports:     wsReportsRoutes,
+			wsTracking:    wsTrackingRoutes,
+		};
 
 		for (let i = 0; i < items.length; i++) {
 			try {
@@ -2545,6 +2568,31 @@ export class Vh3Ai implements INodeType {
 							user_id: userId,
 						});
 						responseData = [raw];
+					}
+				}
+
+				// ── WEB SERVICES (generic route dispatch) ──
+				else if (wsRoutesLookup[resource]) {
+					const routes = wsRoutesLookup[resource];
+					const route = routes[operation];
+					if (route) {
+						const params: Record<string, string | number | boolean | undefined | null> = {};
+						const additional = this.getNodeParameter('additionalFields', i, {}) as Record<string, string | number | boolean | undefined | null>;
+						for (const p of route.params) {
+							let val = (additional[p.camelName] ?? this.getNodeParameter(p.camelName, i, p.default)) as string | number | boolean | undefined | null;
+							if (p.type === 'dateTime' && typeof val === 'string' && val) {
+								val = toWebServicesDateTime(val);
+							}
+							params[p.apiName] = val ?? null;
+						}
+						const cleaned = omitEmptyWsParams(params);
+						if (route.method === 'get') {
+							const raw = await vh3WebServicesGetRequest.call(this, route.path, cleaned);
+							responseData = extractWsItems(raw);
+						} else {
+							const raw = await vh3WebServicesPostRequest.call(this, route.path, cleaned as JsonObject);
+							responseData = extractWsItems(raw);
+						}
 					}
 				}
 
