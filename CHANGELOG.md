@@ -4,6 +4,21 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.3] — 2026-06-16
+
+### Added
+
+- **Attachment (Web Services)** — new resource. List attachments for any BigChange entity; retrieve an attachment by ID. Uses a shared generic route-dispatch pattern to keep the node description footprint minimal.
+- **Report (Web Services)** — new resource. Driver/vehicle performance and infringement reports via BigChange Web Services.
+- **Tracking (Web Services)** — new resource. GPS journeys, live positions, and odometer readings via BigChange Web Services.
+- **Search › Search Summary Sections** (`searchSummarySections`) — semantic hybrid search across the CustomerSummary Weaviate knowledge base (`POST /search/summary-sections`, Xano FSI API ID 2712). Optional `contact_id` scopes results to one customer; optional `section_key` scopes to one of the 7 sections (`customer_overview`, `job_history_patterns`, `systems_equipment`, `key_analyses`, `operational_performance`, `communication_summary`, `risk_opportunity`). Omitting `section_key` searches the entire knowledge base.
+- **Search › Get Summary By Contact** (`getSummaryByContact`) — retrieve all 7 stored CustomerSummary sections for a single contact in one call (`GET /search/summary-sections/by-contact/{company_id}/{contact_id}`, Xano FSI API ID 2713). Optional `full_report` flag appends an assembled markdown string to the response.
+
+### Notes
+
+- Web Services helpers (`vh3WebServicesGetRequest`, `vh3WebServicesPostRequest`, `omitEmptyWsParams`, `toWebServicesDateTime`, `extractWsItems`) are isolated in `GenericFunctions.ts` and share no code paths with the FSI or BigChange API helpers.
+- Purely additive — no existing operations, fields, credentials, or request shapes were modified.
+
 ## [0.10.2] — 2026-06-07
 
 Restores v0.9.2 functionality. Versions 0.10.0 and 0.10.1 shipped an oversized node description (1,019 properties / 564 KB) that prevented loading on managed n8n instances. This release is identical to 0.9.2 in all respects except the version number. Web Services features are preserved on the `dev` branch for a future, lighter release.

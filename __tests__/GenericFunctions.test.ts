@@ -1,5 +1,9 @@
 import type { IExecuteFunctions, IHttpRequestOptions, JsonObject } from 'n8n-workflow';
-import { extractItems } from '../nodes/Vh3Ai/GenericFunctions';
+import {
+	extractItems,
+	omitEmptyWsParams,
+	toWebServicesDateTime,
+} from '../nodes/Vh3Ai/GenericFunctions';
 
 describe('extractItems', () => {
 	it('unwraps Shape A: { response: { result: { items, pageItemCount } } }', () => {
@@ -73,6 +77,84 @@ describe('extractItems', () => {
 		const { items, pageItemCount } = extractItems(raw);
 		expect(items).toEqual([]);
 		expect(pageItemCount).toBe(0);
+	});
+});
+
+describe('omitEmptyWsParams', () => {
+	it('drops null values', () => {
+		expect(omitEmptyWsParams({ a: null, b: 'x' })).toEqual({ b: 'x' });
+	});
+
+	it('drops undefined values', () => {
+		expect(omitEmptyWsParams({ a: undefined, b: 1 })).toEqual({ b: 1 });
+	});
+
+	it('drops empty-string values', () => {
+		expect(omitEmptyWsParams({ a: '', b: 'hello' })).toEqual({ b: 'hello' });
+	});
+
+	it('keeps 0', () => {
+		expect(omitEmptyWsParams({ page: 0, name: 'test' })).toEqual({ page: 0, name: 'test' });
+	});
+
+	it('keeps false', () => {
+		expect(omitEmptyWsParams({ active: false, name: 'test' })).toEqual({ active: false, name: 'test' });
+	});
+
+	it('returns empty object when all values are empty', () => {
+		expect(omitEmptyWsParams({ a: null, b: undefined, c: '' })).toEqual({});
+	});
+
+	it('passes through numbers and non-empty strings unchanged', () => {
+		expect(omitEmptyWsParams({ JobId: 42, JobRef: 'REF-001', Page: 0 })).toEqual({
+			JobId: 42,
+			JobRef: 'REF-001',
+			Page: 0,
+		});
+	});
+});
+
+describe('toWebServicesDateTime', () => {
+	it('converts ISO 8601 UTC string to yyyy-MM-dd HH:mm:ss', () => {
+		expect(toWebServicesDateTime('2026-04-01T10:30:00Z')).toBe('2026-04-01 10:30:00');
+	});
+
+	it('converts ISO 8601 with milliseconds', () => {
+		expect(toWebServicesDateTime('2026-04-01T10:30:00.123Z')).toBe('2026-04-01 10:30:00');
+	});
+
+	it('converts n8n-style datetime string (space separator)', () => {
+		expect(toWebServicesDateTime('2026-04-01 00:00:00')).toBe('2026-04-01 00:00:00');
+	});
+
+	it('converts a Date object', () => {
+		const d = new Date('2025-12-31T23:59:59Z');
+		expect(toWebServicesDateTime(d)).toBe('2025-12-31 23:59:59');
+	});
+
+	it('converts epoch milliseconds', () => {
+		const epoch = new Date('2026-01-01T00:00:00Z').getTime();
+		expect(toWebServicesDateTime(epoch)).toBe('2026-01-01 00:00:00');
+	});
+
+	it('returns undefined for empty string', () => {
+		expect(toWebServicesDateTime('')).toBeUndefined();
+	});
+
+	it('returns undefined for null', () => {
+		expect(toWebServicesDateTime(null)).toBeUndefined();
+	});
+
+	it('returns undefined for undefined', () => {
+		expect(toWebServicesDateTime(undefined)).toBeUndefined();
+	});
+
+	it('returns undefined for an invalid date string', () => {
+		expect(toWebServicesDateTime('not-a-date')).toBeUndefined();
+	});
+
+	it('zero-pads month, day, hour, minute, second', () => {
+		expect(toWebServicesDateTime('2026-02-03T04:05:06Z')).toBe('2026-02-03 04:05:06');
 	});
 });
 
