@@ -4,6 +4,26 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.4] — 2026-06-24
+
+### Added
+
+- **Sentinel (VH3 AI) — full registry parity (19 sentinels).** The Run Sentinels enum now lists all 19 FSI sentinels (added `timing_anomaly_detector`, `dormant_customer_revival`, `service_interval_due`, `single_service_customer`, `engineer_flagged_followup`, `seasonal_uplift_window`, `geographic_cluster_opportunity`). IDs and labels mirror `backfill/sentinels/registry.py`.
+- **Sentinel › per-sentinel threshold overrides.** Selecting a specific sentinel reveals a **Threshold Overrides** collection containing only that sentinel's tunable parameters (registry keys, snake_case, with the registry default shown). Only fields you add are sent as `paramOverrides[<sentinelId>]`; omitted keys use the registry default. Zero is preserved as a valid override.
+- **Sentinel › run-all overrides via JSON.** When `Sentinel = All`, a **Threshold Overrides (JSON)** field accepts a multi-sentinel override map (or a full settings object with a top-level `paramOverrides` key, e.g. a stored tenant profile).
+- **Sentinel › exclusions.** A **Exclusions** collection (`excludedSiteKeys`, `excludedJobTypeIds`, `excludedContactIds`, `excludedResourceIds`, comma-separated) is sent as `exclusions` on any run. Empty fields are omitted.
+- New `GenericFunctions` helpers (`buildSentinelExclusions`, `buildSingleSentinelOverrides`, `parseSentinelOverridesJson`) with unit tests.
+
+### Changed
+
+- **Run Sentinels request shape.** `paramOverrides` and `exclusions` are now attached to both `POST /sentinels/run` and `POST /sentinels/run/{id}` when set. The run-all call no longer sends `sentinel_ids: []`; it omits `sentinelIds` entirely (empty body aside from auth = run all enabled).
+- **`sentinelId` is no longer expression-driven** (`noDataExpression: true`) so the conditional per-sentinel threshold fields resolve correctly. Drive run-all overrides via the JSON field instead.
+
+### Notes
+
+- Additive to existing workflows: a saved Run Sentinels node with no overrides produces the same call as before (now without the empty `sentinel_ids`), and FSI registry defaults continue to apply.
+- Docs `vh3ai-n8n-as-code-reference.md` §6.3 updated with the 19 sentinels, override fields, and exclusions.
+
 ## [0.10.3] — 2026-06-16
 
 ### Added

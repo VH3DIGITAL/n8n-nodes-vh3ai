@@ -3,6 +3,9 @@ import {
 	extractItems,
 	omitEmptyWsParams,
 	toWebServicesDateTime,
+	buildSentinelExclusions,
+	buildSingleSentinelOverrides,
+	parseSentinelOverridesJson,
 } from '../nodes/Vh3Ai/GenericFunctions';
 
 describe('extractItems', () => {
@@ -240,5 +243,93 @@ describe('vh3ListApiRequestAllPages (pagination logic)', () => {
 
 		expect(result.length).toBe(200);
 		expect(callCount).toBe(200);
+	});
+});
+
+describe('buildSingleSentinelOverrides', () => {
+	it('wraps non-empty overrides under the sentinel ID', () => {
+		expect(
+			buildSingleSentinelOverrides('fvf_rate_drop', { fvf_warning: 80 }),
+		).toEqual({ fvf_rate_drop: { fvf_warning: 80 } });
+	});
+
+	it('preserves zero as a valid override (not treated as empty)', () => {
+		expect(
+			buildSingleSentinelOverrides('engineer_flagged_followup', { offset_days: 0 }),
+		).toEqual({ engineer_flagged_followup: { offset_days: 0 } });
+	});
+
+	it('returns undefined for an empty collection', () => {
+		expect(buildSingleSentinelOverrides('fvf_rate_drop', {})).toBeUndefined();
+		expect(buildSingleSentinelOverrides('fvf_rate_drop', undefined)).toBeUndefined();
+	});
+});
+
+describe('buildSentinelExclusions', () => {
+	it('parses comma-separated site keys and numeric IDs', () => {
+		expect(
+			buildSentinelExclusions({
+				excludedSiteKeys: 'site-001, site-002',
+				excludedJobTypeIds: '10, 20 ,30',
+				excludedContactIds: '5',
+				excludedResourceIds: '999',
+			}),
+		).toEqual({
+			excludedSiteKeys: ['site-001', 'site-002'],
+			excludedJobTypeIds: [10, 20, 30],
+			excludedContactIds: [5],
+			excludedResourceIds: [999],
+		});
+	});
+
+	it('omits empty fields and drops non-numeric IDs', () => {
+		expect(
+			buildSentinelExclusions({
+				excludedSiteKeys: '',
+				excludedJobTypeIds: 'abc, 7',
+			}),
+		).toEqual({ excludedJobTypeIds: [7] });
+	});
+
+	it('returns undefined when nothing is provided', () => {
+		expect(buildSentinelExclusions({})).toBeUndefined();
+		expect(buildSentinelExclusions(undefined)).toBeUndefined();
+		expect(buildSentinelExclusions({ excludedSiteKeys: '   ' })).toBeUndefined();
+	});
+});
+
+describe('parseSentinelOverridesJson', () => {
+	const ctx = {
+		getNode: jest.fn().mockReturnValue({ name: 'VH3 AI' }),
+	} as unknown as IExecuteFunctions;
+
+	it('parses a bare sentinel-to-thresholds map', () => {
+		expect(
+			parseSentinelOverridesJson(ctx, '{"fvf_rate_drop":{"fvf_warning":80}}'),
+		).toEqual({ fvf_rate_drop: { fvf_warning: 80 } });
+	});
+
+	it('unwraps a full settings object with a paramOverrides key', () => {
+		const blob = JSON.stringify({
+			companyId: 'abc',
+			paramOverrides: { site_deterioration: { min_sample: 20 } },
+		});
+		expect(parseSentinelOverridesJson(ctx, blob)).toEqual({
+			site_deterioration: { min_sample: 20 },
+		});
+	});
+
+	it('returns undefined for empty input', () => {
+		expect(parseSentinelOverridesJson(ctx, '')).toBeUndefined();
+		expect(parseSentinelOverridesJson(ctx, '{}')).toBeUndefined();
+		expect(parseSentinelOverridesJson(ctx, undefined)).toBeUndefined();
+	});
+
+	it('throws on invalid JSON', () => {
+		expect(() => parseSentinelOverridesJson(ctx, '{not json')).toThrow();
+	});
+
+	it('throws when the payload is not an object', () => {
+		expect(() => parseSentinelOverridesJson(ctx, '[1,2,3]')).toThrow();
 	});
 });

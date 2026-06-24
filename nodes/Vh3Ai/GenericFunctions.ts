@@ -589,3 +589,106 @@ export async function vh3FsiGetAllPages(
 
 	return allItems;
 }
+
+// ── SENTINEL HELPERS (FSI) ───────────────────────────────────────────────────
+
+/**
+ * Split a comma-separated string into trimmed, non-empty string parts.
+ * Returns [] for empty/undefined input.
+ */
+function csvToStringArray(value: unknown): string[] {
+	if (typeof value !== 'string' || value.trim() === '') return [];
+	return value
+		.split(',')
+		.map((part) => part.trim())
+		.filter((part) => part !== '');
+}
+
+/**
+ * Split a comma-separated string into numbers, dropping any non-numeric parts.
+ */
+function csvToNumberArray(value: unknown): number[] {
+	return csvToStringArray(value)
+		.map((part) => Number(part))
+		.filter((n) => !Number.isNaN(n));
+}
+
+/**
+ * Build the `exclusions` object for a sentinel run from the n8n "Exclusions"
+ * collection. Only non-empty arrays are included. Returns undefined when no
+ * exclusions were provided so the caller can omit the key entirely.
+ */
+export function buildSentinelExclusions(raw: JsonObject | undefined): JsonObject | undefined {
+	if (!raw || typeof raw !== 'object') return undefined;
+
+	const out: JsonObject = {};
+	const siteKeys = csvToStringArray(raw.excludedSiteKeys);
+	const jobTypeIds = csvToNumberArray(raw.excludedJobTypeIds);
+	const contactIds = csvToNumberArray(raw.excludedContactIds);
+	const resourceIds = csvToNumberArray(raw.excludedResourceIds);
+
+	if (siteKeys.length > 0) out.excludedSiteKeys = siteKeys;
+	if (jobTypeIds.length > 0) out.excludedJobTypeIds = jobTypeIds;
+	if (contactIds.length > 0) out.excludedContactIds = contactIds;
+	if (resourceIds.length > 0) out.excludedResourceIds = resourceIds;
+
+	return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
+ * Build paramOverrides for a single-sentinel run from its threshold-override
+ * collection. The collection object already contains only the keys the user
+ * added, so it is sent verbatim under the sentinel ID. Returns undefined when
+ * empty (zero is a valid override and is preserved). 
+ */
+export function buildSingleSentinelOverrides(
+	sentinelId: string,
+	overrides: JsonObject | undefined,
+): JsonObject | undefined {
+	if (!overrides || typeof overrides !== 'object' || Object.keys(overrides).length === 0) {
+		return undefined;
+	}
+	return { [sentinelId]: overrides };
+}
+
+/**
+ * Parse the "Threshold Overrides (JSON)" field used for run-all. Accepts either
+ * a bare map of `{ sentinelId: { threshold: value } }` or a full settings object
+ * containing a top-level `paramOverrides` key (e.g. pasted from a tenant config).
+ * Returns undefined for empty input; throws a NodeOperationError on invalid JSON
+ * or a non-object payload.
+ */
+export function parseSentinelOverridesJson(
+	context: IExecuteFunctions,
+	raw: unknown,
+): JsonObject | undefined {
+	if (raw === undefined || raw === null) return undefined;
+
+	let parsed: unknown = raw;
+	if (typeof raw === 'string') {
+		const trimmed = raw.trim();
+		if (trimmed === '' || trimmed === '{}') return undefined;
+		try {
+			parsed = JSON.parse(trimmed);
+		} catch (error) {
+			throw new NodeOperationError(
+				context.getNode(),
+				`Threshold Overrides (JSON) is not valid JSON: ${(error as Error).message}`,
+			);
+		}
+	}
+
+	if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+		throw new NodeOperationError(
+			context.getNode(),
+			'Threshold Overrides (JSON) must be a JSON object mapping sentinel IDs to threshold overrides',
+		);
+	}
+
+	let obj = parsed as JsonObject;
+	if (obj.paramOverrides && typeof obj.paramOverrides === 'object' && !Array.isArray(obj.paramOverrides)) {
+		obj = obj.paramOverrides as JsonObject;
+	}
+
+	return Object.keys(obj).length > 0 ? obj : undefined;
+}

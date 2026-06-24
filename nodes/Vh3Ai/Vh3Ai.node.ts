@@ -28,6 +28,9 @@ import {
 	vh3WebServicesPostRequest,
 	omitEmptyWsParams,
 	extractWsItems,
+	buildSentinelExclusions,
+	buildSingleSentinelOverrides,
+	parseSentinelOverridesJson,
 } from './GenericFunctions';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
@@ -2278,11 +2281,29 @@ export class Vh3Ai implements INodeType {
 				else if (resource === 'sentinel') {
 					if (operation === 'runSentinels') {
 						const sentinelId = this.getNodeParameter('sentinelId', i) as string;
+						const exclusions = buildSentinelExclusions(
+							this.getNodeParameter('exclusions', i, {}) as JsonObject,
+						);
+
 						if (sentinelId === 'all') {
-							const raw = await vh3FsiPostRequest.call(this, '/sentinels/run', { sentinel_ids: [] as unknown as JsonObject });
+							const body: JsonObject = {};
+							const paramOverrides = parseSentinelOverridesJson(
+								this,
+								this.getNodeParameter('paramOverridesJson', i, '') as string,
+							);
+							if (paramOverrides) body.paramOverrides = paramOverrides;
+							if (exclusions) body.exclusions = exclusions;
+							const raw = await vh3FsiPostRequest.call(this, '/sentinels/run', body);
 							responseData = [raw];
 						} else {
-							const raw = await vh3FsiPostRequest.call(this, `/sentinels/run/${sentinelId}`, {});
+							const body: JsonObject = {};
+							const paramOverrides = buildSingleSentinelOverrides(
+								sentinelId,
+								this.getNodeParameter(`thresholdOverrides_${sentinelId}`, i, {}) as JsonObject,
+							);
+							if (paramOverrides) body.paramOverrides = paramOverrides;
+							if (exclusions) body.exclusions = exclusions;
+							const raw = await vh3FsiPostRequest.call(this, `/sentinels/run/${sentinelId}`, body);
 							responseData = [raw];
 						}
 					} else if (operation === 'listSentinelRegistry') {
