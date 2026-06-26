@@ -2285,9 +2285,9 @@ export class Vh3Ai implements INodeType {
 							this.getNodeParameter('exclusions', i, {}) as JsonObject,
 						);
 
-						if (sentinelId === 'all') {
-							const body: JsonObject = {};
-							const paramOverrides = parseSentinelOverridesJson(
+					if (sentinelId === 'all') {
+						const body: JsonObject = { sentinelIds: [] };
+						const paramOverrides = parseSentinelOverridesJson(
 								this,
 								this.getNodeParameter('paramOverridesJson', i, '') as string,
 							);

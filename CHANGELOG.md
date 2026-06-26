@@ -4,6 +4,13 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.5] — 2026-06-26
+
+### Fixed
+
+- **Sentinel run-all (`POST /sentinels/run`) — Pydantic `list_type` error.** The run-all body now always includes `sentinelIds: []`. FSI's Pydantic model requires `sentinelIds` to be a list; omitting it caused a validation error. An empty list means "run all enabled sentinels" per FSI spec. The Xano proxy functions (`fsi/sentinels_run` and `fsi/sentinels_run_single`) now accept and forward `paramOverrides` and `exclusions` inputs — these were previously stripped at the Xano endpoint layer and never reached FSI.
+- **Sentinel `paramOverrides` and `exclusions` dropped by Xano proxy.** Both Xano API endpoints (`sentinels/run` and `sentinels/run/{sentinel_id}`) now declare `paramOverrides?` and `exclusions?` as inputs and pass them through to the underlying functions, which conditionally append them to the FSI request body.
+
 ## [0.10.4] — 2026-06-24
 
 ### Added
