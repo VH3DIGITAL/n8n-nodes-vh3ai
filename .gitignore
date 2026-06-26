@@ -1,5 +1,6 @@
 node_modules/
 dist/
+docs/ROLLBACK-*.md
 
 .DS_Store
 
