@@ -30,7 +30,6 @@ import {
 	extractWsItems,
 	buildSentinelExclusions,
 	buildSingleSentinelOverrides,
-	parseSentinelOverridesJson,
 } from './GenericFunctions';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
@@ -2287,12 +2286,7 @@ export class Vh3Ai implements INodeType {
 
 					if (sentinelId === 'all') {
 						const body: JsonObject = { sentinelIds: [] };
-						const paramOverrides = parseSentinelOverridesJson(
-								this,
-								this.getNodeParameter('paramOverridesJson', i, '') as string,
-							);
-							if (paramOverrides) body.paramOverrides = paramOverrides;
-							if (exclusions) body.exclusions = exclusions;
+						if (exclusions) body.exclusions = exclusions;
 							const raw = await vh3FsiPostRequest.call(this, '/sentinels/run', body);
 							responseData = [raw];
 						} else {

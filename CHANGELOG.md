@@ -4,12 +4,18 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.6] — 2026-06-26
+
+### Removed
+
+- **Sentinel (VH3 AI) — Threshold Overrides (JSON) field removed from Run All Sentinels.** The multi-sentinel JSON override field has been removed from the "All Sentinels" run path. It was causing validation errors due to stale saved values in existing workflows. Per-sentinel threshold overrides (via the structured **Threshold Overrides** collection when a specific sentinel is selected) continue to work as before.
+
 ## [0.10.5] — 2026-06-26
 
 ### Fixed
 
-- **Sentinel run-all (`POST /sentinels/run`) — Pydantic `list_type` error.** The run-all body now always includes `sentinelIds: []`. FSI's Pydantic model requires `sentinelIds` to be a list; omitting it caused a validation error. An empty list means "run all enabled sentinels" per FSI spec. The Xano proxy functions (`fsi/sentinels_run` and `fsi/sentinels_run_single`) now accept and forward `paramOverrides` and `exclusions` inputs — these were previously stripped at the Xano endpoint layer and never reached FSI.
-- **Sentinel `paramOverrides` and `exclusions` dropped by Xano proxy.** Both Xano API endpoints (`sentinels/run` and `sentinels/run/{sentinel_id}`) now declare `paramOverrides?` and `exclusions?` as inputs and pass them through to the underlying functions, which conditionally append them to the FSI request body.
+- **Sentinel run-all (`POST /sentinels/run`) — `list_type` validation error.** The run-all body now always includes `sentinelIds: []`. The VH3 AI backend requires `sentinelIds` to be a list; omitting it caused a validation error. An empty list means "run all enabled sentinels". The backend proxy functions (`fsi/sentinels_run` and `fsi/sentinels_run_single`) now accept and forward `paramOverrides` and `exclusions` inputs — these were previously stripped at the API layer and never reached the sentinel engine.
+- **Sentinel `paramOverrides` and `exclusions` not forwarded.** Both API endpoints (`sentinels/run` and `sentinels/run/{sentinel_id}`) now declare `paramOverrides?` and `exclusions?` as inputs and pass them through to the underlying functions, which conditionally append them to the request body.
 
 ## [0.10.4] — 2026-06-24
 
@@ -38,8 +44,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - **Attachment (Web Services)** — new resource. List attachments for any BigChange entity; retrieve an attachment by ID. Uses a shared generic route-dispatch pattern to keep the node description footprint minimal.
 - **Report (Web Services)** — new resource. Driver/vehicle performance and infringement reports via BigChange Web Services.
 - **Tracking (Web Services)** — new resource. GPS journeys, live positions, and odometer readings via BigChange Web Services.
-- **Search › Search Summary Sections** (`searchSummarySections`) — semantic hybrid search across the CustomerSummary Weaviate knowledge base (`POST /search/summary-sections`, Xano FSI API ID 2712). Optional `contact_id` scopes results to one customer; optional `section_key` scopes to one of the 7 sections (`customer_overview`, `job_history_patterns`, `systems_equipment`, `key_analyses`, `operational_performance`, `communication_summary`, `risk_opportunity`). Omitting `section_key` searches the entire knowledge base.
-- **Search › Get Summary By Contact** (`getSummaryByContact`) — retrieve all 7 stored CustomerSummary sections for a single contact in one call (`GET /search/summary-sections/by-contact/{company_id}/{contact_id}`, Xano FSI API ID 2713). Optional `full_report` flag appends an assembled markdown string to the response.
+- **Search › Search Summary Sections** (`searchSummarySections`) — semantic hybrid search across the CustomerSummary knowledge base (`POST /search/summary-sections`). Optional `contact_id` scopes results to one customer; optional `section_key` scopes to one of the 7 sections (`customer_overview`, `job_history_patterns`, `systems_equipment`, `key_analyses`, `operational_performance`, `communication_summary`, `risk_opportunity`). Omitting `section_key` searches the entire knowledge base.
+- **Search › Get Summary By Contact** (`getSummaryByContact`) — retrieve all 7 stored CustomerSummary sections for a single contact in one call (`GET /search/summary-sections/by-contact/{company_id}/{contact_id}`). Optional `full_report` flag appends an assembled markdown string to the response.
 
 ### Notes
 
@@ -111,7 +117,7 @@ Republish of the 0.9.1 release set after a publish-pipeline retag conflict on np
 
 ### Fixed
 
-- **Email › Classify Email** — corrected end-to-end parameter name mismatch on `/triage/classify`. The n8n node was sending `body` but the internal `fsi/triage_classify` function requires `email_body`; the Xano endpoint was accepting `body` without mapping it correctly. Fixed in both places: n8n node now sends `email_body`, and the Xano `triage/classify` endpoint input field and function-call mapping have been updated to `email_body` and published live.
+- **Email › Classify Email** — corrected end-to-end parameter name mismatch on `/triage/classify`. The n8n node was sending `body` but the API function requires `email_body`; the endpoint was accepting `body` without mapping it correctly. Fixed in both places: n8n node now sends `email_body`, and the `triage/classify` endpoint input field and function-call mapping have been updated to `email_body`.
 
 ## [0.7.6] — 2026-05-17
 

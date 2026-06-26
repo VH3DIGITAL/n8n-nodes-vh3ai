@@ -266,21 +266,6 @@ export const fsiSentinelFields: INodeProperties[] = [
 	},
 	...thresholdOverrideFields,
 	{
-		displayName: 'Threshold Overrides (JSON)',
-		name: 'paramOverridesJson',
-		type: 'json',
-		default: '{}',
-		description:
-			'Optional multi-sentinel threshold overrides applied when running all sentinels. Map each sentinel ID to the threshold keys you want to change, e.g. {"fvf_rate_drop":{"fvf_warning":80},"site_deterioration":{"min_sample":20}}. You may also paste a full settings object containing a "paramOverrides" key. Any key you omit uses the registry default.',
-		displayOptions: {
-			show: {
-				resource: ['sentinel'],
-				operation: ['runSentinels'],
-				sentinelId: ['all'],
-			},
-		},
-	},
-	{
 		displayName: 'Exclusions',
 		name: 'exclusions',
 		type: 'collection',
