@@ -5,7 +5,7 @@ import type {
 	INodeTypeDescription,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
 
 import {
 	vh3ListApiRequest,
@@ -28,6 +28,7 @@ import {
 	vh3WebServicesPostRequest,
 	omitEmptyWsParams,
 	extractWsItems,
+	WEBSERVICES_API_PREFIX,
 	buildSentinelExclusions,
 	buildSingleSentinelOverrides,
 } from './GenericFunctions';
@@ -2626,14 +2627,61 @@ export class Vh3Ai implements INodeType {
 							}
 							params[p.apiName] = val ?? null;
 						}
-						const cleaned = omitEmptyWsParams(params);
-						if (route.method === 'get') {
-							const raw = await vh3WebServicesGetRequest.call(this, route.path, cleaned);
-							responseData = extractWsItems(raw);
-						} else {
-							const raw = await vh3WebServicesPostRequest.call(this, route.path, cleaned as JsonObject);
-							responseData = extractWsItems(raw);
+					const cleaned = omitEmptyWsParams(params);
+
+					if (operation === 'wsAttachmentsGetanattachment') {
+						const credentials = await this.getCredentials('vh3AiApi');
+						const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
+						let fullResponse: { body: unknown; headers: Record<string, unknown>; statusCode: number };
+						try {
+							fullResponse = (await this.helpers.httpRequestWithAuthentication.call(
+								this,
+								'vh3AiApi',
+								{
+									method: 'GET',
+									url: `${baseUrl}${WEBSERVICES_API_PREFIX}${route.path}`,
+									qs: cleaned,
+									encoding: 'arraybuffer',
+									returnFullResponse: true,
+								},
+							)) as typeof fullResponse;
+						} catch (error) {
+							throw new NodeApiError(this.getNode(), error as JsonObject, {
+								message: `Web Services API request failed: GET ${route.path}`,
+								description: (error as Error).message,
+							});
 						}
+						const contentType =
+							(fullResponse.headers?.['content-type'] as string | undefined) ?? 'application/pdf';
+						const disposition =
+							(fullResponse.headers?.['content-disposition'] as string | undefined) ?? '';
+						const filenameMatch = disposition.match(/filename=["']?([^"';\r\n]+)["']?/i);
+						const filename = filenameMatch?.[1]?.trim() ?? 'bigchange-attachment.pdf';
+						const mimeType = contentType.split(';')[0].trim() || 'application/pdf';
+						const binaryData = await this.helpers.prepareBinaryData(
+							Buffer.from(fullResponse.body as ArrayBuffer),
+							filename,
+							mimeType,
+						);
+						returnData.push({
+							json: {
+								attachmentId: cleaned.AttachmentId,
+								fileName: filename,
+								mimeType,
+							},
+							binary: { data: binaryData },
+							pairedItem: { item: i },
+						});
+						continue;
+					}
+
+					if (route.method === 'get') {
+						const raw = await vh3WebServicesGetRequest.call(this, route.path, cleaned);
+						responseData = extractWsItems(raw);
+					} else {
+						const raw = await vh3WebServicesPostRequest.call(this, route.path, cleaned as JsonObject);
+						responseData = extractWsItems(raw);
+					}
 					}
 				}
 

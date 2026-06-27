@@ -4,6 +4,12 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.7] — 2026-06-27
+
+### Fixed
+
+- **Attachments (Web Services) — Retrieve an attachment by Id now returns a binary item.** The `wsAttachmentsGetanattachment` operation previously decoded the raw PDF response body as JSON text, producing garbled `%PDF-1.7` rows. The operation now requests the file with `encoding: arraybuffer`, reads the `Content-Type` and `Content-Disposition` response headers, and returns a proper n8n binary item under `binary.data` with the correct MIME type and filename. All other Web Services operations are unchanged.
+
 ## [0.10.6] — 2026-06-26
 
 ### Removed
