@@ -60,9 +60,9 @@ export const fsiJobsFields: INodeProperties[] = [
 		displayName: 'Page Size',
 		name: 'pageSize',
 		type: 'number',
-		typeOptions: { minValue: 1, maxValue: 200 },
+		typeOptions: { minValue: 1 },
 		default: 25,
-		description: 'Number of jobs per page (max 200)',
+		description: 'Number of jobs per page',
 		displayOptions: {
 			show: {
 				resource: ['jobFeed'],
@@ -240,9 +240,9 @@ export const fsiJobsFields: INodeProperties[] = [
 		displayName: 'Page Size',
 		name: 'pageSize',
 		type: 'number',
-		typeOptions: { minValue: 1, maxValue: 200 },
+		typeOptions: { minValue: 1 },
 		default: 25,
-		description: 'Number of jobs per page (max 200)',
+		description: 'Number of jobs per page',
 		displayOptions: {
 			show: {
 				resource: ['jobFeed'],
@@ -516,7 +516,7 @@ export const fsiJobsFields: INodeProperties[] = [
 				displayName: 'Limit',
 				name: 'limit',
 				type: 'number',
-				typeOptions: { minValue: 1, maxValue: 200 },
+				typeOptions: { minValue: 1 },
 				default: 10,
 				description: 'Max number of grouped rows to return',
 			},

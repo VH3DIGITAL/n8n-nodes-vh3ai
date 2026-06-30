@@ -4,6 +4,12 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.9] — 2026-06-30
+
+### Changed
+
+- **Job Feed (VH3 AI) — Page Size limit removed.** The 200-item `maxValue` cap on the Page Size field (and the grouped-rows Limit field) in all Job Feed operations has been lifted. Users can now request as many items per page as the VH3 AI API supports.
+
 ## [0.10.8] — 2026-06-30
 
 ### Changed
