@@ -271,6 +271,20 @@ export const notesFields: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Description',
+		name: 'description',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Detailed description / body of the note. Required by BigChange.',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['createNote'],
+			},
+		},
+	},
+	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
 		type: 'collection',
@@ -284,13 +298,6 @@ export const notesFields: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Description',
-				name: 'description',
-				type: 'string',
-				default: '',
-				description: 'Detailed description of the note',
-			},
-			{
 				displayName: 'Due At',
 				name: 'dueAt',
 				type: 'dateTime',
@@ -303,6 +310,13 @@ export const notesFields: INodeProperties[] = [
 				type: 'number',
 				default: 0,
 				description: 'User ID of the note owner',
+			},
+			{
+				displayName: 'Parent ID',
+				name: 'parentId',
+				type: 'number',
+				default: 0,
+				description: 'ID of a parent note to nest this note under (optional). Leave blank for a top-level note.',
 			},
 			{
 				displayName: 'Reference',
@@ -321,7 +335,7 @@ export const notesFields: INodeProperties[] = [
 					{ name: 'Open', value: 'open' },
 				],
 				default: 'open',
-				description: 'Status of the note',
+				description: 'Status of the note. Defaults to "open" when omitted.',
 			},
 		],
 	},
@@ -405,6 +419,20 @@ export const notesFields: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Description',
+		name: 'description',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Detailed description / body of the note. Required by BigChange.',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['editNote'],
+			},
+		},
+	},
+	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
 		type: 'collection',
@@ -418,13 +446,6 @@ export const notesFields: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Description',
-				name: 'description',
-				type: 'string',
-				default: '',
-				description: 'Detailed description of the note',
-			},
-			{
 				displayName: 'Due At',
 				name: 'dueAt',
 				type: 'dateTime',
@@ -437,6 +458,13 @@ export const notesFields: INodeProperties[] = [
 				type: 'number',
 				default: 0,
 				description: 'User ID of the note owner',
+			},
+			{
+				displayName: 'Parent ID',
+				name: 'parentId',
+				type: 'number',
+				default: 0,
+				description: 'ID of a parent note to nest this note under (optional). Leave blank for a top-level note.',
 			},
 			{
 				displayName: 'Reference',
@@ -455,7 +483,7 @@ export const notesFields: INodeProperties[] = [
 					{ name: 'Open', value: 'open' },
 				],
 				default: 'open',
-				description: 'Status of the note',
+				description: 'Status of the note. Defaults to "open" when omitted.',
 			},
 		],
 	},

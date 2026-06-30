@@ -4,6 +4,17 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.8] — 2026-06-30
+
+### Changed
+
+- **Notes (BigChange) — `description` is now a required top-level field on Create Note and Edit Note.** Previously an optional Additional Field, `description` is promoted to a required parameter alongside `subject`. BigChange rejects note creation/edit without a body, so surfacing this as required prevents silent 422s.
+- **Notes (BigChange) — `parentId` added to Create Note and Edit Note.** New optional Additional Field (`parentId`, numeric) allows nesting a note under a parent note. Passed through only when provided; omitting it creates a top-level note. Hint: "ID of a parent note to nest this note under (optional). Leave blank for a top-level note."
+
+### Fixed
+
+- **Notes (BigChange) — VH3 AI default for `status` field.** The VH3 AI `notes/create` endpoint now defaults `status` to `"open"` when the caller omits it, matching the existing `default: 'open'` UI hint in the node. The `status` Additional Field remains optional in the UI; VH3 AI is the single source of truth for the default.
+
 ## [0.10.7] — 2026-06-27
 
 ### Fixed
