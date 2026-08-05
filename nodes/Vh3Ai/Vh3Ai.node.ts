@@ -2059,10 +2059,15 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.result) filters.result = additionalFields.result;
 						if (additionalFields.startDate) filters.startDate = additionalFields.startDate;
 						if (additionalFields.endDate) filters.endDate = additionalFields.endDate;
-						if (typeof additionalFields.finishedEarly === 'boolean') {
+						// Prefer Late over Early when both are set for the same axis (no conflicting pairs)
+						if (typeof additionalFields.finishedLate === 'boolean') {
+							filters.finishedLate = additionalFields.finishedLate;
+						} else if (typeof additionalFields.finishedEarly === 'boolean') {
 							filters.finishedEarly = additionalFields.finishedEarly;
 						}
-						if (typeof additionalFields.startedEarly === 'boolean') {
+						if (typeof additionalFields.startedLate === 'boolean') {
+							filters.startedLate = additionalFields.startedLate;
+						} else if (typeof additionalFields.startedEarly === 'boolean') {
 							filters.startedEarly = additionalFields.startedEarly;
 						}
 						if (Object.keys(filters).length > 0) body.filters = filters as unknown as JsonObject;
@@ -2085,10 +2090,14 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.dateField) qs.date_field = additionalFields.dateField as string;
 						if (additionalFields.direction) qs.direction = additionalFields.direction as string;
 						if (additionalFields.sortBy) qs.sort_by = additionalFields.sortBy as string;
-						if (typeof additionalFields.finishedEarly === 'boolean') {
+						if (typeof additionalFields.finishedLate === 'boolean') {
+							qs.finished_late = additionalFields.finishedLate;
+						} else if (typeof additionalFields.finishedEarly === 'boolean') {
 							qs.finished_early = additionalFields.finishedEarly;
 						}
-						if (typeof additionalFields.startedEarly === 'boolean') {
+						if (typeof additionalFields.startedLate === 'boolean') {
+							qs.started_late = additionalFields.startedLate;
+						} else if (typeof additionalFields.startedEarly === 'boolean') {
 							qs.started_early = additionalFields.startedEarly;
 						}
 						if (returnAll) {
@@ -2118,10 +2127,14 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.dateField) qs.date_field = additionalFields.dateField as string;
 						if (additionalFields.direction) qs.direction = additionalFields.direction as string;
 						if (additionalFields.sortBy) qs.sort_by = additionalFields.sortBy as string;
-						if (typeof additionalFields.finishedEarly === 'boolean') {
+						if (typeof additionalFields.finishedLate === 'boolean') {
+							qs.finished_late = additionalFields.finishedLate;
+						} else if (typeof additionalFields.finishedEarly === 'boolean') {
 							qs.finished_early = additionalFields.finishedEarly;
 						}
-						if (typeof additionalFields.startedEarly === 'boolean') {
+						if (typeof additionalFields.startedLate === 'boolean') {
+							qs.started_late = additionalFields.startedLate;
+						} else if (typeof additionalFields.startedEarly === 'boolean') {
 							qs.started_early = additionalFields.startedEarly;
 						}
 						if (returnAll) {

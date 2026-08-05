@@ -320,9 +320,9 @@ select the right VH3 AI node operation.
 
 | Operation            | Key inputs                                                                               | Notes                                                                                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `listJobFeed`        | `status` (multi), `dateField`, `dateFrom`, `dateTo`, `contactId`, `resourceId`, `typeId` | Optional: `finishedEarly`, `startedEarly`, `sortBy` (+ `direction`). Default `dateField`: `createdAt`. Add `simplify: true` to strip nulls.                      |
-| `listAccountJobFeed` | `contactId` (required — any in hierarchy)                                                | Same optional punctuality / sort filters as `listJobFeed`. Traverses full parent-child account tree.                                                               |
-| `aggregateJobs`      | `metric`, `period`, `timeAxis`, `groupBy`, `compareTo`                                   | Optional filters: `finishedEarly`, `startedEarly` (camelCase in `filters`). Prefer `timeAxis` `actualEndAt` / `actualStartAt`.                                     |
+| `listJobFeed`        | `status` (multi), `dateField`, `dateFrom`, `dateTo`, `contactId`, `resourceId`, `typeId` | Optional: `finishedEarly`/`finishedLate`, `startedEarly`/`startedLate`, `sortBy` (+ `direction`). Default `dateField`: `createdAt`. |
+| `listAccountJobFeed` | `contactId` (required — any in hierarchy)                                                | Same optional punctuality / sort filters as `listJobFeed`. Traverses full parent-child account tree.                               |
+| `aggregateJobs`      | `metric`, `period`, `timeAxis`, `groupBy`, `compareTo`                                   | Optional filters: `finishedEarly`/`finishedLate`, `startedEarly`/`startedLate` (camelCase in `filters`). Prefer `timeAxis` `actualEndAt` / `actualStartAt`. |
 | `getEnrichedJob`     | `jobId` (required), `includeWorksheets`                                                  | Returns AI enrichment: vertical, sentiment, key phrases                                                                                                            |
 
 
@@ -334,13 +334,14 @@ select the right VH3 AI node operation.
 Override with `startDate`/`endDate` for custom ranges.
 
 **Punctuality filters** (optional Additional Fields — not shown until added):
-`finishedEarly` / `startedEarly` are boolean switches. When added, both `true`
-and `false` are sent (`false` = late). When not added, params are omitted and
-behaviour matches previous releases. Feed uses snake_case query params
-(`finished_early`); aggregate uses camelCase inside `filters` (`finishedEarly`).
-`sortBy` values: `createdAt`, `endDeltaMins`, `startDeltaMins`, `actualEndAt`,
-`actualStartAt`. Example — worst late finishes: `finishedEarly: false`,
-`dateField: actualEndAt`, `sortBy: endDeltaMins`, `direction: desc`.
+Boolean switches. Prefer `finishedLate: true` / `startedLate: true` for late
+jobs (clearer than Early set to Off). When both Early and Late are set for the
+same axis, only Late is sent. Response job fields remain `finishedEarly` /
+`startedEarly`. Feed uses snake_case query params (`finished_late`); aggregate
+uses camelCase inside `filters` (`finishedLate`). `sortBy` values: `createdAt`,
+`endDeltaMins`, `startDeltaMins`, `actualEndAt`, `actualStartAt`. Example —
+worst late finishes: `finishedLate: true`, `dateField: actualEndAt`,
+`sortBy: endDeltaMins`, `direction: desc`.
 
 ### 6.2 Search (`search`)
 

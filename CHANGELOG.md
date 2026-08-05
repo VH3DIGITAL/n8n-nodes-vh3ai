@@ -4,6 +4,12 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.11] — 2026-08-05
+
+### Added
+
+- **Job Feed › List / Account / Aggregate** — optional **Finished Late** / **Started Late** boolean Additional Fields (`finished_late` / `started_late` on feed; `finishedLate` / `startedLate` in aggregate `filters`). Prefer these set to On for late jobs instead of Early set to Off. When both Early and Late are set for the same axis, only Late is sent.
+
 ## [0.10.10] — 2026-08-05
 
 ### Added
