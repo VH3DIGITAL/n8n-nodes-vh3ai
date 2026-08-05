@@ -4,6 +4,19 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.10.10] — 2026-08-05
+
+### Added
+
+- **Job Feed › List Job Feed / List Account Job Feed** — optional Additional Fields (hidden until added):
+  - **Finished Early** / **Started Early** — boolean switches; `true` and `false` are both sent when the filter is added (late jobs use Off). Omitted entirely when not added, so existing workflows are unchanged.
+  - **Sort By** — `createdAt`, `endDeltaMins`, `startDeltaMins`, `actualEndAt`, `actualStartAt`. Pairs with existing Direction.
+- **Job Feed › Aggregate Jobs** — optional **Finished Early** / **Started Early** boolean filters inside `filters` (camelCase), same send-false semantics. Prefer Time Axis `actualEndAt` / `actualStartAt` when using these.
+
+### Changed
+
+- **Job Feed — Direction** help text now says it pairs with Sort By (was “on createdAt” only). Behaviour unchanged when Sort By is not added.
+
 ## [0.10.9] — 2026-06-30
 
 ### Changed

@@ -2059,6 +2059,12 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.result) filters.result = additionalFields.result;
 						if (additionalFields.startDate) filters.startDate = additionalFields.startDate;
 						if (additionalFields.endDate) filters.endDate = additionalFields.endDate;
+						if (typeof additionalFields.finishedEarly === 'boolean') {
+							filters.finishedEarly = additionalFields.finishedEarly;
+						}
+						if (typeof additionalFields.startedEarly === 'boolean') {
+							filters.startedEarly = additionalFields.startedEarly;
+						}
 						if (Object.keys(filters).length > 0) body.filters = filters as unknown as JsonObject;
 						const raw = await vh3FsiPostRequest.call(this, '/aggregate/jobs', body);
 						responseData = Array.isArray(raw) ? raw : [raw];
@@ -2078,6 +2084,13 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.dateTo) qs.date_to = additionalFields.dateTo as string;
 						if (additionalFields.dateField) qs.date_field = additionalFields.dateField as string;
 						if (additionalFields.direction) qs.direction = additionalFields.direction as string;
+						if (additionalFields.sortBy) qs.sort_by = additionalFields.sortBy as string;
+						if (typeof additionalFields.finishedEarly === 'boolean') {
+							qs.finished_early = additionalFields.finishedEarly;
+						}
+						if (typeof additionalFields.startedEarly === 'boolean') {
+							qs.started_early = additionalFields.startedEarly;
+						}
 						if (returnAll) {
 							responseData = await vh3FsiGetAllPages.call(this, '/jobs/feed', qs, 'jobs');
 						} else {
@@ -2104,6 +2117,13 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.dateTo) qs.date_to = additionalFields.dateTo as string;
 						if (additionalFields.dateField) qs.date_field = additionalFields.dateField as string;
 						if (additionalFields.direction) qs.direction = additionalFields.direction as string;
+						if (additionalFields.sortBy) qs.sort_by = additionalFields.sortBy as string;
+						if (typeof additionalFields.finishedEarly === 'boolean') {
+							qs.finished_early = additionalFields.finishedEarly;
+						}
+						if (typeof additionalFields.startedEarly === 'boolean') {
+							qs.started_early = additionalFields.startedEarly;
+						}
 						if (returnAll) {
 							responseData = await vh3FsiGetAllPages.call(this, '/jobs/feed/account', qs, 'jobs');
 						} else {
