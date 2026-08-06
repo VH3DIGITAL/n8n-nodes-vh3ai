@@ -24,6 +24,7 @@ Community node package for [VH3 AI](https://vh3.ai) on n8n. Single programmatic 
 - Bump `version` in `package.json` and add a `CHANGELOG.md` section.
 - Tag `vX.Y.Z` on `main`; `publish.yml` publishes to npm with provenance.
 - Resubmit new versions to [n8n Creator Portal](https://creators.n8n.io/nodes) after manifest or verification fixes.
+- Full release preflight, tag→publish, and Creator Portal lint traps: `.cursor/skills/n8n-nodes-release/SKILL.md`.
 
 ## Conventions
 
