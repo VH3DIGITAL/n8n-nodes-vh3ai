@@ -6,6 +6,8 @@ import {
 	buildSentinelExclusions,
 	buildSingleSentinelOverrides,
 	parseSentinelOverridesJson,
+	unwrapFsiList,
+	parseJsonField,
 } from '../nodes/Vh3Ai/GenericFunctions';
 
 describe('extractItems', () => {
@@ -331,5 +333,37 @@ describe('parseSentinelOverridesJson', () => {
 
 	it('throws when the payload is not an object', () => {
 		expect(() => parseSentinelOverridesJson(ctx, '[1,2,3]')).toThrow();
+	});
+});
+
+describe('unwrapFsiList', () => {
+	it('returns arrays unchanged', () => {
+		expect(unwrapFsiList([{ id: 1 }] as unknown as JsonObject)).toEqual([{ id: 1 }]);
+	});
+
+	it('prefers a named key then items', () => {
+		expect(unwrapFsiList({ teams: [{ id: 2 }], items: [{ id: 9 }] }, ['teams'])).toEqual([{ id: 2 }]);
+		expect(unwrapFsiList({ items: [{ id: 3 }] })).toEqual([{ id: 3 }]);
+	});
+
+	it('unwraps result.items', () => {
+		expect(unwrapFsiList({ result: { items: [{ id: 4 }] } })).toEqual([{ id: 4 }]);
+	});
+
+	it('falls back to the raw object', () => {
+		expect(unwrapFsiList({ id: 5 })).toEqual([{ id: 5 }]);
+	});
+});
+
+describe('parseJsonField', () => {
+	it('parses JSON strings and passes objects through', () => {
+		expect(parseJsonField('{"a":1}')).toEqual({ a: 1 });
+		expect(parseJsonField({ a: 1 })).toEqual({ a: 1 });
+	});
+
+	it('returns undefined for empty values', () => {
+		expect(parseJsonField('')).toBeUndefined();
+		expect(parseJsonField('   ')).toBeUndefined();
+		expect(parseJsonField(undefined)).toBeUndefined();
 	});
 });

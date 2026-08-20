@@ -135,7 +135,7 @@ When generating a VH3 AI node block in JSON, reference the credential as:
 
 ## 3. Resource taxonomy
 
-The node exposes **30 resources** split across three internal API layers. This
+The node exposes **35 resources** split across three internal API layers. This
 split is invisible in the UI but critical for understanding timeout, latency,
 and data freshness expectations.
 
@@ -192,14 +192,19 @@ operation) and consume LLM tokens for synthesis operations.
 | Pulse (VH3 AI)          | `pulse`          | Fast            | Cached business-health dashboard snapshot                          |
 | Email (VH3 AI)          | `email`          | Fast–Medium     | Email triage: classify, ingest, batch classify, list rules         |
 | Briefing (VH3 AI)       | `briefing`       | Medium (5–10 s) | Pre-visit intelligence briefing + call script for an engineer      |
-| Case (VH3 AI)           | `cases`          | Fast            | Case management: create, update, transition, comment, link items   |
-| Connie (VH3 AI)         | `connie`         | Medium (5–15 s) | Conversational AI assistant: chat, sessions, history search        |
+| Case (VH3 AI)           | `cases`          | Fast            | Case management: create, update, transition, assign team, comment, link items |
+| Connie (VH3 AI)         | `connie`         | Medium (5–15 s) | Conversational AI assistant: chat, generate summary, sessions      |
+| Contact Feed (VH3 AI)   | `contactFeed`    | Fast            | Enriched contact/customer feed with operational snapshot           |
 | Report (VH3 AI)         | `reports`        | Slow (10–25 s)  | Operational reports (daily, weekly, monthly) with narrative        |
 | Investigate (VH3 AI)    | `investigate`    | Slow (10–25 s)  | Multi-step hybrid vector + graph investigation                     |
 | Account Report (VH3 AI) | `accountReport`  | Slow (10–25 s)  | Monthly account review across full parent-child hierarchy          |
 | Intelligence (VH3 AI)   | `intelligence`   | Medium          | Job type profiling — list, get, generate intelligence profiles     |
 | Weather (VH3 AI)        | `weather`        | Fast            | Weather for jobs, sites, forecasts, historical lookups             |
-| User (VH3 AI)           | `users`          | Fast            | User management — list, invite, update role, delete                |
+| Quote Document (VH3 AI) | `quoteDocuments` | Fast            | VH3-owned Quote Documents, revisions, rate cards, parts catalog    |
+| Quotient (VH3 AI)       | `quotient`       | Fast            | Quotient quotations — list and get by UUID or quote number         |
+| Salma (VH3 AI)          | `salma`          | Slow            | Quote Run estimate generation for a job                            |
+| Team (VH3 AI)           | `teams`          | Fast            | Teams — create, update, members, entity links, reverse lookup      |
+| User (VH3 AI)           | `users`          | Fast            | User management — list, invite, update role, delete, list teams    |
 
 
 ### 3d. FSI-first principle

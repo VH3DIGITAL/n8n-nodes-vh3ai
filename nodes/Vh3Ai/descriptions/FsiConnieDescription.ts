@@ -9,6 +9,7 @@ export const fsiConnieOperations: INodeProperties[] = [
 		displayOptions: { show: { resource: ['connie'] } },
 		options: [
 			{ name: 'Chat', value: 'connieChat', action: 'Chat with Connie', description: 'Send a message to the Connie AI assistant' },
+			{ name: 'Generate Summary', value: 'connieGenerateSummary', action: 'Generate a contact summary', description: 'Generate a Connie AI summary for a contact' },
 			{ name: 'Get Session Messages', value: 'connieGetSessionMessages', action: 'Get session messages', description: 'Get messages for a specific chat session' },
 			{ name: 'List Sessions', value: 'connieListSessions', action: 'List chat sessions', description: 'List Connie chat sessions for a user or contact' },
 			{ name: 'Search History', value: 'connieSearchHistory', action: 'Search chat history', description: 'Search across Connie conversation history' },
@@ -67,6 +68,28 @@ export const fsiConnieFields: INodeProperties[] = [
 			{ displayName: 'Contact ID', name: 'contactId', type: 'string', default: '', description: 'Filter by contact ID' },
 			{ displayName: 'Limit', name: 'limit', type: 'number', default: 25, description: 'Maximum number of sessions to return' },
 			{ displayName: 'User ID', name: 'userId', type: 'string', default: '', description: 'Filter by user ID' },
+		],
+	},
+
+	// ── Generate Summary ──
+	{
+		displayName: 'Contact ID',
+		name: 'contactId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Contact identifier to generate a summary for',
+		displayOptions: { show: { resource: ['connie'], operation: ['connieGenerateSummary'] } },
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: { show: { resource: ['connie'], operation: ['connieGenerateSummary'] } },
+		options: [
+			{ displayName: 'Industry', name: 'industry', type: 'string', default: '', description: 'Industry context for summary generation' },
 		],
 	},
 

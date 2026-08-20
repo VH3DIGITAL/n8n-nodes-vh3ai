@@ -37,6 +37,12 @@ export const fsiSearchOperations: INodeProperties[] = [
 			description: 'Search job outcome and diagnostic summaries',
 		},
 		{
+			name: 'Search Outcomes (Enriched)',
+			value: 'searchOutcomesEnriched',
+			action: 'Search job outcomes with graph enrichment',
+			description: 'Search job outcome summaries with Neo4j graph enrichment and optional date, status, and result filters',
+		},
+		{
 			name: 'Search Summary Sections',
 			value: 'searchSummarySections',
 			action: 'Search customer summary knowledge base',
@@ -129,7 +135,7 @@ export const fsiSearchFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['search'],
-				operation: ['searchOutcomes', 'searchIntake', 'searchIntakeBasic'],
+				operation: ['searchOutcomes', 'searchOutcomesEnriched', 'searchIntake', 'searchIntakeBasic'],
 			},
 		},
 	},
@@ -142,7 +148,7 @@ export const fsiSearchFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['search'],
-				operation: ['searchOutcomes', 'searchIntake', 'searchIntakeBasic'],
+				operation: ['searchOutcomes', 'searchOutcomesEnriched', 'searchIntake', 'searchIntakeBasic'],
 			},
 		},
 		options: [
@@ -198,11 +204,25 @@ export const fsiSearchFields: INodeProperties[] = [
 				description: 'Filter by engineer/resource ID',
 			},
 			{
+				displayName: 'Result',
+				name: 'result',
+				type: 'string',
+				default: '',
+				description: 'Filter enriched outcome hits by job result (server-side, enriched search only)',
+			},
+			{
 				displayName: 'Site Key',
 				name: 'siteKey',
 				type: 'string',
 				default: '',
 				description: 'Filter by site key',
+			},
+			{
+				displayName: 'Status',
+				name: 'status',
+				type: 'string',
+				default: '',
+				description: 'Filter enriched outcome hits by job status (server-side, enriched search only)',
 			},
 			{
 				displayName: 'Type ID',

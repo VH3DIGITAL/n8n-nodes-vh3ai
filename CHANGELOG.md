@@ -4,6 +4,25 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.11.0] — 2026-08-20
+
+### Added
+
+- **Team (VH3 AI)** — create, list, search, get, update, members, entity links, and reverse lookup (`GET /entities/{type}/{id}/teams`).
+- **Case › Assign Team** — `POST /cases/{case_id}/assign-team`. Team ID `0` clears the Assigned Team.
+- **Contact Feed (VH3 AI)** — list enriched contacts and get a single contact with operational snapshot / optional summary.
+- **Quotient (VH3 AI)** — list and get Quotient quotations with date-window, status, and full/slim payload controls.
+- **Quote Document (VH3 AI)** — VH3-owned Quote Documents, revisions, rate cards, rate defaults, and parts catalog (tenant-key Quote Run APIs).
+- **Salma (VH3 AI)** — generate a Quote Run estimate for a job (`POST /salma/estimate`). Recipients stay caller-supplied.
+- **Connie › Generate Summary** — `POST /connie/generate-summary`.
+- **Search › Search Outcomes (Enriched)** — `POST /search/outcomes/enriched` with server-side date, status, and result filters.
+- **User › List User Teams** — `GET /users/{user_id}/teams`.
+
+### Notes
+
+- Job Feed already matched the August 2026 feed filters (`finished_late` / `started_late`, `sort_by`). No change.
+- Internal FSI surfaces (ingest, poller, backfill, welcome-pack, graph JWT, catalog seed/upsert, Salma `patch_head`) stay out of the customer node.
+
 ## [0.10.12] — 2026-08-06
 
 ### Fixed
