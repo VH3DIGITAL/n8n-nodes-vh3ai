@@ -81,6 +81,12 @@ export const fsiCasesOperations: INodeProperties[] = [
 				description: 'Add a user as a participant with a specified role',
 			},
 			{
+				name: 'Assign Team',
+				value: 'assignTeam',
+				action: 'Assign a team to a case',
+				description: 'Assign or clear the Case Assigned Team. Pass Team ID 0 to clear.',
+			},
+			{
 				name: 'Create Case',
 				value: 'createCase',
 				action: 'Create a case',
@@ -535,6 +541,37 @@ export const fsiCasesFields: INodeProperties[] = [
 		options: [
 			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is removing the participant' },
+		],
+	},
+
+	// ── Assign Team ──
+	{
+		displayName: 'Case ID',
+		name: 'caseId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'ID of the case',
+		displayOptions: { show: { resource: ['cases'], operation: ['assignTeam'] } },
+	},
+	{
+		displayName: 'Team ID',
+		name: 'teamId',
+		type: 'number',
+		default: 0,
+		description: 'Team to assign. Set to 0 or leave blank to clear the Assigned Team.',
+		displayOptions: { show: { resource: ['cases'], operation: ['assignTeam'] } },
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: { show: { resource: ['cases'], operation: ['assignTeam'] } },
+		options: [
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'Actor ID. For user defaults to API key owner; for agent pass the Agent catalogue ID' },
+			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is assigning the team' },
 		],
 	},
 

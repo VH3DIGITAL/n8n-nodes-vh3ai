@@ -2,6 +2,7 @@ import type {
 	IExecuteFunctions,
 	IHttpRequestOptions,
 	JsonObject,
+	JsonValue,
 } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
@@ -344,6 +345,35 @@ export function extractWsItems(raw: JsonObject): JsonObject[] {
 	if (Array.isArray(inner)) return inner as JsonObject[];
 	if (inner && typeof inner === 'object') return [inner as JsonObject];
 	return [raw];
+}
+
+/**
+ * Unwrap common FSI list envelopes into a flat items array.
+ * Tries the supplied keys, then `items` / `result.items`, then the raw object.
+ */
+export function unwrapFsiList(raw: JsonObject | JsonObject[], keys: string[] = []): JsonObject[] {
+	if (Array.isArray(raw)) return raw;
+	const candidates = [...keys, 'items', 'result'];
+	for (const key of candidates) {
+		const value = raw[key];
+		if (Array.isArray(value)) return value as JsonObject[];
+	}
+	const nested = raw.result as JsonObject | undefined;
+	if (nested && typeof nested === 'object') {
+		for (const key of [...keys, 'items']) {
+			const value = nested[key];
+			if (Array.isArray(value)) return value as JsonObject[];
+		}
+	}
+	return [raw];
+}
+
+export function parseJsonField(value: unknown): JsonValue | undefined {
+	if (value == null || value === '') return undefined;
+	if (typeof value !== 'string') return value as JsonValue;
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	return JSON.parse(trimmed) as JsonValue;
 }
 
 // ── FSI (Field Service Intelligence) API helpers ─────────────────────────────

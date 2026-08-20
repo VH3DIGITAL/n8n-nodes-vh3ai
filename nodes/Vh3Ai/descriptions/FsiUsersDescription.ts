@@ -37,6 +37,12 @@ export const fsiUsersOperations: INodeProperties[] = [
 				description: 'Get all pending (unaccepted) invitations for the company',
 			},
 			{
+				name: 'List User Teams',
+				value: 'listUserTeams',
+				action: 'List teams for a user',
+				description: 'Get all teams for a user with their role and default-team flag',
+			},
+			{
 				name: 'List Users',
 				value: 'listUsers',
 				action: 'List users',
@@ -124,5 +130,16 @@ export const fsiUsersFields: INodeProperties[] = [
 		default: '',
 		description: 'ID of the user to archive',
 		displayOptions: { show: { resource: ['users'], operation: ['deleteUser'] } },
+	},
+
+	// ── List User Teams ──
+	{
+		displayName: 'User ID',
+		name: 'userId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'ID of the user whose teams to list',
+		displayOptions: { show: { resource: ['users'], operation: ['listUserTeams'] } },
 	},
 ];
