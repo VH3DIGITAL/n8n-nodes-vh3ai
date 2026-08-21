@@ -1,18 +1,16 @@
 ---
-description: n8n community package manifest and verification requirements
-globs: package.json
+description: n8n community package manifest and Creator Portal lint
+globs: package.json,nodes/**/*.ts,credentials/**/*.ts
 alwaysApply: false
 ---
 
-# n8n community package manifest
-
-When editing `package.json` for this repo:
+# n8n community package manifest and portal lint
 
 ## `n8n.n8nNodesApiVersion` (Cloud verification)
 
 - **Must be a positive integer**: `1` or `2` only — never a float (`1.1`), string (`"1"`), or semver.
 - This package uses programmatic nodes (`execute()`). Use **`1`** unless migrating to n8n's newer declarative node builder (then `2`).
-- `eslint-plugin-n8n-nodes-base` only checks "is a number"; n8n Cloud's `@n8n/scan-community-package` is stricter.
+- `eslint-plugin-n8n-nodes-base` community ruleset only checks "is a number"; n8n Cloud's `@n8n/scan-community-package` is stricter.
 
 ```json
 "n8n": {
@@ -20,11 +18,17 @@ When editing `package.json` for this repo:
 }
 ```
 
-## Before release
+## Before shipping node UI / description changes
 
-1. `npm run lint` — TypeScript + credentials
-2. `npm run lint:manifest` — local manifest checks (integer API version, nodes/credentials paths)
-3. After publish: `npx @n8n/scan-community-package n8n-nodes-vh3ai@<version>`
+`npm run lint` / `npx @n8n/node-cli lint` use `.eslintrc.js` (`community` ruleset only). Creator Portal does **not**. It runs `@n8n/scan-community-package@beta`, which applies the `nodes` + `credentials` rulesets to GitHub source.
+
+After editing `nodes/**/*.ts` or `credentials/**/*.ts`:
+
+1. `npm run lint:portal:changed` — must exit 0
+2. `npm run lint:n8n`
+3. After publish: `npx @n8n/scan-community-package@beta n8n-nodes-vh3ai@<version>` (always `@beta`, never `@latest`)
+
+Style traps: Update Fields (not Fields to Update); operation `action` in sentence case; Return All exact wording; no description identical to displayName; resource descriptions without a trailing period; Limit default 50. Full list: `.cursor/skills/n8n-nodes-release/SKILL.md`.
 
 ## Other manifest requirements
 

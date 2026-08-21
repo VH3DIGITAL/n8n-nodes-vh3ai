@@ -8,7 +8,7 @@ export const fsiConnieOperations: INodeProperties[] = [
 		noDataExpression: true,
 		displayOptions: { show: { resource: ['connie'] } },
 		options: [
-			{ name: 'Chat', value: 'connieChat', action: 'Chat with Connie', description: 'Send a message to the Connie AI assistant' },
+			{ name: 'Chat', value: 'connieChat', action: 'Chat with connie', description: 'Send a message to the Connie AI assistant' },
 			{ name: 'Generate Summary', value: 'connieGenerateSummary', action: 'Generate a contact summary', description: 'Generate a Connie AI summary for a contact' },
 			{ name: 'Get Session Messages', value: 'connieGetSessionMessages', action: 'Get session messages', description: 'Get messages for a specific chat session' },
 			{ name: 'List Sessions', value: 'connieListSessions', action: 'List chat sessions', description: 'List Connie chat sessions for a user or contact' },
@@ -66,7 +66,14 @@ export const fsiConnieFields: INodeProperties[] = [
 		displayOptions: { show: { resource: ['connie'], operation: ['connieListSessions'] } },
 		options: [
 			{ displayName: 'Contact ID', name: 'contactId', type: 'string', default: '', description: 'Filter by contact ID' },
-			{ displayName: 'Limit', name: 'limit', type: 'number', default: 25, description: 'Maximum number of sessions to return' },
+			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				typeOptions: { minValue: 1 },
+				default: 50,
+				description: 'Max number of results to return',
+			},
 			{ displayName: 'User ID', name: 'userId', type: 'string', default: '', description: 'Filter by user ID' },
 		],
 	},
@@ -123,7 +130,14 @@ export const fsiConnieFields: INodeProperties[] = [
 		displayOptions: { show: { resource: ['connie'], operation: ['connieSearchHistory'] } },
 		options: [
 			{ displayName: 'Contact ID', name: 'contactId', type: 'string', default: '', description: 'Filter by contact ID' },
-			{ displayName: 'Limit', name: 'limit', type: 'number', default: 25, description: 'Maximum number of results' },
+			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				typeOptions: { minValue: 1 },
+				default: 50,
+				description: 'Max number of results to return',
+			},
 			{ displayName: 'User ID', name: 'userId', type: 'string', default: '', description: 'Filter by user ID' },
 		],
 	},

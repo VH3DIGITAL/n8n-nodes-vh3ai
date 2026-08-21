@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -21,6 +23,11 @@ jobs:
       - run: npm ci
 
       - run: npm run lint:n8n
+
+      - name: Creator Portal style lint (changed files)
+        env:
+          PORTAL_LINT_BASE: origin/${{ github.event.pull_request.base.ref || 'main' }}
+        run: npm run lint:portal:changed
 
       - run: npm run build
 

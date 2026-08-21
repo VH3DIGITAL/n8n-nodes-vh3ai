@@ -4,6 +4,16 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.11.1] — 2026-08-21
+
+### Fixed
+
+- **Creator Portal lint** — Update Fields labels, sentence-case operation actions, Return All wording, redundant descriptions, resource description periods, and Search operation order so n8n can approve the v0.11.0 resource set.
+
+### Changed
+
+- Local release preflight now runs `lint:portal:changed` (same `nodes`/`credentials` style rules Creator Portal uses). `npx @n8n/node-cli lint` is not a portal pass.
+
 ## [0.11.0] — 2026-08-20
 
 ### Added

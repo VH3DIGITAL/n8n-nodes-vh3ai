@@ -11,13 +11,13 @@ export const fsiQuotientOperations: INodeProperties[] = [
 			{
 				name: 'Get Quote',
 				value: 'getQuotientQuote',
-				action: 'Get a Quotient quote',
+				action: 'Get a quotient quote',
 				description: 'Get a single Quotient quotation by UUID or quote number',
 			},
 			{
 				name: 'List Quotes',
 				value: 'listQuotientQuotes',
-				action: 'List Quotient quotes',
+				action: 'List quotient quotes',
 				description: 'Paginated Quotient quotations with date-window and status filters',
 			},
 		],
@@ -101,7 +101,6 @@ export const fsiQuotientFields: INodeProperties[] = [
 					{ name: 'Descending', value: 'desc' },
 				],
 				default: 'desc',
-				description: 'Sort order',
 			},
 		],
 	},
