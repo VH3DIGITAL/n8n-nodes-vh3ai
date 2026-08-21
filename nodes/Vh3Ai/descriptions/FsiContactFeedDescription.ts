@@ -31,7 +31,7 @@ export const fsiContactFeedFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: { show: { resource: ['contactFeed'], operation: ['listContactFeed'] } },
 	},
 	{

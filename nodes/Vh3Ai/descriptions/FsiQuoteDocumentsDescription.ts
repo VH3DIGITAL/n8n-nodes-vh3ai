@@ -194,7 +194,7 @@ export const fsiQuoteDocumentsFields: INodeProperties[] = [
 			{ displayName: 'Site Reference', name: 'siteRef', type: 'string', default: '', description: 'Source-system site reference' },
 			{ displayName: 'Title', name: 'title', type: 'string', default: '', description: 'Human-readable title' },
 			{ displayName: 'Valid Until', name: 'validUntil', type: 'dateTime', default: '', description: 'Optional validity deadline' },
-			{ displayName: 'VAT Percentage', name: 'vatPercentage', type: 'number', default: 20, description: 'VAT percentage' },
+			{ displayName: 'VAT Percentage', name: 'vatPercentage', type: 'number', default: 20 },
 			{ displayName: 'Version', name: 'version', type: 'number', default: 0, description: 'Head working/issued version; 0 means unissued draft' },
 		],
 	},

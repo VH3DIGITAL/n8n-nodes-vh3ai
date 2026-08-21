@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-vh3ai",
-	"version": "0.11.0",
+	"version": "0.11.1",
 	"description": "n8n community node for the VH3 AI API — jobs, contacts, resources, vehicles, worksheets, invoices, quotes, teams, and more.",
 	"keywords": [
 		"n8n-community-node-package",
@@ -50,6 +50,9 @@
 		"lint:manifest": "node scripts/validate-package-manifest.mjs",
 		"lint:package": "eslint package.json",
 		"lint:n8n": "npm run lint && npm run lint:manifest && npm run lint:package",
+		"lint:portal": "eslint -c .eslintrc.portal.js nodes/**/*.ts credentials/**/*.ts package.json",
+		"lint:portal:changed": "node scripts/lint-portal-changed.mjs",
+		"lint:portal:fix": "eslint -c .eslintrc.portal.js --fix nodes/**/*.ts credentials/**/*.ts package.json",
 		"lintfix": "eslint nodes/**/*.ts credentials/**/*.ts --fix",
 		"test": "jest",
 		"prepublishOnly": "npm run build && npm run lint:n8n"

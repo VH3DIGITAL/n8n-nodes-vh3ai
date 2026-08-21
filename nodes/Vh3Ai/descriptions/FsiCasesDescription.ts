@@ -263,7 +263,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		displayOptions: { show: { resource: ['cases'], operation: ['updateCase'] } },
 	},
 	{
-		displayName: 'Fields to Update',
+		displayName: 'Update Fields',
 		name: 'updateFields',
 		type: 'collection',
 		placeholder: 'Add Field',
@@ -570,7 +570,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['assignTeam'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'Actor ID. For user defaults to API key owner; for agent pass the Agent catalogue ID' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'Actor ID. For user defaults to API key owner; for agent pass the Agent catalogue ID.' },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is assigning the team' },
 		],
 	},

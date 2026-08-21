@@ -40,6 +40,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Node 24 ships with npm >= 11.5.1, which is required for OIDC Trusted
       # Publisher support. Node 22 LTS still ships with npm 10.9 and the
@@ -54,6 +56,11 @@ jobs:
       - run: npm ci
 
       - run: npm run lint:n8n
+
+      - name: Creator Portal style lint (changed vs main)
+        env:
+          PORTAL_LINT_BASE: origin/main
+        run: npm run lint:portal:changed
 
       - run: npm run build
 

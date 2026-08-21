@@ -12,12 +12,15 @@ Community node package for [VH3 AI](https://vh3.ai) on n8n. Single programmatic 
 
 | Command | Purpose |
 |--------|---------|
-| `npm run lint` | ESLint on `nodes/**/*.ts` and `credentials/**/*.ts` |
+| `npm run lint` | ESLint community ruleset on `package.json` (does **not** catch Creator Portal style) |
 | `npm run lint:manifest` | Validates `package.json` n8n manifest (integer `n8nNodesApiVersion`, nodes/credentials paths, keyword) |
 | `npm run lint:package` | ESLint `community` ruleset on `package.json` |
-| `npx @n8n/scan-community-package n8n-nodes-vh3ai@<version>` | n8n Cloud security/manifest scan (requires published npm version) |
+| `npm run lint:portal:changed` | Same `nodes`/`credentials` style rules Creator Portal uses, on files changed vs `origin/main` |
+| `npx @n8n/scan-community-package@beta n8n-nodes-vh3ai@<version>` | Official portal scanner (always `@beta`, not `@latest`) |
 
 **Critical:** `n8n.n8nNodesApiVersion` must be **`1`** or **`2`** (integer). Never `1.1` or a string. Use `1` for this repo unless explicitly migrating to API v2.
+
+`npx @n8n/node-cli lint` only runs this repo's local ESLint. It is not a portal pass. After description/UI edits, run `npm run lint:portal:changed` before shipping.
 
 ## Releases
 

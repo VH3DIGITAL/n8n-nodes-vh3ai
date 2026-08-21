@@ -197,7 +197,7 @@ export const fsiTeamsFields: INodeProperties[] = [
 	},
 
 	{
-		displayName: 'Fields to Update',
+		displayName: 'Update Fields',
 		name: 'updateFields',
 		type: 'collection',
 		placeholder: 'Add Field',
