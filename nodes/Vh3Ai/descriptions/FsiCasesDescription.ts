@@ -42,13 +42,16 @@ const itemTypeOptions = [
 	{ name: 'Site', value: 'site' },
 ];
 
-const participantRoleOptions = [
+export const participantRoleOptions = [
 	{ name: 'Contributor', value: 'contributor' },
 	{ name: 'Investigator', value: 'investigator' },
 	{ name: 'Observer', value: 'observer' },
 	{ name: 'Owner', value: 'owner' },
 	{ name: 'Reviewer', value: 'reviewer' },
 ];
+
+const actorIdDescription =
+	'Connect user ID when Actor Type is user. Omit or set to 0 to use the tenant API-key owner.';
 
 export const fsiCasesOperations: INodeProperties[] = [
 	{
@@ -78,7 +81,7 @@ export const fsiCasesOperations: INodeProperties[] = [
 				name: 'Add Participant',
 				value: 'addParticipant',
 				action: 'Add a participant to a case',
-				description: 'Add a user as a participant with a specified role',
+				description: 'Add a user as a participant. Roles are owner, investigator, reviewer, observer, and contributor.',
 			},
 			{
 				name: 'Assign Team',
@@ -90,7 +93,7 @@ export const fsiCasesOperations: INodeProperties[] = [
 				name: 'Create Case',
 				value: 'createCase',
 				action: 'Create a case',
-				description: 'Create a new case with title, type, and optional priority, tags, and metadata',
+				description: 'Create a new case in draft with title, type, and optional priority, tags, and metadata',
 			},
 			{
 				name: 'Get Case',
@@ -114,7 +117,7 @@ export const fsiCasesOperations: INodeProperties[] = [
 				name: 'List Cases',
 				value: 'listCases',
 				action: 'List cases',
-				description: 'List cases for a company with filtering and pagination',
+				description: 'List cases for a company with filtering and pagination. Sorting is server-side. Omitted Scope, Sort, and Order use the FSI API defaults.',
 			},
 			{
 				name: 'List Cases for Item',
@@ -150,7 +153,7 @@ export const fsiCasesOperations: INodeProperties[] = [
 				name: 'Update Case',
 				value: 'updateCase',
 				action: 'Update a case',
-				description: 'Update case fields — only provided fields are changed',
+				description: 'Update selected case fields. Unselected fields are preserved. Adding an empty clearable field clears the current value. Actor ID is a Connect user ID; omit or 0 uses the API-key owner.',
 			},
 		],
 		default: 'listCases',
@@ -186,7 +189,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['createCase'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor (defaults to API key owner)' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is creating the case' },
 			{ displayName: 'Description', name: 'description', type: 'string', default: '', description: 'Detailed case narrative' },
 			{ displayName: 'Due Date', name: 'dueDate', type: 'dateTime', default: '', description: 'Optional case deadline' },
@@ -205,11 +208,47 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['listCases'] } },
 		options: [
+			{
+				displayName: 'Order',
+				name: 'order',
+				type: 'options',
+				options: [
+					{ name: 'Ascending', value: 'asc' },
+					{ name: 'Descending', value: 'desc' },
+				],
+				default: 'desc',
+				description: 'Server-side sort direction. Omitted uses the FSI API default of desc.',
+			},
 			{ displayName: 'Owner ID', name: 'ownerId', type: 'number', default: 0, description: 'Filter by case owner user ID' },
 			{ displayName: 'Page', name: 'page', type: 'number', default: 1, description: 'Page number for pagination' },
 			{ displayName: 'Per Page', name: 'perPage', type: 'number', default: 25, description: 'Items per page' },
 			{ displayName: 'Priority', name: 'priority', type: 'options', options: casePriorityOptions, default: '', description: 'Filter by priority' },
+			{
+				displayName: 'Scope',
+				name: 'scope',
+				type: 'options',
+				options: [
+					{ name: 'Active', value: 'active' },
+					{ name: 'All', value: 'all' },
+					{ name: 'Closed', value: 'closed' },
+				],
+				default: 'all',
+				description: 'Lifecycle set requested from FSI. Omitted uses the FSI API default of all statuses. Exact Status still overrides Scope.',
+			},
 			{ displayName: 'Search', name: 'search', type: 'string', default: '', description: 'Search term to match against title and description' },
+			{
+				displayName: 'Sort',
+				name: 'sort',
+				type: 'options',
+				options: [
+					{ name: 'Created At', value: 'created_at' },
+					{ name: 'ID', value: 'id' },
+					{ name: 'Last Activity At', value: 'last_activity_at' },
+					{ name: 'Updated At', value: 'updated_at' },
+				],
+				default: 'updated_at',
+				description: 'Server-side sort field. Omitted uses the FSI API default of updated_at.',
+			},
 			{ displayName: 'Status', name: 'status', type: 'options', options: caseStatusOptions, default: '', description: 'Filter by case status' },
 			{ displayName: 'Type', name: 'type', type: 'options', options: caseTypeOptions, default: '', description: 'Filter by case type' },
 		],
@@ -269,17 +308,19 @@ export const fsiCasesFields: INodeProperties[] = [
 		placeholder: 'Add Field',
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['updateCase'] } },
+		description: 'Fields to change. Unselected fields are preserved. An added empty Description, Resolution, Tags, or Metadata, or Clear Due Date, clears the current value.',
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is performing the update' },
-			{ displayName: 'Description', name: 'description', type: 'string', default: '', description: 'Updated case description' },
-			{ displayName: 'Due Date', name: 'dueDate', type: 'dateTime', default: '', description: 'Updated deadline' },
-			{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '{}', description: 'Updated metadata object' },
-			{ displayName: 'Priority', name: 'priority', type: 'options', options: casePriorityOptions, default: '', description: 'Updated priority' },
-			{ displayName: 'Resolution', name: 'resolution', type: 'string', default: '', description: 'Resolution summary' },
-			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Updated tags array' },
-			{ displayName: 'Title', name: 'title', type: 'string', default: '', description: 'Updated case title' },
-			{ displayName: 'Type', name: 'type', type: 'options', options: caseTypeOptions, default: '', description: 'Updated case type' },
+			{ displayName: 'Clear Due Date', name: 'clearDueDate', type: 'boolean', default: false, description: 'Whether to clear the case deadline by sending due_date as null. Takes precedence over Due Date.' },
+			{ displayName: 'Description', name: 'description', type: 'string', default: '', description: 'Updated case description. An empty value clears the current description.' },
+			{ displayName: 'Due Date', name: 'dueDate', type: 'dateTime', default: '', description: 'Updated deadline. Use Clear Due Date to remove it; an empty value is not sent.' },
+			{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '{}', description: 'Updated metadata object. An empty object clears current metadata.' },
+			{ displayName: 'Priority', name: 'priority', type: 'options', options: casePriorityOptions, default: 'medium', description: 'Updated priority' },
+			{ displayName: 'Resolution', name: 'resolution', type: 'string', default: '', description: 'Resolution summary. An empty value clears the current resolution.' },
+			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Updated tags array. An empty array clears all tags.' },
+			{ displayName: 'Title', name: 'title', type: 'string', default: '', description: 'Updated case title. Empty or whitespace-only titles are rejected.' },
+			{ displayName: 'Type', name: 'type', type: 'options', options: caseTypeOptions, default: 'incident', description: 'Updated case type' },
 		],
 	},
 
@@ -311,7 +352,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['transitionCase'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is performing the transition' },
 			{ displayName: 'Comment', name: 'comment', type: 'string', default: '', description: 'Optional comment explaining the transition' },
 		],
@@ -344,7 +385,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['addComment'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is adding the comment' },
 		],
 	},
@@ -440,7 +481,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['addCaseItem'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is linking the item' },
 			{ displayName: 'Context', name: 'context', type: 'string', default: '', description: 'Why this item is being added' },
 			{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '{}', description: 'Type-specific extra data' },
@@ -474,7 +515,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['removeCaseItem'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is removing the item' },
 		],
 	},
@@ -506,9 +547,9 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['addParticipant'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is adding the participant' },
-			{ displayName: 'Role', name: 'role', type: 'options', options: participantRoleOptions, default: 'contributor', description: 'Role of the participant in the case' },
+			{ displayName: 'Role', name: 'role', type: 'options', options: participantRoleOptions, default: 'contributor', description: 'Role of the participant. Exactly owner, investigator, reviewer, observer, or contributor.' },
 		],
 	},
 
@@ -539,7 +580,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['removeParticipant'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'User ID of the actor' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is removing the participant' },
 		],
 	},
@@ -570,7 +611,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		default: {},
 		displayOptions: { show: { resource: ['cases'], operation: ['assignTeam'] } },
 		options: [
-			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: 'Actor ID. For user defaults to API key owner; for agent pass the Agent catalogue ID.' },
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is assigning the team' },
 		],
 	},

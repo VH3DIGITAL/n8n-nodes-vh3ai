@@ -319,18 +319,18 @@ These features are powered by the VH3 AI layer — they use AI, machine learning
 
 | Operation | What It Does |
 |---|---|
-| **Create Case** | Opens a new case with a title and type. Optional: priority, tags, description, due date. |
+| **Create Case** | Opens a new case in **draft** with a title and type. Optional: priority, tags, description, due date. |
 | **Get Case** | Returns full case detail including participants, linked items, and latest activity. |
-| **Update Case** | Updates case fields. Only the fields you supply are changed. |
+| **Update Case** | Updates selected fields only. Unselected fields are preserved. Adding an empty Description, Resolution, Tags, or Metadata, or using Clear Due Date, clears that value. Title cannot be empty. Actor ID is a Connect user ID; omit or 0 uses the API-key owner. |
 | **Transition Case** | Moves a case to a new status (e.g. from Open to In Progress). Includes lifecycle validation. |
 | **Search Cases** | Full-text search across case titles and descriptions. |
-| **List Cases** | Lists cases with filtering by status, type, priority, or owner. |
+| **List Cases** | Lists cases with filtering by status, type, priority, owner, or search. Optional Scope (`active` / `all` / `closed`), Sort, and Order map to the FSI API. Sorting is server-side. Omitted Scope, Sort, and Order use the FSI API defaults. Exact Status overrides Scope. |
 | **Add Comment** | Adds a comment to the case activity timeline. |
 | **List Activity** | Returns the full activity timeline (comments, transitions, changes) for a case. |
 | **Add Case Item** | Links a job, customer, site, engineer, or document to the case. |
 | **Remove Case Item** | Unlinks an item from a case. |
 | **List Case Items** | Lists all records linked to a case, optionally filtered by type. |
-| **Add Participant** | Adds a user to the case with a role (Owner, Investigator, Reviewer, Contributor, Observer). |
+| **Add Participant** | Adds a user to the case with a role. Roles are exactly owner, investigator, reviewer, observer, and contributor. |
 | **Remove Participant** | Removes a participant from a case. |
 | **List Cases for Item** | Reverse lookup — finds all cases that reference a specific job, site, or customer. |
 

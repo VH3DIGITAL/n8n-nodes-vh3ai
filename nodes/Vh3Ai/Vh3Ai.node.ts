@@ -5,7 +5,7 @@ import type {
 	INodeTypeDescription,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import {
 	vh3ListApiRequest,
@@ -34,6 +34,7 @@ import {
 	unwrapFsiList,
 	parseJsonField,
 } from './GenericFunctions';
+import { buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
 import { contactsOperations, contactsFields } from './descriptions/ContactsDescription';
@@ -2394,15 +2395,8 @@ export class Vh3Ai implements INodeType {
 						responseData = [raw];
 					} else if (operation === 'listCases') {
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
-						const qs: Record<string, string | number | boolean> = {};
-						if (additionalFields.status) qs.status = additionalFields.status as string;
-						if (additionalFields.type) qs.type = additionalFields.type as string;
-						if (additionalFields.priority) qs.priority = additionalFields.priority as string;
-						if (additionalFields.ownerId) qs.owner_id = additionalFields.ownerId as number;
-						if (additionalFields.search) qs.search = additionalFields.search as string;
-						if (additionalFields.page) qs.page = additionalFields.page as number;
-						if (additionalFields.perPage) qs.per_page = additionalFields.perPage as number;
-						const raw = await vh3FsiGetRequest.call(this, '/cases/list', qs);
+						const request = buildCaseListRequest(additionalFields);
+						const raw = await vh3FsiGetRequest.call(this, request.endpoint, request.qs);
 						responseData = Array.isArray(raw) ? raw : [raw];
 					} else if (operation === 'searchCases') {
 						const query = this.getNodeParameter('query', i) as string;
@@ -2422,18 +2416,16 @@ export class Vh3Ai implements INodeType {
 					} else if (operation === 'updateCase') {
 						const caseId = this.getNodeParameter('caseId', i) as number;
 						const updateFields = this.getNodeParameter('updateFields', i) as JsonObject;
-						const body: JsonObject = {};
-						if (updateFields.title) body.title = updateFields.title;
-						if (updateFields.description) body.description = updateFields.description;
-						if (updateFields.type) body.type = updateFields.type;
-						if (updateFields.priority) body.priority = updateFields.priority;
-						if (updateFields.actorType) body.actor_type = updateFields.actorType;
-						if (updateFields.actorId) body.actor_id = updateFields.actorId;
-						if (updateFields.dueDate) body.due_date = updateFields.dueDate;
-						if (updateFields.resolution) body.resolution = updateFields.resolution;
-						if (updateFields.tags) body.tags = typeof updateFields.tags === 'string' ? JSON.parse(updateFields.tags as string) : updateFields.tags;
-						if (updateFields.metadata) body.metadata = typeof updateFields.metadata === 'string' ? JSON.parse(updateFields.metadata as string) : updateFields.metadata;
-						const raw = await vh3FsiPatchRequest.call(this, `/cases/${caseId}`, body);
+						let request;
+						try {
+							request = buildCaseUpdateRequest(caseId, updateFields);
+						} catch (error) {
+							const message = error instanceof CaseUpdateValidationError
+								? error.message
+								: (error as Error).message;
+							throw new NodeOperationError(this.getNode(), message);
+						}
+						const raw = await vh3FsiPatchRequest.call(this, request.endpoint, request.body);
 						responseData = [raw];
 					} else if (operation === 'transitionCase') {
 						const caseId = this.getNodeParameter('caseId', i) as number;
