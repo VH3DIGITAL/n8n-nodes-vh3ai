@@ -453,13 +453,14 @@ Set workflow/node timeout to ≥ 30 s for narrative reports.
 
 | Operation          | Notes                                                                                                                                |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `createCase`       | `title` + `caseType` required. Types: `audit`, `case_study`, `compliance`, `incident`, `investigation`, `project_review`             |
+| `createCase`       | `title` + `caseType` required. Starts in `draft`. Types: `audit`, `case_study`, `compliance`, `incident`, `investigation`, `project_review` |
 | `listCases`        | Filter by `status`, `type`, `priority`, `ownerId`                                                                                    |
 | `searchCases`      | Full-text search across title and description                                                                                        |
 | `getCase`          | Returns participants, items, latest activity                                                                                         |
-| `updateCase`       | Patch — only provided fields change                                                                                                  |
+| `updateCase`       | Presence-based PATCH — unselected Update Fields are omitted and preserved. Selected empty Description/Resolution send `""`; Tags `[]` and Metadata `{}` clear. Clear Due Date sends `due_date: null` (never an empty date string). Empty title is rejected. Type remains patchable. Actor ID is a Connect user ID; omit/0 uses the API-key owner. One PATCH, no GET-and-merge. |
 | `transitionCase`   | Lifecycle-validated status changes. Statuses: `draft` → `open` → `in_progress` → `under_review` → `resolved` → `closed` / `archived` |
 | `addComment`       | Adds to activity timeline                                                                                                            |
+| `addParticipant`   | Roles are exactly `owner`, `investigator`, `reviewer`, `observer`, `contributor`                                                     |
 | `addCaseItem`      | Links a job, customer, site, engineer, job group, note, or document                                                                  |
 | `listCasesForItem` | Reverse lookup — find all cases referencing a specific record                                                                        |
 
