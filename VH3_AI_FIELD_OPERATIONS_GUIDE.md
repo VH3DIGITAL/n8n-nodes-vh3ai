@@ -324,7 +324,7 @@ These features are powered by the VH3 AI layer — they use AI, machine learning
 | **Update Case** | Updates selected fields only. Unselected fields are preserved. Adding an empty Description, Resolution, Tags, or Metadata, or using Clear Due Date, clears that value. Title cannot be empty. Actor ID is a Connect user ID; omit or 0 uses the API-key owner. |
 | **Transition Case** | Moves a case to a new status (e.g. from Open to In Progress). Includes lifecycle validation. |
 | **Search Cases** | Full-text search across case titles and descriptions. |
-| **List Cases** | Lists cases with filtering by status, type, priority, or owner. |
+| **List Cases** | Lists cases with filtering by status, type, priority, owner, or search. Optional Scope (`active` / `all` / `closed`), Sort, and Order map to the FSI API. Sorting is server-side. Omitted Scope, Sort, and Order use the FSI API defaults. Exact Status overrides Scope. |
 | **Add Comment** | Adds a comment to the case activity timeline. |
 | **List Activity** | Returns the full activity timeline (comments, transitions, changes) for a case. |
 | **Add Case Item** | Links a job, customer, site, engineer, or document to the case. |

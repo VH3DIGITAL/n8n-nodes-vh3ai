@@ -34,7 +34,7 @@ import {
 	unwrapFsiList,
 	parseJsonField,
 } from './GenericFunctions';
-import { buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
+import { buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
 import { contactsOperations, contactsFields } from './descriptions/ContactsDescription';
@@ -2395,15 +2395,8 @@ export class Vh3Ai implements INodeType {
 						responseData = [raw];
 					} else if (operation === 'listCases') {
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
-						const qs: Record<string, string | number | boolean> = {};
-						if (additionalFields.status) qs.status = additionalFields.status as string;
-						if (additionalFields.type) qs.type = additionalFields.type as string;
-						if (additionalFields.priority) qs.priority = additionalFields.priority as string;
-						if (additionalFields.ownerId) qs.owner_id = additionalFields.ownerId as number;
-						if (additionalFields.search) qs.search = additionalFields.search as string;
-						if (additionalFields.page) qs.page = additionalFields.page as number;
-						if (additionalFields.perPage) qs.per_page = additionalFields.perPage as number;
-						const raw = await vh3FsiGetRequest.call(this, '/cases/list', qs);
+						const request = buildCaseListRequest(additionalFields);
+						const raw = await vh3FsiGetRequest.call(this, request.endpoint, request.qs);
 						responseData = Array.isArray(raw) ? raw : [raw];
 					} else if (operation === 'searchCases') {
 						const query = this.getNodeParameter('query', i) as string;

@@ -4,6 +4,16 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.11.2] — 2026-08-24
+
+### Added
+
+- **Case › List Cases** — optional Additional Fields **Scope** (`active` / `all` / `closed`), **Sort** (`last_activity_at` / `created_at` / `updated_at` / `id`), and **Order** (`asc` / `desc`). Values map 1:1 to FSI query params. Omitted options keep the FSI API defaults (all statuses, `updated_at`, `desc`). Sorting is server-side; an exact Status filter still overrides Scope.
+
+### Changed
+
+- **Case › Update Case** — serializes from Update Field presence. Unselected fields are omitted and preserved. Selected empty Description/Resolution send `""`; Tags `[]` and Metadata `{}` clear those collections. Clear Due Date sends `due_date: null` (never an empty date string). Empty title is rejected. Actor ID remains a Connect user ID; omit or 0 uses the API-key owner. One PATCH, no GET-and-merge.
+
 ## [0.11.1] — 2026-08-21
 
 ### Fixed

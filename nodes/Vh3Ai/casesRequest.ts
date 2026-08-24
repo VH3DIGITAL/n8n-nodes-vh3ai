@@ -1,5 +1,11 @@
 import type { JsonObject, JsonValue } from 'n8n-workflow';
 
+export type CaseListRequest = {
+	method: 'GET';
+	endpoint: '/cases/list';
+	qs: Record<string, string | number | boolean>;
+};
+
 export type CaseUpdateRequest = {
 	method: 'PATCH';
 	endpoint: string;
@@ -39,6 +45,49 @@ function parsePresentJsonField(
 			`${fieldLabel} is not valid JSON: ${(error as Error).message}`,
 		);
 	}
+}
+
+function assignPresentQueryValue(
+	qs: Record<string, string | number | boolean>,
+	fields: JsonObject,
+	fieldName: string,
+	queryName: string,
+): void {
+	if (!hasOwn(fields, fieldName)) {
+		return;
+	}
+	const value = fields[fieldName];
+	if (value === '' || value == null) {
+		return;
+	}
+	qs[queryName] = value as string | number | boolean;
+}
+
+/**
+ * Build the single FSI GET for List Cases. Selected filters map 1:1 to query params.
+ * Unselected Scope, Sort, and Order are omitted so FSI keeps its defaults.
+ * Never fetches extra pages, filters lifecycle locally, or reorders results.
+ */
+export function buildCaseListRequest(additionalFields: JsonObject): CaseListRequest {
+	const qs: Record<string, string | number | boolean> = {};
+
+	if (additionalFields.status) qs.status = additionalFields.status as string;
+	if (additionalFields.type) qs.type = additionalFields.type as string;
+	if (additionalFields.priority) qs.priority = additionalFields.priority as string;
+	if (additionalFields.ownerId) qs.owner_id = additionalFields.ownerId as number;
+	if (additionalFields.search) qs.search = additionalFields.search as string;
+	if (additionalFields.page) qs.page = additionalFields.page as number;
+	if (additionalFields.perPage) qs.per_page = additionalFields.perPage as number;
+
+	assignPresentQueryValue(qs, additionalFields, 'scope', 'scope');
+	assignPresentQueryValue(qs, additionalFields, 'sort', 'sort');
+	assignPresentQueryValue(qs, additionalFields, 'order', 'order');
+
+	return {
+		method: 'GET',
+		endpoint: '/cases/list',
+		qs,
+	};
 }
 
 /**

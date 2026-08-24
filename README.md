@@ -85,7 +85,7 @@ All operations authenticate using the same API Key and Company ID credentials.
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Account Report (VH3 AI)** | Generate Account Report (monthly account review for a contact)                                                                                                                                                                             |
 | **Briefing (VH3 AI)**       | Generate Briefing (engineer pre-visit briefing and call script)                                                                                                                                                                            |
-| **Case (VH3 AI)**           | Create / Get / Update / Search / List Cases · Transition Case · Assign Team · Add Comment · List Activity · List / Add / Remove Case Items · Add / Remove Participants · List Cases for Item |
+| **Case (VH3 AI)**           | Create / Get / Update / Search / List Cases · Transition Case · Assign Team · Add Comment · List Activity · List / Add / Remove Case Items · Add / Remove Participants · List Cases for Item. Update Case is presence-safe. List Cases can pass FSI Scope, Sort, and Order. |
 | **Connie (VH3 AI)**         | Chat · Generate Summary · List Sessions · Get Session Messages · Search History                                                                                                                                                            |
 | **Contact Feed (VH3 AI)**   | List Contact Feed · Get Enriched Contact                                                                                                                                                                                                   |
 | **Email (VH3 AI)**          | Batch Classify Emails · Classify Email · Ingest Portal Email · List Triage Categories · List Triage Rules                                                                                                                                  |
@@ -112,6 +112,12 @@ All operations authenticate using the same API Key and Company ID credentials.
 Every BigChange read operation exposes a top-level **Simplify** boolean. When ON, the node sends `compact=true` and the API returns LLM-optimised payloads (empty values stripped, nested structures flattened, custom fields collapsed to a key→value dict).
 
 The **Search › Autocomplete** operation also has a **Simplify** toggle (default ON). This is handled at the node layer — it strips `null`, empty string, and empty array fields from each result and its nested `extra` object before returning data. `false` and `0` are retained as meaningful values.
+
+### Case (VH3 AI) — presence-safe updates and server-side list controls
+
+**Update Case** sends only selected Update Fields. Unselected values stay on the Case. Adding an empty Description, Resolution, Tags, or Metadata, or Clear Due Date, clears that value.
+
+**List Cases** can request FSI `scope`, `sort`, and `order`. Sorting is server-side. Omitted options use the FSI API defaults (all statuses, `updated_at` desc). An exact Status filter still overrides Scope.
 
 ### List Invoices / Quotes / Sales Opportunities / Purchase Orders — automatic 12-month fallback
 

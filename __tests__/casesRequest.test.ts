@@ -1,6 +1,6 @@
 import type { INodeProperties, JsonObject } from 'n8n-workflow';
 
-import { buildCaseUpdateRequest, CaseUpdateValidationError } from '../nodes/Vh3Ai/casesRequest';
+import { buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from '../nodes/Vh3Ai/casesRequest';
 import { fsiCasesFields, fsiCasesOperations, participantRoleOptions } from '../nodes/Vh3Ai/descriptions/FsiCasesDescription';
 
 function findCollectionOption(
@@ -13,6 +13,29 @@ function findCollectionOption(
 		return (field.options as INodeProperties[]).find((option) => option.name === optionName);
 	}
 	return undefined;
+}
+
+function findListCasesField(optionName: string): INodeProperties | undefined {
+	for (const field of fsiCasesFields) {
+		const operations = field.displayOptions?.show?.operation;
+		if (
+			field.name !== 'additionalFields' ||
+			!Array.isArray(operations) ||
+			!operations.includes('listCases') ||
+			!Array.isArray(field.options)
+		) {
+			continue;
+		}
+		return (field.options as INodeProperties[]).find((option) => option.name === optionName);
+	}
+	return undefined;
+}
+
+function optionValues(field: INodeProperties | undefined): Array<string | number | boolean> {
+	if (!field?.options) return [];
+	return field.options
+		.filter((option): option is { name: string; value: string } => 'value' in option)
+		.map((option) => option.value);
 }
 
 function findOperation(value: string) {
@@ -159,6 +182,72 @@ describe('buildCaseUpdateRequest', () => {
 	});
 });
 
+describe('buildCaseListRequest', () => {
+	it('maps selected Scope, Sort, and Order exactly to FSI query parameters', () => {
+		const request = buildCaseListRequest({
+			scope: 'active',
+			sort: 'last_activity_at',
+			order: 'asc',
+			status: 'open',
+			type: 'incident',
+			priority: 'high',
+			ownerId: 17,
+			search: 'pump',
+			page: 2,
+			perPage: 10,
+		});
+
+		expect(request).toEqual({
+			method: 'GET',
+			endpoint: '/cases/list',
+			qs: {
+				scope: 'active',
+				sort: 'last_activity_at',
+				order: 'asc',
+				status: 'open',
+				type: 'incident',
+				priority: 'high',
+				owner_id: 17,
+				search: 'pump',
+				page: 2,
+				per_page: 10,
+			},
+		});
+	});
+
+	it('omits unselected Scope, Sort, and Order instead of inventing FSI defaults', () => {
+		const request = buildCaseListRequest({
+			status: 'closed',
+			page: 1,
+		});
+
+		expect(request.qs).toEqual({
+			status: 'closed',
+			page: 1,
+		});
+		expect(request.qs).not.toHaveProperty('scope');
+		expect(request.qs).not.toHaveProperty('sort');
+		expect(request.qs).not.toHaveProperty('order');
+		expect(JSON.stringify(request.qs)).not.toMatch(/all|updated_at|desc|mine|current_user/);
+	});
+
+	it('issues exactly one GET for the requested page and does not reorder results', () => {
+		const request = buildCaseListRequest({
+			page: 3,
+			sort: 'created_at',
+			order: 'asc',
+		});
+
+		expect(request.method).toBe('GET');
+		expect(request.endpoint).toBe('/cases/list');
+		expect(request.qs.page).toBe(3);
+		expect(Object.keys(request)).toEqual(['method', 'endpoint', 'qs']);
+		expect(request).not.toHaveProperty('items');
+		expect(Array.isArray(request)).toBe(false);
+		expect(JSON.stringify(request)).not.toMatch(/sort\(|reorder|mine|current_user/i);
+	});
+});
+
 describe('Cases Update Field copy', () => {
 	it('exposes exactly the five supported participant roles', () => {
 		expect(participantRoleOptions.map((option) => option.value)).toEqual([
@@ -174,6 +263,34 @@ describe('Cases Update Field copy', () => {
 		const actorId = findCollectionOption(fsiCasesFields, 'updateFields', 'actorId');
 		expect(actorId?.description).toMatch(/Connect user ID/i);
 		expect(actorId?.description).toMatch(/API-key owner/i);
+	});
+
+	it('exposes List Cases Scope, Sort, and Order as FSI query options', () => {
+		expect(optionValues(findListCasesField('scope')).sort()).toEqual(['active', 'all', 'closed']);
+		expect(optionValues(findListCasesField('sort')).sort()).toEqual([
+			'created_at',
+			'id',
+			'last_activity_at',
+			'updated_at',
+		]);
+		expect(optionValues(findListCasesField('order')).sort()).toEqual(['asc', 'desc']);
+		expect(findListCasesField('status')).toBeDefined();
+		expect(findListCasesField('type')).toBeDefined();
+		expect(findListCasesField('priority')).toBeDefined();
+		expect(findListCasesField('ownerId')).toBeDefined();
+		expect(findListCasesField('search')).toBeDefined();
+		expect(findListCasesField('page')).toBeDefined();
+		expect(findListCasesField('perPage')).toBeDefined();
+		expect(findListCasesField('mine')).toBeUndefined();
+	});
+
+	it('documents that List Cases sorting is server-side and omitted options use FSI defaults', () => {
+		expect(findOperation('listCases').description).toMatch(/server-side/i);
+		expect(findOperation('listCases').description).toMatch(/FSI API defaults/i);
+		expect(findListCasesField('scope')?.description).toMatch(/all statuses/i);
+		expect(findListCasesField('sort')?.description).toMatch(/updated_at/i);
+		expect(findListCasesField('order')?.description).toMatch(/desc/i);
+		expect(findListCasesField('sort')?.description).toMatch(/server-side/i);
 	});
 
 	it('documents Create Case as starting in draft', () => {
