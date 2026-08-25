@@ -563,7 +563,7 @@ so follow-up messages retain context.
 | `searchTeams`        | Live tenant-key full-text search (`GET /teams/search?q=`). Optional `page`, `perPage`.                                                |
 | `getTeam`            | Team plus members and entity links                                                                                                    |
 | `updateTeam`         | Presence-based PATCH — only provided fields change                                                                                    |
-| `listTeamMembers`    | Membership rows (`user_id`, role, membership id). Resolve email/name via `users:listUsers` until the proxy returns them inline.       |
+| `listTeamMembers`    | Membership rows (`user_id`, role, membership id, `user_name`, `user_email`). Recipients can be taken from this output without `users:listUsers`. |
 | `addTeamMember`      | `userId` + `role`                                                                                                                     |
 | `removeTeamMember`   | By membership id                                                                                                                      |
 | `listTeamEntities` / `addTeamEntity` / `removeTeamEntity` | Entity links (job, customer, site, …)                                                                              |
