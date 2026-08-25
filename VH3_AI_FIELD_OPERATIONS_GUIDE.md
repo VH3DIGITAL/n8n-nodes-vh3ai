@@ -323,6 +323,7 @@ These features are powered by the VH3 AI layer — they use AI, machine learning
 | **Get Case** | Returns full case detail including participants, linked items, and latest activity. |
 | **Update Case** | Updates selected fields only. Unselected fields are preserved. Adding an empty Description, Resolution, Tags, or Metadata, or using Clear Due Date, clears that value. Title cannot be empty. Actor ID is a Connect user ID; omit or 0 uses the API-key owner. |
 | **Transition Case** | Moves a case to an allowed next status: draft → open, archived; open → in_progress, archived; in_progress → under_review, resolved, archived; under_review → resolved, archived; resolved → closed, in_progress (reopen), archived; closed → in_progress (reopen), archived; archived is terminal. Invalid transitions fail with the permitted-next list. |
+| **Delete Case** | Archives a case for audit via the same transition path (`status: archived`). The record, linked items, and activity stay. Does not permanently delete or restore. |
 | **Search Cases** | Full-text search across case titles and descriptions. |
 | **List Cases** | Lists cases with filtering by status, type, priority, owner, or search. Optional Scope (`active` / `all` / `closed`), Sort, and Order map to the FSI API. Sorting is server-side. Omitted Scope, Sort, and Order use the FSI API defaults. Exact Status overrides Scope. |
 | **Add Comment** | Adds a comment to the case activity timeline. |
@@ -350,7 +351,7 @@ These features are powered by the VH3 AI layer — they use AI, machine learning
 | **Search Teams** | Full-text search across team names and descriptions (`GET /teams/search`). |
 | **Get Team** | Returns one team with members and entity links. |
 | **Update Team** | Updates provided fields only. |
-| **List Members** | Returns membership rows (user ID, role, membership ID). Cross-reference **List Users** for email and name. |
+| **List Members** | Returns membership rows with user ID, role, membership ID, `user_name`, and `user_email`. Recipients can be taken from this output without List Users. |
 | **Add Member** / **Remove Member** | Add or remove a user on the team. |
 | **List Entities** / **Add Entity** / **Remove Entity** | Link operational records (job, customer, site, …) to a team. |
 | **List Teams for Entity** | Reverse lookup — which teams include this record. |
@@ -555,7 +556,7 @@ All semantic search operations return one n8n item per result (pre-unwrapped for
 | Generate a customer account review | **Generate Account Report** (VH3 AI) |
 | Track an ongoing incident | **Case — Create Case** then link jobs/sites via **Add Case Item** (VH3 AI) |
 | Create a team from n8n | **Team — Create Team** (tenant API key; not Connect-UI-only) |
-| Email whoever is on a case's team | **Team — List Members** then **User — List Users** to resolve email |
+| Email whoever is on a case's team | **Team — List Members** (name and email are on each row) |
 
 ---
 
