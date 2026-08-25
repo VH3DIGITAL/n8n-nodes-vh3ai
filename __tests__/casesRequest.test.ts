@@ -1,6 +1,6 @@
 import type { INodeProperties, JsonObject } from 'n8n-workflow';
 
-import { buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from '../nodes/Vh3Ai/casesRequest';
+import { buildCaseDeleteRequest, buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from '../nodes/Vh3Ai/casesRequest';
 import { fsiCasesFields, fsiCasesOperations, participantRoleOptions } from '../nodes/Vh3Ai/descriptions/FsiCasesDescription';
 
 function findCollectionOption(
@@ -15,20 +15,23 @@ function findCollectionOption(
 	return undefined;
 }
 
-function findListCasesField(optionName: string): INodeProperties | undefined {
-	for (const field of fsiCasesFields) {
+function findOperationField(operation: string, fieldName: string): INodeProperties | undefined {
+	return fsiCasesFields.find((field) => {
 		const operations = field.displayOptions?.show?.operation;
-		if (
-			field.name !== 'additionalFields' ||
-			!Array.isArray(operations) ||
-			!operations.includes('listCases') ||
-			!Array.isArray(field.options)
-		) {
-			continue;
-		}
-		return (field.options as INodeProperties[]).find((option) => option.name === optionName);
+		return (
+			field.name === fieldName &&
+			Array.isArray(operations) &&
+			operations.includes(operation)
+		);
+	});
+}
+
+function findListCasesField(optionName: string): INodeProperties | undefined {
+	const collection = findOperationField('listCases', 'additionalFields');
+	if (!collection || !Array.isArray(collection.options)) {
+		return undefined;
 	}
-	return undefined;
+	return (collection.options as INodeProperties[]).find((option) => option.name === optionName);
 }
 
 function optionValues(field: INodeProperties | undefined): Array<string | number | boolean> {
@@ -101,6 +104,18 @@ describe('buildCaseUpdateRequest', () => {
 
 		expect(request.body.tags).toEqual(['urgent', 'site-a']);
 		expect(request.body.metadata).toEqual({ source: 'n8n' });
+	});
+
+	it('forwards object-shaped Tags without coercing them to an array', () => {
+		const fromJson = buildCaseUpdateRequest(7, {
+			tags: '{"source":"x","department":"y"}',
+		});
+		expect(fromJson.body.tags).toEqual({ source: 'x', department: 'y' });
+
+		const fromObject = buildCaseUpdateRequest(7, {
+			tags: { source: 'x', department: 'y' },
+		});
+		expect(fromObject.body.tags).toEqual({ source: 'x', department: 'y' });
 	});
 
 	it('treats selected empty JSON Tags/Metadata as collection clears', () => {
@@ -302,5 +317,103 @@ describe('Cases Update Field copy', () => {
 		expect(findOperation('updateCase').description).toMatch(/clears/i);
 		expect(findOperation('updateCase').description).toMatch(/Connect user ID/i);
 		expect(findOperation('updateCase').description).toMatch(/API-key owner/i);
+	});
+
+	it('documents Tags as a string array or object map on create and update', () => {
+		const createTags = findCollectionOption(fsiCasesFields, 'additionalFields', 'tags');
+		const updateTags = findCollectionOption(fsiCasesFields, 'updateFields', 'tags');
+
+		expect(createTags?.description).toMatch(/string array/i);
+		expect(createTags?.description).toMatch(/object map/i);
+		expect(updateTags?.description).toMatch(/string array/i);
+		expect(updateTags?.description).toMatch(/object map/i);
+		expect(updateTags?.description).toMatch(/empty array clears/i);
+	});
+
+	it('documents the Transition Case allowed-next matrix, not a linear draft-to-closed path', () => {
+		const targetStatus = fsiCasesFields.find(
+			(field) =>
+				field.name === 'targetStatus' &&
+				Array.isArray(field.displayOptions?.show?.operation) &&
+				field.displayOptions.show.operation.includes('transitionCase'),
+		);
+		const copy = [findOperation('transitionCase').description, targetStatus?.description].join(' ');
+
+		expect(copy).toMatch(/draft\s*→\s*open,\s*archived/);
+		expect(copy).toMatch(/open\s*→\s*in_progress,\s*archived/);
+		expect(copy).toMatch(/in_progress\s*→\s*under_review,\s*resolved,\s*archived/);
+		expect(copy).toMatch(/under_review\s*→\s*resolved,\s*archived/);
+		expect(copy).toMatch(/resolved\s*→\s*closed,\s*in_progress\s*\(reopen\),\s*archived/);
+		expect(copy).toMatch(/closed\s*→\s*in_progress\s*\(reopen\),\s*archived/);
+		expect(copy).toMatch(/archived.*terminal/i);
+		expect(copy).not.toMatch(/draft\s*→\s*open\s*→\s*in_progress/);
+	});
+
+	it('exposes Delete Case as an archive-for-audit operation, not a hard delete or restore', () => {
+		const operation = findOperation('deleteCase');
+		const action = 'action' in operation ? operation.action : undefined;
+		const copy = [operation.name, action, operation.description].join(' ');
+
+		expect(operation.name).toBe('Delete Case');
+		expect(action).toBe('Delete a case');
+		expect(operation.description).not.toMatch(/^delete case$/i);
+		expect(copy).toMatch(/archive/i);
+		expect(copy).toMatch(/audit/i);
+		expect(copy).toMatch(/does not permanently delete/i);
+		expect(copy).toMatch(/does not.*restore/i);
+		expect(fsiCasesOperations[0]?.options?.some(
+			(option) => 'value' in option && /un-?archive|restore/i.test(String(option.value)),
+		)).toBe(false);
+	});
+
+	it('shows Case ID and optional Actor Type / Actor ID on Delete Case, without a comment', () => {
+		const caseId = findOperationField('deleteCase', 'caseId');
+		const additionalFields = findOperationField('deleteCase', 'additionalFields');
+		const optionNames = Array.isArray(additionalFields?.options)
+			? (additionalFields.options as INodeProperties[]).map((option) => option.name)
+			: [];
+
+		expect(caseId?.required).toBe(true);
+		expect(optionNames).toEqual(['actorId', 'actorType']);
+		expect(optionNames).not.toContain('comment');
+		expect(findOperationField('deleteCase', 'targetStatus')).toBeUndefined();
+	});
+});
+
+describe('buildCaseDeleteRequest', () => {
+	it('archives via the existing transition endpoint and never hard-deletes', () => {
+		const request = buildCaseDeleteRequest(42, {});
+
+		expect(request).toEqual({
+			method: 'POST',
+			endpoint: '/cases/42/transition',
+			body: { status: 'archived' },
+		});
+		expect(JSON.stringify(request)).not.toMatch(/DELETE|un-?archive|restore/i);
+	});
+
+	it('forwards optional actors the same way Transition Case does', () => {
+		const request = buildCaseDeleteRequest(42, {
+			actorType: 'user',
+			actorId: 88,
+		});
+
+		expect(request.body).toEqual({
+			status: 'archived',
+			actor_type: 'user',
+			actor_id: 88,
+		});
+	});
+
+	it('omits unselected actors and never sends a comment', () => {
+		const request = buildCaseDeleteRequest(42, {});
+
+		expect(request.body).not.toHaveProperty('actor_type');
+		expect(request.body).not.toHaveProperty('actor_id');
+		expect(request.body).not.toHaveProperty('comment');
+	});
+
+	it('omits zero Actor ID so the API-key owner fallback applies', () => {
+		expect(buildCaseDeleteRequest(7, { actorId: 0 }).body).not.toHaveProperty('actor_id');
 	});
 });

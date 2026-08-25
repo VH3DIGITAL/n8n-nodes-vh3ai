@@ -48,7 +48,7 @@ export const fsiTeamsOperations: INodeProperties[] = [
 				name: 'Create Team',
 				value: 'createTeam',
 				action: 'Create a team',
-				description: 'Create a new team with name and optional purpose, description, and metadata',
+				description: 'Create a team with the tenant API key. Name required; optional purpose, description, and metadata. Connect UI edit of an existing team still requires team-lead or manager.',
 			},
 			{
 				name: 'Get Team',
@@ -72,7 +72,7 @@ export const fsiTeamsOperations: INodeProperties[] = [
 				name: 'List Teams',
 				value: 'listTeams',
 				action: 'List teams',
-				description: 'List teams for the company with optional purpose and name filters',
+				description: 'List teams for the company. Optional purpose and Search filters are live tenant-key query params.',
 			},
 			{
 				name: 'List Teams for Entity',
@@ -96,7 +96,7 @@ export const fsiTeamsOperations: INodeProperties[] = [
 				name: 'Search Teams',
 				value: 'searchTeams',
 				action: 'Search teams',
-				description: 'Full-text search across team names and descriptions',
+				description: 'Full-text search across team names and descriptions. Live tenant-key operation, not Connect-UI-only.',
 			},
 			{
 				name: 'Update Team',

@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-vh3ai",
-	"version": "0.11.2",
+	"version": "0.11.3",
 	"description": "n8n community node for the VH3 AI API — jobs, contacts, resources, vehicles, worksheets, invoices, quotes, teams, and more.",
 	"keywords": [
 		"n8n-community-node-package",

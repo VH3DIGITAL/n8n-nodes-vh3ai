@@ -315,14 +315,15 @@ These features are powered by the VH3 AI layer — they use AI, machine learning
 
 **Case Types:** Audit, Case Study, Compliance, Incident, Investigation, Project Review
 
-**Case Statuses:** Draft → Open → In Progress → Under Review → Resolved → Closed → Archived
+**Case Statuses:** draft, open, in_progress, under_review, resolved, closed, archived (not a straight line — see Transition Case)
 
 | Operation | What It Does |
 |---|---|
 | **Create Case** | Opens a new case in **draft** with a title and type. Optional: priority, tags, description, due date. |
 | **Get Case** | Returns full case detail including participants, linked items, and latest activity. |
 | **Update Case** | Updates selected fields only. Unselected fields are preserved. Adding an empty Description, Resolution, Tags, or Metadata, or using Clear Due Date, clears that value. Title cannot be empty. Actor ID is a Connect user ID; omit or 0 uses the API-key owner. |
-| **Transition Case** | Moves a case to a new status (e.g. from Open to In Progress). Includes lifecycle validation. |
+| **Transition Case** | Moves a case to an allowed next status: draft → open, archived; open → in_progress, archived; in_progress → under_review, resolved, archived; under_review → resolved, archived; resolved → closed, in_progress (reopen), archived; closed → in_progress (reopen), archived; archived is terminal. Invalid transitions fail with the permitted-next list. |
+| **Delete Case** | Archives a case for audit via the same transition path (`status: archived`). The record, linked items, and activity stay. Does not permanently delete or restore. |
 | **Search Cases** | Full-text search across case titles and descriptions. |
 | **List Cases** | Lists cases with filtering by status, type, priority, owner, or search. Optional Scope (`active` / `all` / `closed`), Sort, and Order map to the FSI API. Sorting is server-side. Omitted Scope, Sort, and Order use the FSI API defaults. Exact Status overrides Scope. |
 | **Add Comment** | Adds a comment to the case activity timeline. |
@@ -333,6 +334,27 @@ These features are powered by the VH3 AI layer — they use AI, machine learning
 | **Add Participant** | Adds a user to the case with a role. Roles are exactly owner, investigator, reviewer, observer, and contributor. |
 | **Remove Participant** | Removes a participant from a case. |
 | **List Cases for Item** | Reverse lookup — finds all cases that reference a specific job, site, or customer. |
+| **Assign Team** | Assigns or clears the Case Assigned Team. Team ID `0` clears. Safe to call on every refresh. |
+
+---
+
+### Teams (VH3 AI)
+
+**What it does:** Organise Connect users into teams, assign a team to a case, and resolve who should get a notification from live membership.
+
+**Create Team and Search Teams are live tenant-key operations** — usable from n8n with the company API key. They are not type-definition stubs and do not require a Connect UI session. Editing an **existing** team in Connect still requires team-lead or manager rights on that team.
+
+| Operation | What It Does |
+|---|---|
+| **Create Team** | Creates a team (`POST /teams/create`). Name required; optional purpose, description, and metadata. |
+| **List Teams** | Lists teams for the company. Optional purpose and Search (name) filters are sent to the API. |
+| **Search Teams** | Full-text search across team names and descriptions (`GET /teams/search`). |
+| **Get Team** | Returns one team with members and entity links. |
+| **Update Team** | Updates provided fields only. |
+| **List Members** | Returns membership rows with user ID, role, membership ID, `user_name`, and `user_email`. Recipients can be taken from this output without List Users. |
+| **Add Member** / **Remove Member** | Add or remove a user on the team. |
+| **List Entities** / **Add Entity** / **Remove Entity** | Link operational records (job, customer, site, …) to a team. |
+| **List Teams for Entity** | Reverse lookup — which teams include this record. |
 
 ---
 
@@ -533,6 +555,8 @@ All semantic search operations return one n8n item per result (pre-unwrapped for
 | Get an overview of business health | **Get Pulse** (VH3 AI) |
 | Generate a customer account review | **Generate Account Report** (VH3 AI) |
 | Track an ongoing incident | **Case — Create Case** then link jobs/sites via **Add Case Item** (VH3 AI) |
+| Create a team from n8n | **Team — Create Team** (tenant API key; not Connect-UI-only) |
+| Email whoever is on a case's team | **Team — List Members** (name and email are on each row) |
 
 ---
 

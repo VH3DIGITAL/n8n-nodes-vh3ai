@@ -458,7 +458,8 @@ Set workflow/node timeout to ≥ 30 s for narrative reports.
 | `searchCases`      | Full-text search across title and description                                                                                        |
 | `getCase`          | Returns participants, items, latest activity                                                                                         |
 | `updateCase`       | Presence-based PATCH — unselected Update Fields are omitted and preserved. Selected empty Description/Resolution send `""`; Tags `[]` and Metadata `{}` clear. Clear Due Date sends `due_date: null` (never an empty date string). Empty title is rejected. Type remains patchable. Actor ID is a Connect user ID; omit/0 uses the API-key owner. One PATCH, no GET-and-merge. |
-| `transitionCase`   | Lifecycle-validated status changes. Statuses: `draft` → `open` → `in_progress` → `under_review` → `resolved` → `closed` / `archived` |
+| `transitionCase`   | Lifecycle-validated status changes. Allowed next: `draft` → `open`, `archived`; `open` → `in_progress`, `archived`; `in_progress` → `under_review`, `resolved`, `archived`; `under_review` → `resolved`, `archived`; `resolved` → `closed`, `in_progress` (reopen), `archived`; `closed` → `in_progress` (reopen), `archived`; `archived` is terminal. Invalid transitions fail with the permitted-next list. |
+| `deleteCase`       | Archives via the same transition endpoint (`POST /cases/{id}/transition`, `status: archived`). Optional `actorType` / `actorId`. Does not permanently delete or restore. A second call on an archived case fails as a terminal transition. |
 | `addComment`       | Adds to activity timeline                                                                                                            |
 | `addParticipant`   | Roles are exactly `owner`, `investigator`, `reviewer`, `observer`, `contributor`                                                     |
 | `addCaseItem`      | Links a job, customer, site, engineer, job group, note, or document                                                                  |
@@ -552,6 +553,23 @@ so follow-up messages retain context.
 | `inviteUser`     | `email`, `role`, `companyName`, `inviterName`        | Roles: `admin`, `manager`, `user` |
 | `updateUserRole` | `userId`, `role`                                     | — |
 | `deleteUser`     | `userId`                                             | Soft-delete (archive) — not permanent |
+
+### 6.15 Team (`teams`)
+
+
+| Operation            | Notes                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `createTeam`         | Live tenant-key write (`POST /teams/create`). `name` required. Optional `purpose`, `description`, `metadata`, actor fields. Usable from n8n with the company API key — not a type-only stub. Connect UI edit of an existing team still requires team-lead or manager on that team. |
+| `listTeams`          | Filter by `purpose`, `search` (name), `page`, `perPage`. `search` is a live query param.                                              |
+| `searchTeams`        | Live tenant-key full-text search (`GET /teams/search?q=`). Optional `page`, `perPage`.                                                |
+| `getTeam`            | Team plus members and entity links                                                                                                    |
+| `updateTeam`         | Presence-based PATCH — only provided fields change                                                                                    |
+| `listTeamMembers`    | Membership rows (`user_id`, role, membership id, `user_name`, `user_email`). Recipients can be taken from this output without `users:listUsers`. |
+| `addTeamMember`      | `userId` + `role`                                                                                                                     |
+| `removeTeamMember`   | By membership id                                                                                                                      |
+| `listTeamEntities` / `addTeamEntity` / `removeTeamEntity` | Entity links (job, customer, site, …)                                                                              |
+| `listTeamsForEntity` | Reverse lookup — teams that include a given entity                                                                                    |
+
 
 ---
 

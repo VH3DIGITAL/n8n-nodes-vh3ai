@@ -96,6 +96,12 @@ export const fsiCasesOperations: INodeProperties[] = [
 				description: 'Create a new case in draft with title, type, and optional priority, tags, and metadata',
 			},
 			{
+				name: 'Delete Case',
+				value: 'deleteCase',
+				action: 'Delete a case',
+				description: 'Archive a case for audit. The record, linked items, and activity stay. Does not permanently delete or restore.',
+			},
+			{
 				name: 'Get Case',
 				value: 'getCase',
 				action: 'Get a case',
@@ -147,7 +153,7 @@ export const fsiCasesOperations: INodeProperties[] = [
 				name: 'Transition Case',
 				value: 'transitionCase',
 				action: 'Transition case status',
-				description: 'Transition a case to a new status with lifecycle validation',
+				description: 'Transition a case to an allowed next status. Invalid transitions fail with the permitted-next list.',
 			},
 			{
 				name: 'Update Case',
@@ -195,7 +201,7 @@ export const fsiCasesFields: INodeProperties[] = [
 			{ displayName: 'Due Date', name: 'dueDate', type: 'dateTime', default: '', description: 'Optional case deadline' },
 			{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '{}', description: 'Extensible key-value store for custom data' },
 			{ displayName: 'Priority', name: 'priority', type: 'options', options: casePriorityOptions, default: 'medium', description: 'Case priority level' },
-			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Array of strings for flexible categorisation' },
+			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'String array or object map. Examples: ["urgent","site-a"] or {"source":"x","department":"y"}.' },
 		],
 	},
 
@@ -318,7 +324,7 @@ export const fsiCasesFields: INodeProperties[] = [
 			{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '{}', description: 'Updated metadata object. An empty object clears current metadata.' },
 			{ displayName: 'Priority', name: 'priority', type: 'options', options: casePriorityOptions, default: 'medium', description: 'Updated priority' },
 			{ displayName: 'Resolution', name: 'resolution', type: 'string', default: '', description: 'Resolution summary. An empty value clears the current resolution.' },
-			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Updated tags array. An empty array clears all tags.' },
+			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Same shapes as create: a string array or object map. An empty array clears all tags.' },
 			{ displayName: 'Title', name: 'title', type: 'string', default: '', description: 'Updated case title. Empty or whitespace-only titles are rejected.' },
 			{ displayName: 'Type', name: 'type', type: 'options', options: caseTypeOptions, default: 'incident', description: 'Updated case type' },
 		],
@@ -341,7 +347,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		required: true,
 		options: caseStatusOptions,
 		default: 'open',
-		description: 'The target status to transition to',
+		description: 'Allowed next statuses from the current one: draft → open, archived; open → in_progress, archived; in_progress → under_review, resolved, archived; under_review → resolved, archived; resolved → closed, in_progress (reopen), archived; closed → in_progress (reopen), archived; archived is terminal. Invalid transitions fail with the permitted-next list.',
 		displayOptions: { show: { resource: ['cases'], operation: ['transitionCase'] } },
 	},
 	{
@@ -355,6 +361,29 @@ export const fsiCasesFields: INodeProperties[] = [
 			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is performing the transition' },
 			{ displayName: 'Comment', name: 'comment', type: 'string', default: '', description: 'Optional comment explaining the transition' },
+		],
+	},
+
+	// ── Delete Case ──
+	{
+		displayName: 'Case ID',
+		name: 'caseId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'ID of the case to archive',
+		displayOptions: { show: { resource: ['cases'], operation: ['deleteCase'] } },
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: { show: { resource: ['cases'], operation: ['deleteCase'] } },
+		options: [
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
+			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is archiving the case' },
 		],
 	},
 

@@ -34,7 +34,7 @@ import {
 	unwrapFsiList,
 	parseJsonField,
 } from './GenericFunctions';
-import { buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
+import { buildCaseDeleteRequest, buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
 import { contactsOperations, contactsFields } from './descriptions/ContactsDescription';
@@ -2436,6 +2436,12 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
 						if (additionalFields.comment) body.comment = additionalFields.comment;
 						const raw = await vh3FsiPostRequest.call(this, `/cases/${caseId}/transition`, body);
+						responseData = [raw];
+					} else if (operation === 'deleteCase') {
+						const caseId = this.getNodeParameter('caseId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
+						const request = buildCaseDeleteRequest(caseId, additionalFields);
+						const raw = await vh3FsiPostRequest.call(this, request.endpoint, request.body);
 						responseData = [raw];
 					} else if (operation === 'addComment') {
 						const caseId = this.getNodeParameter('caseId', i) as number;

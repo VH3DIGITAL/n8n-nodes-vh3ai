@@ -12,6 +12,12 @@ export type CaseUpdateRequest = {
 	body: JsonObject;
 };
 
+export type CaseDeleteRequest = {
+	method: 'POST';
+	endpoint: string;
+	body: JsonObject;
+};
+
 export class CaseUpdateValidationError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -157,6 +163,25 @@ export function buildCaseUpdateRequest(
 	return {
 		method: 'PATCH',
 		endpoint: `/cases/${caseId}`,
+		body,
+	};
+}
+
+/**
+ * Build the FSI POST that archives a case through the existing transition path.
+ * Always targets status archived. Never issues a hard delete or restore.
+ */
+export function buildCaseDeleteRequest(
+	caseId: number,
+	additionalFields: JsonObject,
+): CaseDeleteRequest {
+	const body: JsonObject = { status: 'archived' };
+	if (additionalFields.actorType) body.actor_type = additionalFields.actorType;
+	if (additionalFields.actorId) body.actor_id = additionalFields.actorId;
+
+	return {
+		method: 'POST',
+		endpoint: `/cases/${caseId}/transition`,
 		body,
 	};
 }
