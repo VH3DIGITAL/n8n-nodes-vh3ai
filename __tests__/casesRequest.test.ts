@@ -103,6 +103,18 @@ describe('buildCaseUpdateRequest', () => {
 		expect(request.body.metadata).toEqual({ source: 'n8n' });
 	});
 
+	it('forwards object-shaped Tags without coercing them to an array', () => {
+		const fromJson = buildCaseUpdateRequest(7, {
+			tags: '{"source":"x","department":"y"}',
+		});
+		expect(fromJson.body.tags).toEqual({ source: 'x', department: 'y' });
+
+		const fromObject = buildCaseUpdateRequest(7, {
+			tags: { source: 'x', department: 'y' },
+		});
+		expect(fromObject.body.tags).toEqual({ source: 'x', department: 'y' });
+	});
+
 	it('treats selected empty JSON Tags/Metadata as collection clears', () => {
 		const request = buildCaseUpdateRequest(7, {
 			tags: '',
@@ -302,5 +314,16 @@ describe('Cases Update Field copy', () => {
 		expect(findOperation('updateCase').description).toMatch(/clears/i);
 		expect(findOperation('updateCase').description).toMatch(/Connect user ID/i);
 		expect(findOperation('updateCase').description).toMatch(/API-key owner/i);
+	});
+
+	it('documents Tags as a string array or object map on create and update', () => {
+		const createTags = findCollectionOption(fsiCasesFields, 'additionalFields', 'tags');
+		const updateTags = findCollectionOption(fsiCasesFields, 'updateFields', 'tags');
+
+		expect(createTags?.description).toMatch(/string array/i);
+		expect(createTags?.description).toMatch(/object map/i);
+		expect(updateTags?.description).toMatch(/string array/i);
+		expect(updateTags?.description).toMatch(/object map/i);
+		expect(updateTags?.description).toMatch(/empty array clears/i);
 	});
 });

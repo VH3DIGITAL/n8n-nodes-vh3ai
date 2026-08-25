@@ -195,7 +195,7 @@ export const fsiCasesFields: INodeProperties[] = [
 			{ displayName: 'Due Date', name: 'dueDate', type: 'dateTime', default: '', description: 'Optional case deadline' },
 			{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '{}', description: 'Extensible key-value store for custom data' },
 			{ displayName: 'Priority', name: 'priority', type: 'options', options: casePriorityOptions, default: 'medium', description: 'Case priority level' },
-			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Array of strings for flexible categorisation' },
+			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'String array or object map. Examples: ["urgent","site-a"] or {"source":"x","department":"y"}.' },
 		],
 	},
 
@@ -318,7 +318,7 @@ export const fsiCasesFields: INodeProperties[] = [
 			{ displayName: 'Metadata (JSON)', name: 'metadata', type: 'json', default: '{}', description: 'Updated metadata object. An empty object clears current metadata.' },
 			{ displayName: 'Priority', name: 'priority', type: 'options', options: casePriorityOptions, default: 'medium', description: 'Updated priority' },
 			{ displayName: 'Resolution', name: 'resolution', type: 'string', default: '', description: 'Resolution summary. An empty value clears the current resolution.' },
-			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Updated tags array. An empty array clears all tags.' },
+			{ displayName: 'Tags (JSON)', name: 'tags', type: 'json', default: '[]', description: 'Same shapes as create: a string array or object map. An empty array clears all tags.' },
 			{ displayName: 'Title', name: 'title', type: 'string', default: '', description: 'Updated case title. Empty or whitespace-only titles are rejected.' },
 			{ displayName: 'Type', name: 'type', type: 'options', options: caseTypeOptions, default: 'incident', description: 'Updated case type' },
 		],
