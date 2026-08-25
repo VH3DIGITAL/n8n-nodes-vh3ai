@@ -7,6 +7,15 @@ docs/ROLLBACK-*.md
 # Build output
 *.tsbuildinfo
 
+# Local agent tickets / specs / one-off verification scripts
+.scratch/
+tmp/
+test-scripts/
+scripts/tmp/
+scripts/test-*.sh
+scripts/verify-*.sh
+*.local.sh
+
 # Editor
 .idea/
 .vscode/

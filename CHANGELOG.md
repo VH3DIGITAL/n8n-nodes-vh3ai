@@ -4,6 +4,14 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [Unreleased]
+
+### Changed
+
+- **Case › Tags** — Create and Update field copy now documents both a string array and an object map (the shapes the FSI proxy accepts).
+- **Case › Transition Case** — help text and guides publish the allowed-next matrix (including archive and reopen). The path is not a straight line from draft to closed.
+- **Team** — Create Team, Search Teams, and List Teams search are documented as live tenant-key operations. Connect UI edit of an existing team still requires team-lead or manager.
+
 ## [0.11.2] — 2026-08-24
 
 ### Added

@@ -553,6 +553,23 @@ so follow-up messages retain context.
 | `updateUserRole` | `userId`, `role`                                     | — |
 | `deleteUser`     | `userId`                                             | Soft-delete (archive) — not permanent |
 
+### 6.15 Team (`teams`)
+
+
+| Operation            | Notes                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `createTeam`         | Live tenant-key write (`POST /teams/create`). `name` required. Optional `purpose`, `description`, `metadata`, actor fields. Usable from n8n with the company API key — not a type-only stub. Connect UI edit of an existing team still requires team-lead or manager on that team. |
+| `listTeams`          | Filter by `purpose`, `search` (name), `page`, `perPage`. `search` is a live query param.                                              |
+| `searchTeams`        | Live tenant-key full-text search (`GET /teams/search?q=`). Optional `page`, `perPage`.                                                |
+| `getTeam`            | Team plus members and entity links                                                                                                    |
+| `updateTeam`         | Presence-based PATCH — only provided fields change                                                                                    |
+| `listTeamMembers`    | Membership rows (`user_id`, role, membership id). Resolve email/name via `users:listUsers` until the proxy returns them inline.       |
+| `addTeamMember`      | `userId` + `role`                                                                                                                     |
+| `removeTeamMember`   | By membership id                                                                                                                      |
+| `listTeamEntities` / `addTeamEntity` / `removeTeamEntity` | Entity links (job, customer, site, …)                                                                              |
+| `listTeamsForEntity` | Reverse lookup — teams that include a given entity                                                                                    |
+
+
 ---
 
 ## 7. BigChange CRUD resources — operation summary
