@@ -96,6 +96,12 @@ export const fsiCasesOperations: INodeProperties[] = [
 				description: 'Create a new case in draft with title, type, and optional priority, tags, and metadata',
 			},
 			{
+				name: 'Delete Case',
+				value: 'deleteCase',
+				action: 'Delete a case',
+				description: 'Archive a case for audit. The record, linked items, and activity stay. Does not permanently delete or restore.',
+			},
+			{
 				name: 'Get Case',
 				value: 'getCase',
 				action: 'Get a case',
@@ -355,6 +361,29 @@ export const fsiCasesFields: INodeProperties[] = [
 			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
 			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is performing the transition' },
 			{ displayName: 'Comment', name: 'comment', type: 'string', default: '', description: 'Optional comment explaining the transition' },
+		],
+	},
+
+	// ── Delete Case ──
+	{
+		displayName: 'Case ID',
+		name: 'caseId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'ID of the case to archive',
+		displayOptions: { show: { resource: ['cases'], operation: ['deleteCase'] } },
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: { show: { resource: ['cases'], operation: ['deleteCase'] } },
+		options: [
+			{ displayName: 'Actor ID', name: 'actorId', type: 'number', default: 0, description: actorIdDescription },
+			{ displayName: 'Actor Type', name: 'actorType', type: 'options', options: actorTypeOptions, default: 'user', description: 'Who is archiving the case' },
 		],
 	},
 
