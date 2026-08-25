@@ -315,14 +315,14 @@ These features are powered by the VH3 AI layer — they use AI, machine learning
 
 **Case Types:** Audit, Case Study, Compliance, Incident, Investigation, Project Review
 
-**Case Statuses:** Draft → Open → In Progress → Under Review → Resolved → Closed → Archived
+**Case Statuses:** draft, open, in_progress, under_review, resolved, closed, archived (not a straight line — see Transition Case)
 
 | Operation | What It Does |
 |---|---|
 | **Create Case** | Opens a new case in **draft** with a title and type. Optional: priority, tags, description, due date. |
 | **Get Case** | Returns full case detail including participants, linked items, and latest activity. |
 | **Update Case** | Updates selected fields only. Unselected fields are preserved. Adding an empty Description, Resolution, Tags, or Metadata, or using Clear Due Date, clears that value. Title cannot be empty. Actor ID is a Connect user ID; omit or 0 uses the API-key owner. |
-| **Transition Case** | Moves a case to a new status (e.g. from Open to In Progress). Includes lifecycle validation. |
+| **Transition Case** | Moves a case to an allowed next status: draft → open, archived; open → in_progress, archived; in_progress → under_review, resolved, archived; under_review → resolved, archived; resolved → closed, in_progress (reopen), archived; closed → in_progress (reopen), archived; archived is terminal. Invalid transitions fail with the permitted-next list. |
 | **Search Cases** | Full-text search across case titles and descriptions. |
 | **List Cases** | Lists cases with filtering by status, type, priority, owner, or search. Optional Scope (`active` / `all` / `closed`), Sort, and Order map to the FSI API. Sorting is server-side. Omitted Scope, Sort, and Order use the FSI API defaults. Exact Status overrides Scope. |
 | **Add Comment** | Adds a comment to the case activity timeline. |

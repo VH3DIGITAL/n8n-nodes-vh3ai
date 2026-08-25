@@ -147,7 +147,7 @@ export const fsiCasesOperations: INodeProperties[] = [
 				name: 'Transition Case',
 				value: 'transitionCase',
 				action: 'Transition case status',
-				description: 'Transition a case to a new status with lifecycle validation',
+				description: 'Transition a case to an allowed next status. Invalid transitions fail with the permitted-next list.',
 			},
 			{
 				name: 'Update Case',
@@ -341,7 +341,7 @@ export const fsiCasesFields: INodeProperties[] = [
 		required: true,
 		options: caseStatusOptions,
 		default: 'open',
-		description: 'The target status to transition to',
+		description: 'Allowed next statuses from the current one: draft → open, archived; open → in_progress, archived; in_progress → under_review, resolved, archived; under_review → resolved, archived; resolved → closed, in_progress (reopen), archived; closed → in_progress (reopen), archived; archived is terminal. Invalid transitions fail with the permitted-next list.',
 		displayOptions: { show: { resource: ['cases'], operation: ['transitionCase'] } },
 	},
 	{

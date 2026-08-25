@@ -326,4 +326,23 @@ describe('Cases Update Field copy', () => {
 		expect(updateTags?.description).toMatch(/object map/i);
 		expect(updateTags?.description).toMatch(/empty array clears/i);
 	});
+
+	it('documents the Transition Case allowed-next matrix, not a linear draft-to-closed path', () => {
+		const targetStatus = fsiCasesFields.find(
+			(field) =>
+				field.name === 'targetStatus' &&
+				Array.isArray(field.displayOptions?.show?.operation) &&
+				field.displayOptions.show.operation.includes('transitionCase'),
+		);
+		const copy = [findOperation('transitionCase').description, targetStatus?.description].join(' ');
+
+		expect(copy).toMatch(/draft\s*→\s*open,\s*archived/);
+		expect(copy).toMatch(/open\s*→\s*in_progress,\s*archived/);
+		expect(copy).toMatch(/in_progress\s*→\s*under_review,\s*resolved,\s*archived/);
+		expect(copy).toMatch(/under_review\s*→\s*resolved,\s*archived/);
+		expect(copy).toMatch(/resolved\s*→\s*closed,\s*in_progress\s*\(reopen\),\s*archived/);
+		expect(copy).toMatch(/closed\s*→\s*in_progress\s*\(reopen\),\s*archived/);
+		expect(copy).toMatch(/archived.*terminal/i);
+		expect(copy).not.toMatch(/draft\s*→\s*open\s*→\s*in_progress/);
+	});
 });
