@@ -4,6 +4,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 	JsonObject,
+	JsonValue,
 } from 'n8n-workflow';
 import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
@@ -35,6 +36,7 @@ import {
 	parseJsonField,
 } from './GenericFunctions';
 import { buildCaseDeleteRequest, buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
+import { buildPortalIngestBody, portalIngestNodeOutput, SourceEmailValidationError } from './emailIngest';
 
 import { jobsOperations, jobsFields } from './descriptions/JobsDescription';
 import { contactsOperations, contactsFields } from './descriptions/ContactsDescription';
@@ -2049,15 +2051,25 @@ export class Vh3Ai implements INodeType {
 						const emailSubject = this.getNodeParameter('emailSubject', i) as string;
 						const emailFrom = this.getNodeParameter('emailFrom', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
-						const body: JsonObject = { email_text: emailText, email_subject: emailSubject, email_from: emailFrom, attachments: attachments as unknown as JsonObject, preferred_type_ids: [] as unknown as JsonObject };
-						if (additionalFields.emailHtml) body.email_html = additionalFields.emailHtml;
-						if (additionalFields.emailDate) body.email_date = additionalFields.emailDate;
-						const typeIdsRaw = (additionalFields.preferredTypeIds as string) || '';
-						if (typeIdsRaw.trim()) {
-							body.preferred_type_ids = typeIdsRaw.split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n)) as unknown as JsonObject;
+						const sourceEmail = this.getNodeParameter('sourceEmail', i, '{}');
+						let body: JsonObject;
+						try {
+							body = buildPortalIngestBody({
+								emailText,
+								emailSubject,
+								emailFrom,
+								attachments: attachments as unknown as JsonValue,
+								additionalFields,
+								sourceEmail,
+							});
+						} catch (error) {
+							const message = error instanceof SourceEmailValidationError
+								? error.message
+								: (error as Error).message;
+							throw new NodeOperationError(this.getNode(), message);
 						}
 						const raw = await vh3FsiPostRequest.call(this, '/ingest/email/portal', body);
-						responseData = [raw];
+						responseData = [portalIngestNodeOutput(raw)];
 					}
 				}
 

@@ -159,6 +159,20 @@ export const fsiEmailFields: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Source Email',
+		name: 'sourceEmail',
+		type: 'json',
+		default: '{}',
+		description:
+			'Optional provider provenance object forwarded as sourceEmail. When set, include provider, mailboxLocator, and providerMessageId. Identifiers are sent unchanged. Leave empty to omit.',
+		displayOptions: {
+			show: {
+				resource: ['email'],
+				operation: ['ingestEmail'],
+			},
+		},
+	},
 
 	// ══════════════════════════════════════════════════════════════════════
 	// Shared attachment fields — both operations
@@ -353,8 +367,8 @@ export const fsiEmailFields: INodeProperties[] = [
 		},
 		options: [
 			{ name: 'All Phases', value: '' },
-			{ name: 'Pre-Classify (noise filters)', value: 'pre_classify' },
-			{ name: 'Post-Classify (routing decisions)', value: 'post_classify' },
+			{ name: 'Pre-Classify (Noise Filters)', value: 'pre_classify' },
+			{ name: 'Post-Classify (Routing Decisions)', value: 'post_classify' },
 		],
 	},
 ];
