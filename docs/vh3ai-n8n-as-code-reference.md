@@ -487,7 +487,7 @@ so follow-up messages retain context.
 | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `classifyEmail`        | `subject` + `emailBody` + `senderAddress` required. Supports attachment via URL or binary data.            |
 | `batchClassifyEmail`   | JSON array of up to 50 email objects. Portal/pre-filter hits are instant; novel emails consume LLM tokens. |
-| `ingestEmail`          | Extracts structured job data from FM portal emails. Returns resolved entities and a `status` field. Always Switch on `status` downstream. |
+| `ingestEmail`          | Extracts structured job data from FM portal emails via `/ingest/email/portal`. Optional JSON `sourceEmail` is forwarded unchanged when set and echoed on the response (`null` when omitted). Always Switch on `status` downstream. |
 | `listTriageCategories` | Returns active categories with priority, destination, and prompt rules.                                                                   |
 | `listTaxonomyRules`    | Filter by `phase`: `pre_classify` (noise filters) or `post_classify` (routing decisions).                                                 |
 
@@ -499,6 +499,12 @@ so follow-up messages retain context.
 | `Review` | Ambiguity or missing data — route to human review queue |
 | `Unprocessable` | Email could not be parsed as a portal job email |
 | `Rejected` | Matched a noise or exclusion rule — discard silently |
+
+**`sourceEmail` (optional, 0.11.4+)** — provider provenance object. Send it as a top-level JSON parameter on `ingestEmail`. The node forwards it unchanged on `POST /ingest/email/portal`. Do not put mailbox or message ids in `emailText`, PDF prompts, `preferredTypeIds`, notification bodies, or info logs. `company_id` and `api_key` stay in the VH3 AI credential.
+
+When set, required keys: `provider` (`microsoft_graph` or `gmail`), `mailboxLocator` (durable mailbox / UPN / user id — never `me`, `/me`, or `users/me`), `providerMessageId` (provider resource id, not RFC Message-ID and not `conversationId`). Optional: `providerMessageIdFormat` (`restId` or `restImmutableEntryId`, Graph only), `providerThreadId`, `internetMessageId`, `providerConversationIndex`, `webUrl`. Preserve identifiers exactly.
+
+When omitted or `{}`, the request matches 0.11.3 and FSI returns `sourceEmail: null`. The node output includes the echoed `sourceEmail` plus `status`, `jobPreview`, `reviewFlags`, `contactCreatePreview`, `caseId`, and `surface`. Do not rebuild `sourceEmail` from subject, sender, or date.
 
 **PDF vs HTML input**: Many FM portals send job orders as PDF attachments rather than HTML body. The `ingestEmail` operation accepts plain text (`emailText`) — it does not process binary PDFs directly. For PDF-based portals, extract the text first using n8n's **Extract From File** node before passing it to `ingestEmail`. Build your workflow to switch on whether the email has a PDF attachment and handle both paths feeding the same `ingestEmail` node.
 
@@ -771,7 +777,7 @@ Outlook trigger (new email)
   → Switch: has PDF attachment?
     → [PDF]  Get Binary Attachment → Extract From File (PDF→text)
     → [HTML] extract body text
-  → VH3 AI: Email — Ingest Email (emailText + preferredTypeIds from config)
+  → VH3 AI: Email — Ingest Email (emailText + preferredTypeIds from config; optional sourceEmail)
   → Switch: ingestEmail.status
     → "Create":
         → VH3 AI: Job Type — Get All (fetch schema for matched type)

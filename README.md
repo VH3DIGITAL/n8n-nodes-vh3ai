@@ -88,7 +88,7 @@ All operations authenticate using the same API Key and Company ID credentials.
 | **Case (VH3 AI)**           | Create / Get / Update / Search / List Cases · Transition Case · Assign Team · Add Comment · List Activity · List / Add / Remove Case Items · Add / Remove Participants · List Cases for Item. Update Case is presence-safe. List Cases can pass FSI Scope, Sort, and Order. |
 | **Connie (VH3 AI)**         | Chat · Generate Summary · List Sessions · Get Session Messages · Search History                                                                                                                                                            |
 | **Contact Feed (VH3 AI)**   | List Contact Feed · Get Enriched Contact                                                                                                                                                                                                   |
-| **Email (VH3 AI)**          | Batch Classify Emails · Classify Email · Ingest Portal Email · List Triage Categories · List Triage Rules                                                                                                                                  |
+| **Email (VH3 AI)**          | Batch Classify Emails · Classify Email · Ingest Portal Email (optional `sourceEmail`) · List Triage Categories · List Triage Rules                                                                                                          |
 | **Intelligence (VH3 AI)**   | List Profiles (with **Profiled Only** filter) · Get Profile · Generate Profiles                                                                                                                                                            |
 | **Investigate (VH3 AI)**    | Run Investigation (multi-step hybrid investigation across vector + graph data)                                                                                                                                                             |
 | **Job Feed (VH3 AI)**       | List Job Feed · List Account Job Feed · Get Enriched Job · Aggregate Jobs (metrics with grouping, time-axis control, period-over-period comparison)                                                                                        |
@@ -123,9 +123,11 @@ The **Search › Autocomplete** operation also has a **Simplify** toggle (defaul
 
 BigChange's finance list endpoints reject requests with no filter or date range. When no filter is supplied, the node automatically scopes the query to the last 12 months.
 
-### Email operations — attachment support
+### Email operations — attachments and portal provenance
 
-**Classify Email** and **Ingest Email** support optional attachments via URL (server-side fetch) or binary data (base64-encoded upload).
+**Classify Email** and **Ingest Portal Email** support optional attachments via URL (server-side fetch) or binary data (base64-encoded upload).
+
+**Ingest Portal Email** (`ingestEmail`) still posts to `/ingest/email/portal`. Optional **Source Email** JSON (`sourceEmail`) carries Microsoft Graph or Gmail provenance. When omitted or empty, the request matches 0.11.3. The node output includes the echoed `sourceEmail` from the Intelligence API (`null` when omitted). Tenant `company_id` and `api_key` stay in the VH3 AI credential.
 
 ### Search operations — per-result unwrapping
 
