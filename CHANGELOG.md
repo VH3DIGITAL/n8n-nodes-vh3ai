@@ -4,6 +4,12 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.12.0] — 2026-09-02
+
+### Added
+
+- **Email › Ingest General Email** — runs the full general-email pipeline through the tenant gateway at `POST /ingest/email/triage`, using the same inputs as Portal Ingest. The existing Classify Email and Ingest Portal Email operations are unchanged, and FSI responses pass through without filtering.
+
 ## [0.11.4] — 2026-08-29
 
 ### Added
