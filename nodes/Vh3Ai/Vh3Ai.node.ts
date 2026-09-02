@@ -2046,7 +2046,7 @@ export class Vh3Ai implements INodeType {
 					if (phase) qs.phase = phase;
 					const raw = await vh3FsiGetRequest.call(this, '/triage/taxonomy/rules', qs);
 					responseData = Array.isArray(raw) ? raw : [raw];
-				} else if (operation === 'ingestEmail') {
+				} else if (operation === 'ingestEmail' || operation === 'ingestGeneralEmail') {
 						const emailText = this.getNodeParameter('emailText', i) as string;
 						const emailSubject = this.getNodeParameter('emailSubject', i) as string;
 						const emailFrom = this.getNodeParameter('emailFrom', i) as string;
@@ -2068,8 +2068,13 @@ export class Vh3Ai implements INodeType {
 								: (error as Error).message;
 							throw new NodeOperationError(this.getNode(), message);
 						}
-						const raw = await vh3FsiPostRequest.call(this, '/ingest/email/portal', body);
-						responseData = [portalIngestNodeOutput(raw)];
+						const endpoint = operation === 'ingestEmail'
+							? '/ingest/email/portal'
+							: '/ingest/email/triage';
+						const raw = await vh3FsiPostRequest.call(this, endpoint, body);
+						responseData = operation === 'ingestEmail'
+							? [portalIngestNodeOutput(raw)]
+							: [raw];
 					}
 				}
 
