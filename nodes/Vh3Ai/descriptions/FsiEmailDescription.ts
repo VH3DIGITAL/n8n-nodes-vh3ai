@@ -25,6 +25,12 @@ export const fsiEmailOperations: INodeProperties[] = [
 				description: 'Classify an incoming email using the AI triage pipeline',
 			},
 			{
+				name: 'Ingest General Email',
+				value: 'ingestGeneralEmail',
+				action: 'Ingest a general email',
+				description: 'Run a general email through the full ingest pipeline via the /ingest/email/triage endpoint',
+			},
+			{
 				name: 'Ingest Portal Email',
 				value: 'ingestEmail',
 				action: 'Ingest a portal email',
@@ -127,7 +133,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['ingestEmail'],
+				operation: ['ingestEmail', 'ingestGeneralEmail'],
 			},
 		},
 	},
@@ -141,7 +147,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['ingestEmail'],
+				operation: ['ingestEmail', 'ingestGeneralEmail'],
 			},
 		},
 	},
@@ -155,7 +161,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['ingestEmail'],
+				operation: ['ingestEmail', 'ingestGeneralEmail'],
 			},
 		},
 	},
@@ -169,7 +175,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['ingestEmail'],
+				operation: ['ingestEmail', 'ingestGeneralEmail'],
 			},
 		},
 	},
@@ -186,7 +192,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['classifyEmail', 'ingestEmail'],
+				operation: ['classifyEmail', 'ingestEmail', 'ingestGeneralEmail'],
 			},
 		},
 		options: [
@@ -205,7 +211,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['classifyEmail', 'ingestEmail'],
+				operation: ['classifyEmail', 'ingestEmail', 'ingestGeneralEmail'],
 				attachmentSource: ['url'],
 			},
 		},
@@ -220,7 +226,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['classifyEmail', 'ingestEmail'],
+				operation: ['classifyEmail', 'ingestEmail', 'ingestGeneralEmail'],
 				attachmentSource: ['url'],
 			},
 		},
@@ -234,7 +240,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['classifyEmail', 'ingestEmail'],
+				operation: ['classifyEmail', 'ingestEmail', 'ingestGeneralEmail'],
 				attachmentSource: ['url'],
 			},
 		},
@@ -249,7 +255,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['classifyEmail', 'ingestEmail'],
+				operation: ['classifyEmail', 'ingestEmail', 'ingestGeneralEmail'],
 				attachmentSource: ['binary'],
 			},
 		},
@@ -321,7 +327,7 @@ export const fsiEmailFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['email'],
-				operation: ['ingestEmail'],
+				operation: ['ingestEmail', 'ingestGeneralEmail'],
 			},
 		},
 		options: [
