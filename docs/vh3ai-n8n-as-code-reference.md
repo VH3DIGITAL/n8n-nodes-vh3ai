@@ -36,7 +36,7 @@ including workflow building, not just execution.
 **Setup (Claude.ai):**
 
 1. Open the connector directory → search **n8n** → add connector
-2. Paste your instance URL (e.g. `https://dyno.n8n.vh3.ai`)
+2. Paste your instance URL (e.g. `https://<your-n8n-domain>`)
 3. Authenticate with OAuth or your n8n MCP access token
 
 **Setup (Claude Code):**
