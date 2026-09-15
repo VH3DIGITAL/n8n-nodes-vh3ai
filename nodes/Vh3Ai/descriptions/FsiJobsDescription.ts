@@ -41,6 +41,32 @@ export const fsiJobsOperations: INodeProperties[] = [
 	},
 ];
 
+/** True-only list filters: omit or Off keeps mixed results (not an inverse filter). */
+const jobFeedHasFollowUpOption: INodeProperties = {
+	displayName: 'Has Follow Up',
+	name: 'hasFollowUp',
+	type: 'boolean',
+	default: false,
+	description:
+		'Whether to return only jobs with a non-empty follow-up list. Off or omitted keeps the mixed list; it is not an inverse filter.',
+};
+
+const jobFeedIncludeVh3AiOption: INodeProperties = {
+	displayName: 'Include VH3 AI',
+	name: 'includeVh3Ai',
+	type: 'boolean',
+	default: false,
+	description: 'Whether to include VH3 AI enrichment on each list row in the same shape as Get Enriched Job',
+};
+
+const jobFeedDateFieldOptions = [
+	{ name: 'Actual End At', value: 'actualEndAt' },
+	{ name: 'Actual Start At', value: 'actualStartAt' },
+	{ name: 'Created At', value: 'createdAt' },
+	{ name: 'Planned End At', value: 'plannedEndAt' },
+	{ name: 'Planned Start At', value: 'plannedStartAt' },
+];
+
 export const fsiJobsFields: INodeProperties[] = [
 	// ── List Job Feed fields ──
 	{
@@ -48,7 +74,7 @@ export const fsiJobsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobFeed'],
@@ -130,13 +156,7 @@ export const fsiJobsFields: INodeProperties[] = [
 				displayName: 'Date Field',
 				name: 'dateField',
 				type: 'options',
-				options: [
-					{ name: 'Created At', value: 'createdAt' },
-					{ name: 'Planned Start At', value: 'plannedStartAt' },
-					{ name: 'Planned End At', value: 'plannedEndAt' },
-					{ name: 'Actual Start At', value: 'actualStartAt' },
-					{ name: 'Actual End At', value: 'actualEndAt' },
-				],
+				options: jobFeedDateFieldOptions,
 				default: 'createdAt',
 				description: 'Which timestamp dateFrom/dateTo apply to',
 			},
@@ -179,6 +199,8 @@ export const fsiJobsFields: INodeProperties[] = [
 				default: false,
 				description: 'Whether to filter for jobs that finished after their planned end time. Prefer this over Finished Early set to Off. Only applied when this field is added.',
 			},
+			jobFeedHasFollowUpOption,
+			jobFeedIncludeVh3AiOption,
 			{
 				displayName: 'Resource ID',
 				name: 'resourceId',
@@ -270,7 +292,7 @@ export const fsiJobsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobFeed'],
@@ -345,13 +367,7 @@ export const fsiJobsFields: INodeProperties[] = [
 				displayName: 'Date Field',
 				name: 'dateField',
 				type: 'options',
-				options: [
-					{ name: 'Created At', value: 'createdAt' },
-					{ name: 'Planned Start At', value: 'plannedStartAt' },
-					{ name: 'Planned End At', value: 'plannedEndAt' },
-					{ name: 'Actual Start At', value: 'actualStartAt' },
-					{ name: 'Actual End At', value: 'actualEndAt' },
-				],
+				options: jobFeedDateFieldOptions,
 				default: 'createdAt',
 				description: 'Which timestamp dateFrom/dateTo apply to',
 			},
@@ -394,6 +410,8 @@ export const fsiJobsFields: INodeProperties[] = [
 				default: false,
 				description: 'Whether to filter for jobs that finished after their planned end time. Prefer this over Finished Early set to Off. Only applied when this field is added.',
 			},
+			jobFeedHasFollowUpOption,
+			jobFeedIncludeVh3AiOption,
 			{
 				displayName: 'Resource ID',
 				name: 'resourceId',
@@ -472,11 +490,11 @@ export const fsiJobsFields: INodeProperties[] = [
 		type: 'options',
 		required: true,
 		options: [
-			{ name: 'Job Count', value: 'job_count' },
+			{ name: 'Avg End Delay (Mins)', value: 'avg_end_delta_mins' },
+			{ name: 'Avg Start Delay (Mins)', value: 'avg_start_delta_mins' },
 			{ name: 'Completion Rate', value: 'completion_rate' },
 			{ name: 'First Visit Fix Rate', value: 'first_visit_fix_rate' },
-			{ name: 'Avg Start Delay (mins)', value: 'avg_start_delta_mins' },
-			{ name: 'Avg End Delay (mins)', value: 'avg_end_delta_mins' },
+			{ name: 'Job Count', value: 'job_count' },
 		],
 		default: 'job_count',
 		description: 'The metric to compute',
@@ -492,15 +510,15 @@ export const fsiJobsFields: INodeProperties[] = [
 		name: 'period',
 		type: 'options',
 		options: [
-			{ name: 'Today', value: 'today' },
-			{ name: 'Yesterday', value: 'yesterday' },
-			{ name: 'This Week', value: 'this_week' },
+			{ name: 'Last 30 Days', value: 'last_30_days' },
+			{ name: 'Last 7 Days', value: 'last_7_days' },
+			{ name: 'Last 90 Days', value: 'last_90_days' },
+			{ name: 'Last Month', value: 'last_month' },
 			{ name: 'Last Week', value: 'last_week' },
 			{ name: 'This Month', value: 'this_month' },
-			{ name: 'Last Month', value: 'last_month' },
-			{ name: 'Last 7 Days', value: 'last_7_days' },
-			{ name: 'Last 30 Days', value: 'last_30_days' },
-			{ name: 'Last 90 Days', value: 'last_90_days' },
+			{ name: 'This Week', value: 'this_week' },
+			{ name: 'Today', value: 'today' },
+			{ name: 'Yesterday', value: 'yesterday' },
 		],
 		default: 'last_7_days',
 		description: 'Time period to aggregate over',
@@ -516,8 +534,8 @@ export const fsiJobsFields: INodeProperties[] = [
 		name: 'timeAxis',
 		type: 'options',
 		options: [
-			{ name: 'Actual Start At', value: 'actualStartAt' },
 			{ name: 'Actual End At', value: 'actualEndAt' },
+			{ name: 'Actual Start At', value: 'actualStartAt' },
 			{ name: 'Created At', value: 'createdAt' },
 			{ name: 'Planned Start At', value: 'plannedStartAt' },
 			{ name: 'Scheduled At', value: 'scheduledAt' },
@@ -557,10 +575,10 @@ export const fsiJobsFields: INodeProperties[] = [
 				type: 'options',
 				options: [
 					{ name: 'Previous Period', value: 'previous_period' },
-					{ name: 'Same Period Last Week', value: 'same_period_last_week' },
 					{ name: 'Same Period Last Month', value: 'same_period_last_month' },
+					{ name: 'Same Period Last Week', value: 'same_period_last_week' },
 				],
-				default: '',
+				default: 'previous_period',
 				description: 'Compare against a reference period to see deltas',
 			},
 			{
@@ -596,18 +614,18 @@ export const fsiJobsFields: INodeProperties[] = [
 				name: 'groupBy',
 				type: 'options',
 				options: [
-					{ name: 'Status', value: 'status' },
-					{ name: 'Result', value: 'result' },
-					{ name: 'Job Type', value: 'typeId' },
 					{ name: 'Category', value: 'categoryId' },
-					{ name: 'Engineer', value: 'resourceId' },
-					{ name: 'Site', value: 'siteKey' },
-					{ name: 'Vertical', value: 'vertical' },
 					{ name: 'Day', value: 'day' },
-					{ name: 'Week', value: 'week' },
+					{ name: 'Engineer', value: 'resourceId' },
+					{ name: 'Job Type', value: 'typeId' },
 					{ name: 'Month', value: 'month' },
+					{ name: 'Result', value: 'result' },
+					{ name: 'Site', value: 'siteKey' },
+					{ name: 'Status', value: 'status' },
+					{ name: 'Vertical', value: 'vertical' },
+					{ name: 'Week', value: 'week' },
 				],
-				default: '',
+				default: 'status',
 				description: 'Dimension to group the results by',
 			},
 			{
@@ -615,8 +633,8 @@ export const fsiJobsFields: INodeProperties[] = [
 				name: 'limit',
 				type: 'number',
 				typeOptions: { minValue: 1 },
-				default: 10,
-				description: 'Max number of grouped rows to return',
+				default: 50,
+				description: 'Max number of results to return',
 			},
 			{
 				displayName: 'Resource ID',
@@ -676,7 +694,7 @@ export const fsiJobsFields: INodeProperties[] = [
 					{ name: 'Suspended', value: 'suspended' },
 					{ name: 'Unscheduled', value: 'unscheduled' },
 				],
-				default: '',
+				default: 'accepted',
 				description: 'Filter by job status',
 			},
 			{

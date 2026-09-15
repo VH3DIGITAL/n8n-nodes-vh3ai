@@ -4,6 +4,16 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.13.0] — 2026-09-15
+
+### Added
+
+- **Job Feed / Account Job Feed** — optional Additional Fields **Has Follow Up** and **Include VH3 AI**. `has_follow_up` and `include_vh3_ai` are sent only when the toggle is true. Off or omitted keeps the mixed list; it is not an inverse filter.
+
+### Fixed
+
+- **Creator Portal lint** — Return All wording, sentence-case actions, `ID` casing, boolean `Whether` copy, email placeholders, A–Z collection/option order, and throw-outside-catch JSON validation in case update and email ingest helpers.
+
 ## [0.12.0] — 2026-09-02
 
 ### Added

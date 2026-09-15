@@ -18,15 +18,15 @@ export const wsAttachmentsOperations: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'List attachments for an entity',
+				name: 'List Attachments for an Entity',
 				value: 'wsAttachmentsGetlistofattachments',
-				action: 'List attachments for an entity via Web Services',
-				description: 'This service lists information about any attachments to the requested entity.',
+				action: 'List attachments for an entity via web services',
+				description: 'This service lists information about any attachments to the requested entity',
 			},
 			{
-				name: 'Retrieve an attachment by Id',
+				name: 'Retrieve an Attachment by ID',
 				value: 'wsAttachmentsGetanattachment',
-				action: 'Retrieve an attachment by Id via Web Services',
+				action: 'Retrieve an attachment by id via web services',
 				description: 'This service retrieves an attachment using an AttachmentId. This can be retrieved using ListAttachments.',
 			},
 		],
@@ -41,7 +41,7 @@ export const wsAttachmentsFields: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'Attachment Type Name, for example \'job\'.',
+		description: 'Attachment Type Name, for example \'job\'',
 		displayOptions: {
 			show: {
 				resource: ['wsAttachments'],
@@ -79,12 +79,12 @@ export const wsAttachmentsFields: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Attachment Id',
+		displayName: 'Attachment ID',
 		name: 'attachmentId',
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'The Id of the attachment to be retrieved. Use "ListAttachments" to retrieve document Ids.',
+		description: 'The ID of the attachment to be retrieved. Use "ListAttachments" to retrieve document IDs.',
 		displayOptions: {
 			show: {
 				resource: ['wsAttachments'],

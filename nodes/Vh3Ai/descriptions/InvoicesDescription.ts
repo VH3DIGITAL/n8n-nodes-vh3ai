@@ -90,7 +90,7 @@ export const invoicesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['invoices'],
@@ -297,18 +297,18 @@ export const invoicesFields: INodeProperties[] = [
 				description: 'Invoice date. Defaults to the current date/time if not provided. Must be in UTC.',
 			},
 			{
-				displayName: 'Department Code ID',
-				name: 'departmentCodeId',
-				type: 'number',
-				default: 0,
-				description: 'Department code ID to associate with the invoice',
-			},
-			{
 				displayName: 'Delivery Site Contact ID',
 				name: 'deliverySiteContactId',
 				type: 'number',
 				default: 0,
 				description: 'Delivery site contact ID to associate with the invoice',
+			},
+			{
+				displayName: 'Department Code ID',
+				name: 'departmentCodeId',
+				type: 'number',
+				default: 0,
+				description: 'Department code ID to associate with the invoice',
 			},
 			{
 				displayName: 'Internal Notes',
@@ -521,7 +521,7 @@ export const invoicesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['invoices'],
@@ -679,7 +679,6 @@ export const invoicesFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Department code ID',
 		displayOptions: {
 			show: {
 				resource: ['invoices'],

@@ -34,13 +34,13 @@ export const purchaseOrdersOperations: INodeProperties[] = [
 				name: 'Edit Purchase Order',
 				value: 'editPurchaseOrder',
 				action: 'Edit a purchase order',
-				description: 'Update a purchase order (PATCH semantics — omit a field to keep its existing value).',
+				description: 'Update a purchase order (PATCH semantics — omit a field to keep its existing value)',
 			},
 			{
 				name: 'Edit Purchase Order Line Item',
 				value: 'editPurchaseOrderLineItem',
 				action: 'Edit a purchase order line item',
-				description: 'Update an existing line on a purchase order (PATCH semantics — omit a field to keep its existing value).',
+				description: 'Update an existing line on a purchase order (PATCH semantics — omit a field to keep its existing value)',
 			},
 			{
 				name: 'Get Purchase Order',
@@ -58,7 +58,7 @@ export const purchaseOrdersOperations: INodeProperties[] = [
 				name: 'Get Purchase Order Series',
 				value: 'getPurchaseOrderSeries',
 				action: 'Get a purchase order series',
-				description: 'Get a single purchase order series (numbering sequence) by ID.',
+				description: 'Get a single purchase order series (numbering sequence) by ID',
 			},
 			{
 				name: 'List Purchase Order Line Items',
@@ -70,13 +70,13 @@ export const purchaseOrdersOperations: INodeProperties[] = [
 				name: 'List Purchase Order Series',
 				value: 'listPurchaseOrderSeries',
 				action: 'List purchase order series',
-				description: 'List configured purchase order series (numbering sequences) — reference data.',
+				description: 'List configured purchase order series (numbering sequences) — reference data',
 			},
 			{
 				name: 'List Purchase Orders',
 				value: 'listPurchaseOrders',
 				action: 'List or search purchase orders',
-				description: 'List purchase orders. BigChange requires at least one filter (id/jobId/jobGroupId/contactId/reference) or a createdAt window — if none supplied, the node defaults to the last 12 months. Note: date-only filtering may return a BC 500 on some tenants — combine with id[]/jobId[]/contactId[] when possible.',
+				description: 'List purchase orders. BigChange requires at least one filter (ID/jobId/jobGroupId/contactId/reference) or a createdAt window — if none supplied, the node defaults to the last 12 months. Note: date-only filtering may return a BC 500 on some tenants — combine with ID[]/jobId[]/contactId[] when possible.',
 			},
 		],
 		default: 'listPurchaseOrders',
@@ -90,7 +90,7 @@ export const purchaseOrdersFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['purchaseOrders'],
@@ -174,13 +174,6 @@ export const purchaseOrdersFields: INodeProperties[] = [
 				description: 'Sort direction',
 			},
 			{
-				displayName: 'Purchase Order IDs',
-				name: 'id',
-				type: 'string',
-				default: '',
-				description: 'Filter by purchase order IDs (comma-separated)',
-			},
-			{
 				displayName: 'Job Group IDs',
 				name: 'jobGroupId',
 				type: 'string',
@@ -193,6 +186,13 @@ export const purchaseOrdersFields: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Filter by job IDs (comma-separated)',
+			},
+			{
+				displayName: 'Purchase Order IDs',
+				name: 'id',
+				type: 'string',
+				default: '',
+				description: 'Filter by purchase order IDs (comma-separated)',
 			},
 			{
 				displayName: 'References',
@@ -300,14 +300,12 @@ export const purchaseOrdersFields: INodeProperties[] = [
 				name: 'deliverySiteContactId',
 				type: 'number',
 				default: 0,
-				description: 'Delivery site contact ID',
 			},
 			{
 				displayName: 'Department Code ID',
 				name: 'departmentCodeId',
 				type: 'number',
 				default: 0,
-				description: 'Department code ID',
 			},
 			{
 				displayName: 'Internal Notes',
@@ -430,14 +428,12 @@ export const purchaseOrdersFields: INodeProperties[] = [
 				name: 'deliverySiteContactId',
 				type: 'number',
 				default: 0,
-				description: 'Delivery site contact ID',
 			},
 			{
 				displayName: 'Department Code ID',
 				name: 'departmentCodeId',
 				type: 'number',
 				default: 0,
-				description: 'Department code ID',
 			},
 			{
 				displayName: 'Internal Notes',
@@ -505,7 +501,7 @@ export const purchaseOrdersFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['purchaseOrders'],
@@ -580,7 +576,7 @@ export const purchaseOrdersFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['purchaseOrders'],
@@ -768,7 +764,6 @@ export const purchaseOrdersFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Department code ID',
 		displayOptions: {
 			show: {
 				resource: ['purchaseOrders'],
@@ -824,7 +819,6 @@ export const purchaseOrdersFields: INodeProperties[] = [
 				name: 'departmentCodeId',
 				type: 'number',
 				default: 0,
-				description: 'Department code ID',
 			},
 			{
 				displayName: 'Description',

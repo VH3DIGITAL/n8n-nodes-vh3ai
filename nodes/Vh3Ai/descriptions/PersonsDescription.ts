@@ -28,7 +28,7 @@ export const personsOperations: INodeProperties[] = [
 				name: 'Get Person',
 				value: 'getPerson',
 				action: 'Get a person',
-				description: 'Get one person by their UUID (string) — name, role, contact details, parent contact, opt-out status.',
+				description: 'Get one person by their UUID (string) — name, role, contact details, parent contact, opt-out status',
 			},
 			{
 				name: 'List Consent History',
@@ -54,7 +54,7 @@ export const personsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['persons'],
@@ -127,6 +127,7 @@ export const personsFields: INodeProperties[] = [
 				displayName: 'Email',
 				name: 'email',
 				type: 'string',
+				placeholder: 'name@email.com',
 				default: '',
 				description: 'Filter by email address',
 			},
@@ -234,6 +235,7 @@ export const personsFields: INodeProperties[] = [
 				displayName: 'Email',
 				name: 'email',
 				type: 'string',
+				placeholder: 'name@email.com',
 				default: '',
 				description: 'Email address',
 			},
@@ -342,6 +344,7 @@ export const personsFields: INodeProperties[] = [
 				displayName: 'Email',
 				name: 'email',
 				type: 'string',
+				placeholder: 'name@email.com',
 				default: '',
 				description: 'Email address',
 			},
@@ -402,7 +405,7 @@ export const personsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['persons'],

@@ -78,7 +78,7 @@ export const worksheetsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: true,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['worksheets'],
@@ -123,7 +123,7 @@ export const worksheetsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: true,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['worksheets'],
@@ -182,7 +182,7 @@ export const worksheetsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: true,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['worksheets'],

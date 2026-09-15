@@ -28,13 +28,13 @@ export const salesOpportunitiesOperations: INodeProperties[] = [
 				name: 'Edit Sales Opportunity',
 				value: 'editSalesOpportunity',
 				action: 'Edit a sales opportunity',
-				description: 'Update a sales opportunity (PATCH semantics — omit a field to keep its existing value).',
+				description: 'Update a sales opportunity (PATCH semantics — omit a field to keep its existing value)',
 			},
 			{
 				name: 'Edit Sales Opportunity Line Item',
 				value: 'editSalesOpportunityLineItem',
 				action: 'Edit a sales opportunity line item',
-				description: 'Update an existing line on a sales opportunity (PATCH semantics — omit a field to keep its existing value).',
+				description: 'Update an existing line on a sales opportunity (PATCH semantics — omit a field to keep its existing value)',
 			},
 			{
 				name: 'Get Sales Opportunity',
@@ -52,13 +52,13 @@ export const salesOpportunitiesOperations: INodeProperties[] = [
 				name: 'List Probabilities',
 				value: 'listSalesOpportunityProbabilities',
 				action: 'List sales opportunity probabilities',
-				description: 'List configured sales opportunity probabilities (reference data — e.g. 25%, 50%, 75%).',
+				description: 'List configured sales opportunity probabilities (reference data — e.g. 25%, 50%, 75%)',
 			},
 			{
 				name: 'List Sales Opportunities',
 				value: 'listSalesOpportunities',
 				action: 'List or search sales opportunities',
-				description: 'List sales opportunities. BigChange requires at least one filter (id/status/contactId/ownerId/reference) or a date window (createdAt or dueDate) — if none supplied, the node defaults to the last 12 months.',
+				description: 'List sales opportunities. BigChange requires at least one filter (ID/status/contactId/ownerId/reference) or a date window (createdAt or dueDate) — if none supplied, the node defaults to the last 12 months.',
 			},
 			{
 				name: 'List Sales Opportunity Line Items',
@@ -70,7 +70,7 @@ export const salesOpportunitiesOperations: INodeProperties[] = [
 				name: 'List Stages',
 				value: 'listSalesOpportunityStages',
 				action: 'List sales opportunity stages',
-				description: 'List configured sales opportunity pipeline stages (reference data — e.g. Qualified, Proposal, Negotiation, Closed Won).',
+				description: 'List configured sales opportunity pipeline stages (reference data — e.g. Qualified, Proposal, Negotiation, Closed Won)',
 			},
 		],
 		default: 'listSalesOpportunities',
@@ -84,7 +84,7 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['salesOpportunities'],
@@ -182,13 +182,6 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 				description: 'Only return sales opportunities due on or before this date',
 			},
 			{
-				displayName: 'Sales Opportunity IDs',
-				name: 'id',
-				type: 'string',
-				default: '',
-				description: 'Filter by sales opportunity IDs (comma-separated)',
-			},
-			{
 				displayName: 'Owner ID',
 				name: 'ownerId',
 				type: 'number',
@@ -201,6 +194,13 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Filter by references (comma-separated)',
+			},
+			{
+				displayName: 'Sales Opportunity IDs',
+				name: 'id',
+				type: 'string',
+				default: '',
+				description: 'Filter by sales opportunity IDs (comma-separated)',
 			},
 			{
 				displayName: 'Sort By',
@@ -283,7 +283,6 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 				name: 'departmentCodeId',
 				type: 'number',
 				default: 0,
-				description: 'Department code ID',
 			},
 			{
 				displayName: 'Due Date',
@@ -386,7 +385,7 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['salesOpportunities'],
@@ -445,7 +444,7 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['salesOpportunities'],
@@ -633,7 +632,6 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Department code ID',
 		displayOptions: {
 			show: {
 				resource: ['salesOpportunities'],
@@ -689,7 +687,6 @@ export const salesOpportunitiesFields: INodeProperties[] = [
 				name: 'departmentCodeId',
 				type: 'number',
 				default: 0,
-				description: 'Department code ID',
 			},
 			{
 				displayName: 'Description',

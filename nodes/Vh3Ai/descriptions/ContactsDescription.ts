@@ -85,7 +85,7 @@ export const contactsFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Numeric BigChange contact ID. Source from List Contacts (contact.id) or any prior step that returned a contact.',
+		description: 'Numeric BigChange contact ID. Source from List Contacts (contact.ID) or any prior step that returned a contact.',
 		displayOptions: {
 			show: {
 				resource: ['contacts'],
@@ -145,7 +145,7 @@ export const contactsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['contacts'],
@@ -272,7 +272,7 @@ export const contactsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: true,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['contacts'],

@@ -52,7 +52,7 @@ export const jobTypesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: true,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobTypes'],
@@ -108,7 +108,7 @@ export const jobTypesFields: INodeProperties[] = [
 				name: 'isTasksEnabled',
 				type: 'boolean',
 				default: false,
-				description: 'Filter by whether the job type has tasks enabled',
+				description: 'Whether the job type has tasks enabled',
 			},
 		],
 	},

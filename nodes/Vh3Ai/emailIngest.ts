@@ -26,17 +26,21 @@ export function normalizeSourceEmail(value: unknown): JsonObject | undefined {
 		return undefined;
 	}
 
-	let parsed: JsonValue;
+	let parsed: JsonValue | undefined;
 	if (typeof value === 'string') {
 		const trimmed = value.trim();
 		if (!trimmed || trimmed === '{}') {
 			return undefined;
 		}
+		let parseError: Error | undefined;
 		try {
 			parsed = JSON.parse(trimmed) as JsonValue;
 		} catch (error) {
+			parseError = error as Error;
+		}
+		if (parseError) {
 			throw new SourceEmailValidationError(
-				`Source Email is not valid JSON: ${(error as Error).message}`,
+				`Source Email is not valid JSON: ${parseError.message}`,
 			);
 		}
 	} else {

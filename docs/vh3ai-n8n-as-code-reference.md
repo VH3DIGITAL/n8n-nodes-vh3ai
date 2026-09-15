@@ -36,7 +36,7 @@ including workflow building, not just execution.
 **Setup (Claude.ai):**
 
 1. Open the connector directory → search **n8n** → add connector
-2. Paste your instance URL (e.g. `https://dyno.n8n.vh3.ai`)
+2. Paste your instance URL (e.g. `https://<your-n8n-domain>`)
 3. Authenticate with OAuth or your n8n MCP access token
 
 **Setup (Claude Code):**
@@ -325,8 +325,8 @@ select the right VH3 AI node operation.
 
 | Operation            | Key inputs                                                                               | Notes                                                                                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `listJobFeed`        | `status` (multi), `dateField`, `dateFrom`, `dateTo`, `contactId`, `resourceId`, `typeId` | Optional: `finishedEarly`/`finishedLate`, `startedEarly`/`startedLate`, `sortBy` (+ `direction`). Default `dateField`: `createdAt`. |
-| `listAccountJobFeed` | `contactId` (required — any in hierarchy)                                                | Same optional punctuality / sort filters as `listJobFeed`. Traverses full parent-child account tree.                               |
+| `listJobFeed`        | `status` (multi), `dateField`, `dateFrom`, `dateTo`, `contactId`, `resourceId`, `typeId` | Optional: `finishedEarly`/`finishedLate`, `startedEarly`/`startedLate`, `hasFollowUp`, `includeVh3Ai`, `sortBy` (+ `direction`). Default `dateField`: `createdAt`. |
+| `listAccountJobFeed` | `contactId` (required — any in hierarchy)                                                | Same optional punctuality / follow-up / VH3 AI / sort filters as `listJobFeed`. Traverses full parent-child account tree. |
 | `aggregateJobs`      | `metric`, `period`, `timeAxis`, `groupBy`, `compareTo`                                   | Optional filters: `finishedEarly`/`finishedLate`, `startedEarly`/`startedLate` (camelCase in `filters`). Prefer `timeAxis` `actualEndAt` / `actualStartAt`. |
 | `getEnrichedJob`     | `jobId` (required), `includeWorksheets`                                                  | Returns AI enrichment: vertical, sentiment, key phrases                                                                                                            |
 
@@ -347,6 +347,15 @@ uses camelCase inside `filters` (`finishedLate`). `sortBy` values: `createdAt`,
 `endDeltaMins`, `startDeltaMins`, `actualEndAt`, `actualStartAt`. Example —
 worst late finishes: `finishedLate: true`, `dateField: actualEndAt`,
 `sortBy: endDeltaMins`, `direction: desc`.
+
+**Follow-up and VH3 AI flags** (optional Additional Fields on `listJobFeed` and
+`listAccountJobFeed`; same pattern as `compact`):
+- `hasFollowUp: true` → `has_follow_up=true`. Returns only jobs with a non-empty
+  `followUp` string array. Unset or `false` keeps the mixed list — not an inverse
+  filter. Every job row includes `followUp` (`[]` when empty); there is no
+  `hasFollowUp` field on the job.
+- `includeVh3Ai: true` → `include_vh3_ai=true`. Appends get-by-id-shaped `vh3_ai`
+  on each list row. Unset or `false` omits the param.
 
 ### 6.2 Search (`search`)
 

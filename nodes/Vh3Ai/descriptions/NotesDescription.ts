@@ -34,7 +34,7 @@ export const notesOperations: INodeProperties[] = [
 				name: 'Get Note',
 				value: 'getNote',
 				action: 'Get a note',
-				description: 'Get a single note by numeric ID — entity link, subject, description, status, owner, due date.',
+				description: 'Get a single note by numeric ID — entity link, subject, description, status, owner, due date',
 			},
 			{
 				name: 'Get Note Type',
@@ -66,7 +66,7 @@ export const notesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['notes'],
@@ -532,7 +532,7 @@ export const notesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['notes'],

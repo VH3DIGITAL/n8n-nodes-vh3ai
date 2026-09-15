@@ -722,3 +722,19 @@ export function parseSentinelOverridesJson(
 
 	return Object.keys(obj).length > 0 ? obj : undefined;
 }
+
+/**
+ * Job Feed / Account Job Feed true-only query flags (same pattern as compact).
+ * Unset or false is omitted — not an inverse filter.
+ */
+export function applyJobFeedTrueOnlyQuery(
+	qs: Record<string, string | number | boolean>,
+	additionalFields: JsonObject,
+): void {
+	if (additionalFields.hasFollowUp === true) {
+		qs.has_follow_up = true;
+	}
+	if (additionalFields.includeVh3Ai === true) {
+		qs.include_vh3_ai = true;
+	}
+}

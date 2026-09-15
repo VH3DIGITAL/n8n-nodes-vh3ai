@@ -44,13 +44,19 @@ function parsePresentJsonField(
 	if (!trimmed) {
 		return emptyFallback;
 	}
+	let parsed: JsonValue | undefined;
+	let parseError: Error | undefined;
 	try {
-		return JSON.parse(trimmed) as JsonValue;
+		parsed = JSON.parse(trimmed) as JsonValue;
 	} catch (error) {
+		parseError = error as Error;
+	}
+	if (parseError) {
 		throw new CaseUpdateValidationError(
-			`${fieldLabel} is not valid JSON: ${(error as Error).message}`,
+			`${fieldLabel} is not valid JSON: ${parseError.message}`,
 		);
 	}
+	return parsed as JsonValue;
 }
 
 function assignPresentQueryValue(
