@@ -36,8 +36,8 @@ export const fsiWeatherFields: INodeProperties[] = [
 		displayName: 'Additional Fields', name: 'additionalFields', type: 'collection', placeholder: 'Add Field', default: {},
 		displayOptions: { show: { resource: ['weather'], operation: ['getForecast'] } },
 		options: [
-			{ displayName: 'End Hour', name: 'endHour', type: 'string', default: '', description: 'End hour' },
-			{ displayName: 'Start Hour', name: 'startHour', type: 'string', default: '', description: 'Start hour' },
+			{ displayName: 'End Hour', name: 'endHour', type: 'string', default: '' },
+			{ displayName: 'Start Hour', name: 'startHour', type: 'string', default: '' },
 			{ displayName: 'Timezone', name: 'timezone', type: 'string', default: '', description: 'Timezone (e.g. Europe/London)' },
 		],
 	},

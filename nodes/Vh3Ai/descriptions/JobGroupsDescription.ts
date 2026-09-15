@@ -22,13 +22,13 @@ export const jobGroupsOperations: INodeProperties[] = [
 				name: 'Edit Job Group',
 				value: 'editJobGroup',
 				action: 'Edit a job group',
-				description: 'Update fields on an existing job group (title, order number, planned start/end, category).',
+				description: 'Update fields on an existing job group (title, order number, planned start/end, category)',
 			},
 			{
 				name: 'Get Job Group',
 				value: 'getJobGroup',
 				action: 'Get a job group',
-				description: 'Get one job group by numeric ID — title, customer, planned dates, status, member jobs.',
+				description: 'Get one job group by numeric ID — title, customer, planned dates, status, member jobs',
 			},
 			{
 				name: 'List Job Group Status History',
@@ -66,7 +66,7 @@ export const jobGroupsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobGroups'],
@@ -406,7 +406,7 @@ export const jobGroupsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobGroups'],

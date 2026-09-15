@@ -39,6 +39,15 @@ interface ThresholdParam {
 	description: string;
 }
 
+function thresholdNumber(
+	name: string,
+	displayName: string,
+	defaultValue: number,
+	description: string,
+): INodeProperties {
+	return { displayName, name, type: 'number', default: defaultValue, description };
+}
+
 const SENTINEL_THRESHOLDS: Array<{ id: string; params: ThresholdParam[] }> = [
 	{
 		id: 'engineer_performance_slip',
@@ -235,14 +244,8 @@ const thresholdOverrideFields: INodeProperties[] = SENTINEL_THRESHOLDS.map(
 				sentinelId: [id],
 			},
 		},
-		options: params.map(
-			(p): INodeProperties => ({
-				displayName: p.displayName,
-				name: p.name,
-				type: 'number',
-				default: p.default,
-				description: p.description,
-			}),
+		options: params.map((p) =>
+			thresholdNumber(p.name, p.displayName, p.default, p.description),
 		),
 	}),
 );
