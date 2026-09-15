@@ -34,13 +34,13 @@ export const stockOperations: INodeProperties[] = [
 				name: 'Get Stock Details',
 				value: 'getStockDetails',
 				action: 'Get a stock product (SKU)',
-				description: 'Get one stock product definition by stockDetailsId — model, make, stock code, category, suppliers reference.',
+				description: 'Get one stock product definition by stockDetailsId — model, make, stock code, category, suppliers reference',
 			},
 			{
 				name: 'Get Stock Item',
 				value: 'getStockItem',
 				action: 'Get a stock item',
-				description: 'Get one physical stock unit by stockItemId — serial number, condition, current location, quantity.',
+				description: 'Get one physical stock unit by stockItemId — serial number, condition, current location, quantity',
 			},
 			{
 				name: 'Get Stock Supplier',
@@ -57,7 +57,7 @@ export const stockOperations: INodeProperties[] = [
 			{
 				name: 'List Stock Details',
 				value: 'listStockDetails',
-				action: 'List stock products (SKUs)',
+				action: 'List stock products',
 				description: 'List stock product definitions. Filter by productCategoryId(s), stockCode(s), or isConsumable. Use to browse the SKU catalogue.',
 			},
 			{
@@ -82,13 +82,13 @@ export const stockOperations: INodeProperties[] = [
 				name: 'Update Stock Details',
 				value: 'updateStockDetails',
 				action: 'Update a stock product (SKU)',
-				description: 'Update fields on an existing stock product definition (model, category, make, stockCode, batchNumber, isConsumable).',
+				description: 'Update fields on an existing stock product definition (model, category, make, stockCode, batchNumber, isConsumable)',
 			},
 			{
 				name: 'Update Stock Item',
 				value: 'updateStockItem',
 				action: 'Update a stock item',
-				description: 'Update fields on a physical stock unit (serial number, make, notes, quantity, location contact, condition).',
+				description: 'Update fields on a physical stock unit (serial number, make, notes, quantity, location contact, condition)',
 			},
 		],
 		default: 'listStockItems',
@@ -102,7 +102,7 @@ export const stockFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['stock'],
@@ -169,7 +169,7 @@ export const stockFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['stock'],
@@ -225,7 +225,7 @@ export const stockFields: INodeProperties[] = [
 				name: 'isConsumable',
 				type: 'boolean',
 				default: false,
-				description: 'Filter by consumable flag',
+				description: 'Whether to filter by consumable flag',
 			},
 			{
 				displayName: 'Product Category IDs',
@@ -398,7 +398,7 @@ export const stockFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['stock'],
@@ -524,7 +524,6 @@ export const stockFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Product category ID',
 		displayOptions: {
 			show: {
 				resource: ['stock'],
@@ -679,7 +678,7 @@ export const stockFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['stock'],
@@ -731,6 +730,13 @@ export const stockFields: INodeProperties[] = [
 		},
 		options: [
 			{
+				displayName: 'Drop-Off Contact IDs',
+				name: 'dropOffContactId',
+				type: 'string',
+				default: '',
+				description: 'Filter by drop-off contact IDs (comma-separated for multiple, max 50)',
+			},
+			{
 				displayName: 'Drop-Off From',
 				name: 'dropOffAtFrom',
 				type: 'dateTime',
@@ -743,13 +749,6 @@ export const stockFields: INodeProperties[] = [
 				type: 'dateTime',
 				default: '',
 				description: 'Only return movements where drop-off date is on or before this UTC date',
-			},
-			{
-				displayName: 'Drop-Off Contact IDs',
-				name: 'dropOffContactId',
-				type: 'string',
-				default: '',
-				description: 'Filter by drop-off contact IDs (comma-separated for multiple, max 50)',
 			},
 			{
 				displayName: 'Drop-Off Vehicle IDs',
@@ -823,7 +822,7 @@ export const stockFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['stock'],
