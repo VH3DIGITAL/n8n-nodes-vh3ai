@@ -64,13 +64,13 @@ export const quotesOperations: INodeProperties[] = [
 				name: 'List Quotes',
 				value: 'listQuotes',
 				action: 'List or search quotes',
-				description: 'List quotes. BigChange requires at least one filter (id/jobId/jobGroupId/contactId/reference) or a createdAt window — if none supplied, the node defaults to the last 12 months. Use for pipeline/conversion analysis or finding a customer\'s outstanding quote.',
+				description: 'List quotes. BigChange requires at least one filter (ID/jobId/jobGroupId/contactId/reference) or a createdAt window — if none supplied, the node defaults to the last 12 months. Use for pipeline/conversion analysis or finding a customer\'s outstanding quote.',
 			},
 			{
 				name: 'Mark Quote Accepted',
 				value: 'markQuoteAccepted',
 				action: 'Mark a quote as accepted',
-				description: 'Customer accepted the quote — locks pricing and unblocks job/invoice creation against it.',
+				description: 'Customer accepted the quote — locks pricing and unblocks job/invoice creation against it',
 			},
 			{
 				name: 'Mark Quote Rejected',
@@ -96,7 +96,7 @@ export const quotesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['quotes'],
@@ -180,13 +180,6 @@ export const quotesFields: INodeProperties[] = [
 				description: 'Sort direction',
 			},
 			{
-				displayName: 'Quote IDs',
-				name: 'id',
-				type: 'string',
-				default: '',
-				description: 'Filter by quote IDs (comma-separated)',
-			},
-			{
 				displayName: 'Job Group IDs',
 				name: 'jobGroupId',
 				type: 'string',
@@ -199,6 +192,13 @@ export const quotesFields: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Filter by job IDs (comma-separated)',
+			},
+			{
+				displayName: 'Quote IDs',
+				name: 'id',
+				type: 'string',
+				default: '',
+				description: 'Filter by quote IDs (comma-separated)',
 			},
 			{
 				displayName: 'References',
@@ -301,14 +301,12 @@ export const quotesFields: INodeProperties[] = [
 				name: 'deliverySiteContactId',
 				type: 'number',
 				default: 0,
-				description: 'Delivery site contact ID',
 			},
 			{
 				displayName: 'Department Code ID',
 				name: 'departmentCodeId',
 				type: 'number',
 				default: 0,
-				description: 'Department code ID',
 			},
 			{
 				displayName: 'Internal Notes',
@@ -431,14 +429,12 @@ export const quotesFields: INodeProperties[] = [
 				name: 'deliverySiteContactId',
 				type: 'number',
 				default: 0,
-				description: 'Delivery site contact ID',
 			},
 			{
 				displayName: 'Department Code ID',
 				name: 'departmentCodeId',
 				type: 'number',
 				default: 0,
-				description: 'Department code ID',
 			},
 			{
 				displayName: 'Internal Notes',
@@ -513,7 +509,7 @@ export const quotesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['quotes'],
@@ -701,7 +697,6 @@ export const quotesFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Department code ID',
 		displayOptions: {
 			show: {
 				resource: ['quotes'],
@@ -829,7 +824,6 @@ export const quotesFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Department code ID',
 		displayOptions: {
 			show: {
 				resource: ['quotes'],
