@@ -46,7 +46,7 @@ export const jobsOperations: INodeProperties[] = [
 				name: 'Delete Job Constraint',
 				value: 'deleteJobConstraint',
 				action: 'Delete a job constraint',
-				description: 'Remove a scheduling constraint by its constraint ID (get it first via List Job Constraints).',
+				description: 'Remove a scheduling constraint by its constraint ID (get it first via List Job Constraints)',
 			},
 			{
 				name: 'Edit Job',
@@ -57,20 +57,20 @@ export const jobsOperations: INodeProperties[] = [
 			{
 				name: 'Get Job',
 				value: 'getJob',
-				action: 'Get a job (enriched)',
+				action: 'Get an enriched job',
 				description: 'Get the FULL enriched view of one job (status history, assigned engineer, site address, custom fields, completed worksheet answers, attachments). Heavier payload — use this when an agent needs to summarise/answer questions about a specific job. For a quick lookup, use Get Job by ID instead.',
 			},
 			{
 				name: 'Get Job by ID',
 				value: 'getJobById',
-				action: 'Get a job by ID (lightweight)',
+				action: 'Get a job by id',
 				description: 'Lightweight single-job lookup by numeric ID via the proxy. Optionally include worksheets. Faster and cheaper than Get Job — prefer this when you only need core job fields. Set Simplify=true to strip the deep BigChange envelope.',
 			},
 			{
 				name: 'List Job Constraints',
 				value: 'listJobConstraints',
 				action: 'List job constraints',
-				description: 'List all scheduling constraints currently attached to a job (pre-existing rules the scheduler must respect).',
+				description: 'List all scheduling constraints currently attached to a job (pre-existing rules the scheduler must respect)',
 			},
 			{
 				name: 'List Job Status History',
@@ -82,7 +82,7 @@ export const jobsOperations: INodeProperties[] = [
 				name: 'List Job Stock',
 				value: 'listJobStock',
 				action: 'List job stock',
-				description: 'List every stock/parts line attached to a job — what was planned, brought, used, or taken back.',
+				description: 'List every stock/parts line attached to a job — what was planned, brought, used, or taken back',
 			},
 			{
 				name: 'List Jobs',
@@ -164,7 +164,7 @@ export const jobsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
@@ -263,8 +263,8 @@ export const jobsFields: INodeProperties[] = [
 					{ name: 'New', value: 'new' },
 					{ name: 'On The Way', value: 'onTheWay' },
 					{ name: 'Read', value: 'read' },
-					{ name: 'Rescheduled', value: 'rescheduled' },
 					{ name: 'Refused', value: 'refused' },
+					{ name: 'Rescheduled', value: 'rescheduled' },
 					{ name: 'Scheduled', value: 'scheduled' },
 					{ name: 'Sent', value: 'sent' },
 					{ name: 'Started', value: 'started' },
@@ -298,7 +298,7 @@ export const jobsFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Numeric BigChange job ID. Source from List Jobs (job.id) or any prior step that returned a job.',
+		description: 'Numeric BigChange job ID. Source from List Jobs (job ID) or any prior step that returned a job.',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
@@ -314,7 +314,7 @@ export const jobsFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Numeric BigChange job ID. Source from List Jobs (job.id).',
+		description: 'Numeric BigChange job ID. Source from List Jobs (job ID).',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
@@ -441,7 +441,6 @@ export const jobsFields: INodeProperties[] = [
 				name: 'jobGroupId',
 				type: 'number',
 				default: 0,
-				description: 'Job group ID',
 			},
 			{
 				displayName: 'Order Number',
@@ -531,7 +530,7 @@ export const jobsFields: INodeProperties[] = [
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Numeric contact ID of the customer or site this job is for.',
+		description: 'Numeric contact ID of the customer or site this job is for',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
@@ -543,7 +542,6 @@ export const jobsFields: INodeProperties[] = [
 		displayName: 'Custom Fields (JSON)',
 		name: 'customFieldsJson',
 		type: 'json',
-		required: false,
 		default: '[]',
 		description: 'Array of custom field objects resolved at runtime. Each item must have <code>definitionId</code> (number) and <code>value</code> (string). Pass the output of a Code node that builds this array dynamically from the job type schema.',
 		displayOptions: {
@@ -578,7 +576,6 @@ export const jobsFields: INodeProperties[] = [
 				name: 'jobGroupId',
 				type: 'number',
 				default: 0,
-				description: 'Job group ID',
 			},
 			{
 				displayName: 'Order Number',
@@ -665,7 +662,6 @@ export const jobsFields: INodeProperties[] = [
 				name: 'jobGroupId',
 				type: 'number',
 				default: 0,
-				description: 'Job group ID',
 			},
 			{
 				displayName: 'Office Notes',
@@ -922,7 +918,7 @@ export const jobsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
@@ -1095,7 +1091,7 @@ export const jobsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
@@ -1189,14 +1185,12 @@ export const jobsFields: INodeProperties[] = [
 				name: 'stockDetailsId',
 				type: 'number',
 				default: 0,
-				description: 'Stock details ID',
 			},
 			{
 				displayName: 'Stock Item ID',
 				name: 'stockItemId',
 				type: 'number',
 				default: 0,
-				description: 'Stock item ID',
 			},
 		],
 	},
@@ -1221,7 +1215,7 @@ export const jobsFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
