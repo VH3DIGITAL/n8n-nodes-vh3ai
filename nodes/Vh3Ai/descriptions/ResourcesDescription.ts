@@ -15,13 +15,13 @@ export const resourcesOperations: INodeProperties[] = [
 			{
 				name: 'Create Resource',
 				value: 'createResource',
-				action: 'Create a resource (engineer)',
+				action: 'Create a resource',
 				description: 'Create a new engineer/technician/operative. Requires name and groupId (team). Optional email, mobile, reference. Returns the new resource ID for use in Schedule Job.',
 			},
 			{
 				name: 'Get Resource',
 				value: 'getResource',
-				action: 'Get a resource (engineer)',
+				action: 'Get a resource',
 				description: 'Get one engineer by numeric ID — name, group/team, contact details, reference. Use to look up an engineer\'s profile.',
 			},
 			{
@@ -33,19 +33,19 @@ export const resourcesOperations: INodeProperties[] = [
 			{
 				name: 'List Resource Groups',
 				value: 'listResourceGroups',
-				action: 'List resource groups (teams)',
+				action: 'List resource groups',
 				description: 'List the teams that engineers belong to (e.g. "North region", "Senior techs"). Use as a lookup before listing/creating resources.',
 			},
 			{
 				name: 'List Resources',
 				value: 'listResources',
-				action: 'List resources (engineers)',
+				action: 'List resources',
 				description: 'List every engineer/technician/operative on the books. Use whenever an agent needs to find engineers, map names to IDs, or pick someone to assign a job to.',
 			},
 			{
 				name: 'Update Resource',
 				value: 'updateResource',
-				action: 'Update a resource (engineer)',
+				action: 'Update a resource',
 				description: 'Update fields on an existing engineer record (name, group/team, email, mobile, reference). Only supplied fields are changed.',
 			},
 		],
@@ -116,6 +116,7 @@ export const resourcesFields: INodeProperties[] = [
 				displayName: 'Email',
 				name: 'email',
 				type: 'string',
+				placeholder: 'name@email.com',
 				default: '',
 				description: 'Email address of the resource',
 			},
@@ -165,11 +166,12 @@ export const resourcesFields: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Name',
-				name: 'name',
+				displayName: 'Email',
+				name: 'email',
 				type: 'string',
+				placeholder: 'name@email.com',
 				default: '',
-				description: 'Updated name of the resource',
+				description: 'Updated email address',
 			},
 			{
 				displayName: 'Group ID',
@@ -179,18 +181,18 @@ export const resourcesFields: INodeProperties[] = [
 				description: 'Updated resource group assignment',
 			},
 			{
-				displayName: 'Email',
-				name: 'email',
-				type: 'string',
-				default: '',
-				description: 'Updated email address',
-			},
-			{
 				displayName: 'Mobile',
 				name: 'mobile',
 				type: 'string',
 				default: '',
 				description: 'Updated mobile phone number',
+			},
+			{
+				displayName: 'Name',
+				name: 'name',
+				type: 'string',
+				default: '',
+				description: 'Updated name of the resource',
 			},
 			{
 				displayName: 'Reference',
@@ -224,7 +226,7 @@ export const resourcesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['resources'],
@@ -269,7 +271,7 @@ export const resourcesFields: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: true,
-		description: 'Whether to return all results or only up to a given page size',
+		description: 'Whether to return all results or only up to a given limit',
 		displayOptions: {
 			show: {
 				resource: ['resources'],

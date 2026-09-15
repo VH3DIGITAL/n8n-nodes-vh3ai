@@ -34,6 +34,7 @@ import {
 	buildSingleSentinelOverrides,
 	unwrapFsiList,
 	parseJsonField,
+	applyJobFeedTrueOnlyQuery,
 } from './GenericFunctions';
 import { buildCaseDeleteRequest, buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
 import { buildPortalIngestBody, portalIngestNodeOutput, SourceEmailValidationError } from './emailIngest';
@@ -81,7 +82,7 @@ export class Vh3Ai implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'VH3 AI',
 		name: 'vh3Ai',
-		icon: 'file:vh3ai.svg',
+		icon: { light: 'file:vh3ai.svg', dark: 'file:vh3ai-inverted.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + " (" + $parameter["resource"] + ")"}}',
@@ -2120,6 +2121,7 @@ export class Vh3Ai implements INodeType {
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
 						const qs: Record<string, string | number | boolean> = {};
 						if (simplify) qs.compact = true;
+						applyJobFeedTrueOnlyQuery(qs, additionalFields);
 						if (additionalFields.contactId) qs.contact_id = additionalFields.contactId as number;
 						if (additionalFields.resourceId) qs.resource_id = additionalFields.resourceId as number;
 						if (additionalFields.typeId) qs.type_id = additionalFields.typeId as number;
@@ -2158,6 +2160,7 @@ export class Vh3Ai implements INodeType {
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
 						const qs: Record<string, string | number | boolean> = { contact_id: contactId };
 						if (simplify) qs.compact = true;
+						applyJobFeedTrueOnlyQuery(qs, additionalFields);
 						if (additionalFields.resourceId) qs.resource_id = additionalFields.resourceId as number;
 						if (additionalFields.typeId) qs.type_id = additionalFields.typeId as number;
 						if (additionalFields.categoryId) qs.category_id = additionalFields.categoryId as number;
@@ -3076,7 +3079,7 @@ export class Vh3Ai implements INodeType {
 					returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: i } });
 					continue;
 				}
-				throw error;
+				throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
 			}
 		}
 

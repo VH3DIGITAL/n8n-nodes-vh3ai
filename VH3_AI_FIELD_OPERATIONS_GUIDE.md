@@ -420,7 +420,8 @@ Both operations support optional **attachments** (e.g. a PDF from the customer) 
 
 | Operation | What It Does |
 |---|---|
-| **List Job Feed** | Returns a paginated, filtered list of AI-enriched jobs. Filterable by status, result, engineer, customer, job type, and category. |
+| **List Job Feed** | Returns a paginated, filtered list of AI-enriched jobs. Filterable by status, result, engineer, customer, job type, and category. Optional **Has Follow Up** returns only jobs with a non-empty follow-up list. Optional **Include VH3 AI** appends get-by-id-shaped VH3 AI data on each row. |
+| **List Account Job Feed** | Same filters as List Job Feed, scoped to a parent account and all its children. Pass any contact ID in the hierarchy. |
 | **Get Enriched Job** | Returns a single job with full AI enrichment. Optionally include worksheet answers. |
 | **Aggregate Jobs** | Computes summary metrics across a time period with grouping and period-over-period comparison. |
 

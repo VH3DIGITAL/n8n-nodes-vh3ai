@@ -8,6 +8,7 @@ import {
 	parseSentinelOverridesJson,
 	unwrapFsiList,
 	parseJsonField,
+	applyJobFeedTrueOnlyQuery,
 } from '../nodes/Vh3Ai/GenericFunctions';
 
 describe('extractItems', () => {
@@ -365,5 +366,19 @@ describe('parseJsonField', () => {
 		expect(parseJsonField('')).toBeUndefined();
 		expect(parseJsonField('   ')).toBeUndefined();
 		expect(parseJsonField(undefined)).toBeUndefined();
+	});
+});
+
+describe('applyJobFeedTrueOnlyQuery', () => {
+	it('omits has_follow_up and include_vh3_ai unless they are exactly true', () => {
+		const qs: Record<string, string | number | boolean> = {};
+		applyJobFeedTrueOnlyQuery(qs, {});
+		expect(qs).toEqual({});
+
+		applyJobFeedTrueOnlyQuery(qs, { hasFollowUp: false, includeVh3Ai: false });
+		expect(qs).toEqual({});
+
+		applyJobFeedTrueOnlyQuery(qs, { hasFollowUp: true, includeVh3Ai: true });
+		expect(qs).toEqual({ has_follow_up: true, include_vh3_ai: true });
 	});
 });
