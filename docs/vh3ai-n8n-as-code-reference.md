@@ -118,7 +118,7 @@ be changed unless VH3 support instructs otherwise.
 | Field        | Internal name | Required      | Default                                  | Notes                                                                                |
 | ------------ | ------------- | ------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
 | API Key      | `apiKey`      | Yes           | —                                        | Sent as `X-API-KEY` header on every request                                          |
-| Company ID   | `companyId`   | Conditionally | —                                        | Required for single-record operations (e.g. Get Job). Omit for list/feed operations. |
+| Company ID   | `companyId`   | Conditionally | —                                        | Required for VH3 AI operations, including Get Enriched Job. Not required for Get Job. |
 | Base URL     | `baseUrl`     | Yes           | `https://api.vh3connect.io`              | BigChange Web Services proxy base                                                    |
 | FSI Base URL | `fsiBaseUrl`  | Yes           | `https://api.vh3connect.io/api:kP8T1CK7` | VH3 AI intelligence layer base                                                       |
 
@@ -135,7 +135,7 @@ When generating a VH3 AI node block in JSON, reference the credential as:
 
 ## 3. Resource taxonomy
 
-The node exposes **35 resources** split across three internal API layers. This
+The node exposes **37 resources** split across three internal API layers. This
 split is invisible in the UI but critical for understanding timeout, latency,
 and data freshness expectations.
 
@@ -328,7 +328,7 @@ select the right VH3 AI node operation.
 | `listJobFeed`        | `status` (multi), `dateField`, `dateFrom`, `dateTo`, `contactId`, `resourceId`, `typeId` | Optional: `finishedEarly`/`finishedLate`, `startedEarly`/`startedLate`, `hasFollowUp`, `includeVh3Ai`, `sortBy` (+ `direction`). Default `dateField`: `createdAt`. |
 | `listAccountJobFeed` | `contactId` (required — any in hierarchy)                                                | Same optional punctuality / follow-up / VH3 AI / sort filters as `listJobFeed`. Traverses full parent-child account tree. |
 | `aggregateJobs`      | `metric`, `period`, `timeAxis`, `groupBy`, `compareTo`                                   | Optional filters: `finishedEarly`/`finishedLate`, `startedEarly`/`startedLate` (camelCase in `filters`). Prefer `timeAxis` `actualEndAt` / `actualStartAt`. |
-| `getEnrichedJob`     | `jobId` (required), `includeWorksheets`                                                  | Returns AI enrichment: vertical, sentiment, key phrases                                                                                                            |
+| `getEnrichedJob`     | `jobId` (required), `simplify`, `includeWorksheets`                                      | Enriched job. A response that is only an error detail fails the item. Plain BigChange jobs use Job → Get Job. |
 
 
 **Aggregate metrics**: `job_count`, `completion_rate`, `first_visit_fix_rate`,
@@ -480,7 +480,7 @@ Set workflow/node timeout to ≥ 30 s for narrative reports.
 
 | Operation                  | Key inputs                                               | Notes                                                                                                              |
 | -------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `connieChat`               | `message`, `sessionId` (optional), `contactId`, `userId` | Pass `sessionId` to continue an existing conversation. Set `experimentalMode: true` for the experimental pipeline. |
+| `connieChat`               | `message`, `sessionId` (optional), `contactId`, `userId` | Pass `sessionId` to continue an existing conversation. Chat always uses the stable Connie route. |
 | `listSessions`             | `userId`, `contactId`                                    | —                                                                                                                  |
 | `connieGetSessionMessages` | `sessionId`                                              | —                                                                                                                  |
 | `connieSearchHistory`      | `query`, `userId`, `contactId`                           | —                                                                                                                  |

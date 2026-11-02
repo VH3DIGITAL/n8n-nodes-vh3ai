@@ -49,6 +49,12 @@ export const jobsOperations: INodeProperties[] = [
 				description: 'Remove a scheduling constraint by its constraint ID (get it first via List Job Constraints)',
 			},
 			{
+				name: 'Delete Job Stock',
+				value: 'deleteJobStock',
+				action: 'Delete job stock',
+				description: 'Remove one planned part from a job',
+			},
+			{
 				name: 'Edit Job',
 				value: 'editJob',
 				action: 'Edit a job',
@@ -57,14 +63,20 @@ export const jobsOperations: INodeProperties[] = [
 			{
 				name: 'Get Job',
 				value: 'getJob',
-				action: 'Get an enriched job',
-				description: 'Get the FULL enriched view of one job (status history, assigned engineer, site address, custom fields, completed worksheet answers, attachments). Heavier payload — use this when an agent needs to summarise/answer questions about a specific job. For a quick lookup, use Get Job by ID instead.',
+				action: 'Get a plain job',
+				description: 'Get one plain BigChange job by numeric ID. This does not include AI enrichment. For the enriched job, use Job Feed (VH3 AI) and Get Enriched Job.',
 			},
 			{
 				name: 'Get Job by ID',
 				value: 'getJobById',
 				action: 'Get a job by id',
-				description: 'Lightweight single-job lookup by numeric ID via the proxy. Optionally include worksheets. Faster and cheaper than Get Job — prefer this when you only need core job fields. Set Simplify=true to strip the deep BigChange envelope.',
+				description: 'Get one plain BigChange job by numeric ID, using the same job route as Get Job. Optionally request a compact payload or worksheet answers.',
+			},
+			{
+				name: 'Get Job Stock',
+				value: 'getJobStock',
+				action: 'Get job stock',
+				description: 'Get one planned part on a job',
 			},
 			{
 				name: 'List Job Constraints',
@@ -291,34 +303,18 @@ export const jobsFields: INodeProperties[] = [
 		],
 	},
 
-	// ── Get Job fields ──
+	// ── Get Job and Get Job by ID ──
 	{
 		displayName: 'Job ID',
 		name: 'jobId',
 		type: 'number',
 		required: true,
 		default: 0,
-		description: 'Numeric BigChange job ID. Source from List Jobs (job ID) or any prior step that returned a job.',
+		description: 'Numeric BigChange job ID. Source from List Jobs or any prior step that returned a job.',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
-				operation: ['getJob'],
-			},
-		},
-	},
-
-	// ── Get Job by ID fields ──
-	{
-		displayName: 'Job ID',
-		name: 'jobId',
-		type: 'number',
-		required: true,
-		default: 0,
-		description: 'Numeric BigChange job ID. Source from List Jobs (job ID).',
-		displayOptions: {
-			show: {
-				resource: ['jobs'],
-				operation: ['getJobById'],
+				operation: ['getJob', 'getJobById'],
 			},
 		},
 	},
@@ -331,7 +327,7 @@ export const jobsFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
-				operation: ['getJobById'],
+				operation: ['getJob', 'getJobById'],
 			},
 		},
 	},
@@ -340,11 +336,11 @@ export const jobsFields: INodeProperties[] = [
 		name: 'includeWorksheets',
 		type: 'boolean',
 		default: false,
-		description: 'Whether to fetch and append the job\'s submitted worksheet answers (mobile-app checklists). Adds a second API call — leave off for fastest response.',
+		description: 'Whether to include BigChange worksheet answers on the job',
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
-				operation: ['getJobById'],
+				operation: ['getJob', 'getJobById'],
 			},
 		},
 	},
@@ -1263,8 +1259,30 @@ export const jobsFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
-				operation: ['listJobStatusHistory', 'listJobConstraints', 'listJobStock'],
+				operation: ['listJobStatusHistory', 'listJobConstraints', 'listJobStock', 'getJobStock'],
 			},
+		},
+	},
+	{
+		displayName: 'Job ID',
+		name: 'jobId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'Numeric ID of the job the stock row belongs to',
+		displayOptions: {
+			show: { resource: ['jobs'], operation: ['getJobStock', 'deleteJobStock'] },
+		},
+	},
+	{
+		displayName: 'Job Stock ID',
+		name: 'jobStockId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'Numeric ID of the job stock row',
+		displayOptions: {
+			show: { resource: ['jobs'], operation: ['getJobStock', 'deleteJobStock'] },
 		},
 	},
 ];

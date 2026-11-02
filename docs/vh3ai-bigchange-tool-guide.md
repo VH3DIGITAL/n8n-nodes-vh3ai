@@ -72,8 +72,8 @@ quotes, notes, stock, or related data.
   John's id → Schedule Job (jobId=12345, resourceId=<john>, plannedStartAt).
 - "Raise invoice for job 12345" → Create Invoice (currencyCode=GBP, jobId=12345)
   → Create Invoice Line Item (one or more) → Mark Invoice Sent.
-- "What did the engineer do on job 12345?" → Get Job (enriched, includes
-  worksheet answers and status history).
+- "What did the engineer do on job 12345?" → Job Feed, Get Enriched Job
+  (include worksheets). Get Job on Job (BigChange) is the plain job.
 - "Put customer Acme on stop" → List Contacts (name=Acme) → Stop Contact
   (contactId=<id>, status=contactOnStop, reason=...).
 ```
@@ -84,7 +84,7 @@ quotes, notes, stock, or related data.
 
 | Resource | Use when the user asks about... | Primary read | Primary write |
 |---|---|---|---|
-| **Job** | jobs, visits, callouts, schedule, status of a job | `List Jobs`, `Get Job` (enriched), `Get Job by ID` | `Create Job`, `Schedule Job`, `Start Job`, `Set Job Result`, `Cancel Job`, `Edit Job` |
+| **Job** | jobs, visits, callouts, schedule, status of a job | `List Jobs`, `Get Job`, `Get Job by ID` (plain BigChange job). Enriched detail is Job Feed → `Get Enriched Job`. | `Create Job`, `Schedule Job`, `Start Job`, `Set Job Result`, `Cancel Job`, `Edit Job` |
 | **Contact** | customers, sites, addresses, accounts | `List Contacts`, `Get Contact` | `Create Contact`, `Edit Contact`, `Stop Contact` / `Unstop Contact` |
 | **Resource (Engineer)** | engineers, technicians, operatives, who's free | `List Resources`, `Get Resource` | `Create Resource`, `Update Resource` |
 | **Vehicle** | fleet, vans, registrations | `List Vehicles`, `Get Vehicle` | `Create Vehicle`, `Update Vehicle` |
@@ -105,7 +105,7 @@ quotes, notes, stock, or related data.
 
 | If the agent is tempted to... | ...do this instead |
 |---|---|
-| Use `Get Job` for a quick lookup | Prefer `Get Job by ID` (lightweight). Reserve `Get Job` for full enriched detail incl. worksheets and history. |
+| Use `Get Job` when you need the enriched job | `Get Job` and `Get Job by ID` both return the plain BigChange job. Use Job Feed → `Get Enriched Job` for the enriched job. |
 | Cancel a job that was attended but failed | Use `Set Job Result` with `completedWithIssues` and a result string. `Cancel Job` is for jobs that didn't happen. |
 | Create an invoice line item without reference data | First call `List Reference Data` (department + nominal codes) and `List Job Types` for tax IDs. |
 | Search jobs by scheduled date | `List Jobs` filters by **created** date. To filter by scheduled time, list a wider window then filter the result by `plannedStartAt` in a downstream node. |
@@ -177,7 +177,7 @@ To avoid agents hallucinating IDs, here's the source for every ID the node accep
 1. `List Contacts` → name=`Acme` → take `id` (e.g. `4012`)
 2. `List Jobs` → `createdAtFrom=<yesterday 00:00Z>`, `createdAtTo=<yesterday 23:59Z>`,
    `contactId=4012`, `status=["completedWithIssues"]`, `simplify=true`
-3. For each job, optionally `Get Job` (enriched) for worksheet answers.
+3. For each job, optionally Job Feed → `Get Enriched Job` with worksheets, or `Get Job` with Include Worksheets for the plain job.
 
 ### Example B — "Raise an invoice for job 12345"
 
@@ -197,7 +197,7 @@ To avoid agents hallucinating IDs, here's the source for every ID the node accep
 ### Example D — "What worksheets did the engineer fill in on job 12345?"
 
 1. `List Worksheet Answers` (`jobIds='12345'`, `simplify=true`).
-   (Or `Get Job` (enriched) which embeds them.)
+   (Or `Get Job` with Include Worksheets, or Job Feed → `Get Enriched Job`.)
 
 ---
 
