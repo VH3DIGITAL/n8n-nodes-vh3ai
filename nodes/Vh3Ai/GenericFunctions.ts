@@ -7,7 +7,6 @@ import type {
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 const LIST_API_PREFIX = '/api:YdihQNr3';
-const ENRICH_API_PREFIX = '/api:6q5N0phZ';
 
 /**
  * Normalise the three BigChange response envelope shapes into a flat items array.
@@ -104,7 +103,7 @@ export async function vh3ListApiRequest(
 }
 
 /**
- * Validate that companyId is present in credentials before calling enrich endpoints.
+ * Validate that companyId is present before a VH3 AI call.
  */
 export function requireCompanyId(context: IExecuteFunctions, companyId: unknown): asserts companyId is string {
 	if (!companyId || (typeof companyId === 'string' && companyId.trim() === '')) {
@@ -112,38 +111,6 @@ export function requireCompanyId(context: IExecuteFunctions, companyId: unknown)
 			context.getNode(),
 			'Company ID is required for this operation. Set it in your VH3 AI API credentials.',
 		);
-	}
-}
-
-/**
- * Make an authenticated GET request to the VH3 enrichment API.
- */
-export async function vh3EnrichApiRequest(
-	this: IExecuteFunctions,
-	endpoint: string,
-	qs: Record<string, string | number>,
-): Promise<JsonObject> {
-	const credentials = await this.getCredentials('vh3AiApi');
-	const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
-
-	const options: IHttpRequestOptions = {
-		method: 'GET',
-		url: `${baseUrl}${ENRICH_API_PREFIX}${endpoint}`,
-		qs,
-		json: true,
-	};
-
-	try {
-		return (await this.helpers.httpRequestWithAuthentication.call(
-			this,
-			'vh3AiApi',
-			options,
-		)) as JsonObject;
-	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject, {
-			message: `Enrich API request failed: GET ${endpoint}`,
-			description: (error as Error).message,
-		});
 	}
 }
 
@@ -433,6 +400,86 @@ export async function vh3FsiPostRequest(
 		body: JSON.stringify(fullBody),
 		headers: {
 			'Content-Type': 'application/json',
+		},
+	};
+
+	try {
+		const response = await this.helpers.httpRequest(options);
+		if (typeof response === 'string') {
+			return JSON.parse(response) as JsonObject;
+		}
+		return response as JsonObject;
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: `FSI API request failed: POST ${endpoint}`,
+			description: (error as Error).message,
+		});
+	}
+}
+
+const JOB_IDENTITY_KEYS = ['id', 'job_id', 'reference'] as const;
+
+function isEmptyPayloadValue(value: unknown): boolean {
+	if (value === undefined || value === null || value === '') return true;
+	if (Array.isArray(value)) return value.length === 0;
+	if (typeof value === 'object') return Object.keys(value as object).length === 0;
+	return false;
+}
+
+/**
+ * A successful enriched-job response that is only an error detail, with no job identity.
+ */
+export function enrichedJobResponseIsErrorDetail(body: JsonObject): boolean {
+	const hasIdentity = JOB_IDENTITY_KEYS.some((key) => !isEmptyPayloadValue(body[key]));
+	if (hasIdentity) return false;
+	if (typeof body.detail !== 'string' || body.detail.trim() === '') return false;
+	return Object.entries(body).every(([key, value]) => key === 'detail' || isEmptyPayloadValue(value));
+}
+
+export function assertEnrichedJobPayload(context: IExecuteFunctions, raw: JsonObject): void {
+	if (!enrichedJobResponseIsErrorDetail(raw)) return;
+	const detail = String(raw.detail);
+	throw new NodeApiError(context.getNode(), { message: detail }, {
+		message: detail,
+		description: detail,
+	});
+}
+
+export function clampInteger(value: unknown, min: number, max: number, fallback: number): number {
+	const parsed = typeof value === 'number' ? value : Number(value);
+	if (!Number.isFinite(parsed)) return fallback;
+	return Math.min(max, Math.max(min, Math.trunc(parsed)));
+}
+
+/**
+ * Multipart POST to the VH3 AI API. Auth fields are sent in the form body.
+ */
+export async function vh3FsiMultipartPostRequest(
+	this: IExecuteFunctions,
+	endpoint: string,
+	fields: Record<string, string>,
+	file: { buffer: Buffer; fileName: string; mimeType: string },
+): Promise<JsonObject> {
+	const { fsiBaseUrl, company_id, api_key } = await getFsiAuth(this);
+	const body = {
+		company_id,
+		api_key,
+		...fields,
+		file: {
+			value: file.buffer,
+			options: {
+				filename: file.fileName,
+				contentType: file.mimeType,
+			},
+		},
+	};
+
+	const options: IHttpRequestOptions = {
+		method: 'POST',
+		url: `${fsiBaseUrl}${endpoint}`,
+		body: body as IHttpRequestOptions['body'],
+		headers: {
+			'Content-Type': 'multipart/form-data',
 		},
 	};
 

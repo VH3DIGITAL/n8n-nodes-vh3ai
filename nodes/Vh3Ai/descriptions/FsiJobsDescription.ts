@@ -22,7 +22,7 @@ export const fsiJobsOperations: INodeProperties[] = [
 				name: 'Get Enriched Job',
 				value: 'getEnrichedJob',
 				action: 'Get an enriched job',
-				description: 'Get a single job with worksheets, AI enrichment (vertical, sentiment, key phrases), and timing data',
+				description: 'Get one enriched job. Simplify flattens the payload, and Include Worksheets adds worksheet data. A response that only contains an error detail fails the item. For the plain BigChange job, use Job (BigChange) and Get Job.',
 			},
 			{
 				name: 'List Account Job Feed',

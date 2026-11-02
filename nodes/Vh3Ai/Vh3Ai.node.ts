@@ -12,7 +12,6 @@ import {
 	vh3ListApiRequest,
 	vh3ListApiRequestAllPages,
 	vh3ProxyGetRequest,
-	vh3EnrichApiRequest,
 	extractItems,
 	requireCompanyId,
 	toUtcDateTime,
@@ -35,6 +34,9 @@ import {
 	unwrapFsiList,
 	parseJsonField,
 	applyJobFeedTrueOnlyQuery,
+	assertEnrichedJobPayload,
+	clampInteger,
+	vh3FsiMultipartPostRequest,
 } from './GenericFunctions';
 import { buildCaseDeleteRequest, buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
 import { buildPortalIngestBody, portalIngestNodeOutput, SourceEmailValidationError } from './emailIngest';
@@ -68,6 +70,7 @@ import { fsiWeatherOperations, fsiWeatherFields } from './descriptions/FsiWeathe
 import { fsiIntelligenceOperations, fsiIntelligenceFields } from './descriptions/FsiIntelligenceDescription';
 import { fsiInvestigateOperations, fsiInvestigateFields } from './descriptions/FsiInvestigateDescription';
 import { fsiConnieOperations, fsiConnieFields } from './descriptions/FsiConnieDescription';
+import { fsiKnowledgeOperations, fsiKnowledgeFields } from './descriptions/FsiKnowledgeDescription';
 import { fsiUsersOperations, fsiUsersFields } from './descriptions/FsiUsersDescription';
 import { fsiTeamsOperations, fsiTeamsFields } from './descriptions/FsiTeamsDescription';
 import { fsiContactFeedOperations, fsiContactFeedFields } from './descriptions/FsiContactFeedDescription';
@@ -122,6 +125,7 @@ export class Vh3Ai implements INodeType {
 					{ name: 'Job Feed (VH3 AI)', value: 'jobFeed', description: 'Enriched job feed with aggregation and analytics' },
 					{ name: 'Job Group (BigChange)', value: 'jobGroups', description: 'Linked sets of jobs (e.g. multi-visit projects) and their status history' },
 					{ name: 'Job Type (BigChange)', value: 'jobTypes', description: 'Job type definitions (templates) — schemas for installation/repair/maintenance' },
+					{ name: 'Knowledge (VH3 AI)', value: 'knowledge', description: 'Search and manage library documents and summaries' },
 					{ name: 'Note (BigChange)', value: 'notes', description: 'Notes, tasks, and progress updates attached to jobs/contacts/persons' },
 					{ name: 'Person (BigChange)', value: 'persons', description: 'Individual people attached to a contact (e.g. site contacts). Includes consent history.' },
 					{ name: 'Pulse (VH3 AI)', value: 'pulse', description: 'Operational pulse dashboard for your company' },
@@ -206,6 +210,8 @@ export class Vh3Ai implements INodeType {
 			...fsiInvestigateFields,
 			...fsiConnieOperations,
 			...fsiConnieFields,
+			...fsiKnowledgeOperations,
+			...fsiKnowledgeFields,
 			...fsiUsersOperations,
 			...fsiUsersFields,
 			...fsiTeamsOperations,
@@ -239,7 +245,7 @@ export class Vh3Ai implements INodeType {
 
 		const fsiResources = new Set([
 			'accountReport', 'briefing', 'cases', 'connie', 'contactFeed', 'email',
-			'intelligence', 'investigate', 'jobFeed', 'pulse', 'quoteDocuments',
+			'intelligence', 'investigate', 'jobFeed', 'knowledge', 'pulse', 'quoteDocuments',
 			'quotient', 'reports', 'salma', 'search', 'sentinel', 'teams', 'users',
 			'weather',
 		]);
@@ -298,19 +304,9 @@ export class Vh3Ai implements INodeType {
 							const raw = await vh3ListApiRequest.call(this, '/jobs/list', body);
 							responseData = extractItems(raw).items;
 						}
-					} else if (operation === 'getJob') {
-						const credentials = await this.getCredentials('vh3AiApi');
-						const companyId = credentials.companyId;
-						requireCompanyId(this, companyId);
+					} else if (operation === 'getJob' || operation === 'getJobById') {
 						const jobId = this.getNodeParameter('jobId', i) as number;
-						const raw = await vh3EnrichApiRequest.call(this, '/enrichJob', {
-							jobId,
-							companyId: companyId as string,
-						});
-						responseData = [raw];
-					} else if (operation === 'getJobById') {
-						const jobId = this.getNodeParameter('jobId', i) as number;
-						const simplify = this.getNodeParameter('simplify', i) as boolean;
+						const simplify = this.getNodeParameter('simplify', i, false) as boolean;
 						const includeWorksheets = this.getNodeParameter('includeWorksheets', i, false) as boolean;
 						const qs: Record<string, string | number | boolean> = { id: jobId };
 						if (simplify) qs.compact = true;
@@ -480,6 +476,18 @@ export class Vh3Ai implements INodeType {
 							const raw = await vh3ListApiRequest.call(this, '/jobs/stock/list', body);
 							responseData = extractItems(raw).items;
 						}
+					} else if (operation === 'getJobStock') {
+						const jobId = this.getNodeParameter('jobId', i) as number;
+						const jobStockId = this.getNodeParameter('jobStockId', i) as number;
+						const body: JsonObject = { jobId, jobStockId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						const raw = await vh3ListApiRequest.call(this, '/jobs/stock/get', body);
+						responseData = [raw];
+					} else if (operation === 'deleteJobStock') {
+						const jobId = this.getNodeParameter('jobId', i) as number;
+						const jobStockId = this.getNodeParameter('jobStockId', i) as number;
+						const raw = await vh3ListApiRequest.call(this, '/jobs/stock/delete', { jobId, jobStockId });
+						responseData = [raw];
 					}
 				}
 
@@ -600,6 +608,23 @@ export class Vh3Ai implements INodeType {
 						const body: JsonObject = { groupId };
 						if (additionalFields.name) body.name = additionalFields.name;
 						const raw = await vh3ListApiRequest.call(this, '/contact_groups/update', body);
+						responseData = [raw];
+					} else if (operation === 'listSiteAccessHours') {
+						const contactId = this.getNodeParameter('contactId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const body: JsonObject = { contactId };
+						if (additionalFields.pageNumber) body.pageNumber = additionalFields.pageNumber;
+						if (additionalFields.pageSize) body.pageSize = additionalFields.pageSize;
+						const raw = await vh3ListApiRequest.call(this, '/contacts/site_access_hours_list', body);
+						const hours = extractItems(raw).items;
+						responseData = hours.length > 0 ? hours : [raw];
+					} else if (operation === 'updateSiteAccessHours') {
+						const contactId = this.getNodeParameter('contactId', i) as number;
+						const accessHours = parseJsonField(this.getNodeParameter('accessHours', i));
+						const raw = await vh3ListApiRequest.call(this, '/contacts/site_access_hours_update', {
+							contactId,
+							accessHours: (accessHours ?? []) as JsonObject,
+						});
 						responseData = [raw];
 					}
 				}
@@ -954,6 +979,10 @@ export class Vh3Ai implements INodeType {
 						const invoiceId = this.getNodeParameter('invoiceId', i) as number;
 						const lineItemId = this.getNodeParameter('lineItemId', i) as number;
 						const raw = await vh3ListApiRequest.call(this, '/invoices/line_item/delete', { invoiceId, lineItemId });
+						responseData = [raw];
+					} else if (operation === 'createInvoiceDocument') {
+						const invoiceId = this.getNodeParameter('invoiceId', i) as number;
+						const raw = await vh3ListApiRequest.call(this, '/invoices/document/create', { invoiceId });
 						responseData = [raw];
 					}
 				}
@@ -1687,6 +1716,15 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.isOptedOut !== undefined) body.isOptedOut = additionalFields.isOptedOut;
 						const raw = await vh3ListApiRequest.call(this, '/persons/edit', body);
 						responseData = [raw];
+					} else if (operation === 'setPersonConsent') {
+						const personId = this.getNodeParameter('personId', i) as string;
+						const status = this.getNodeParameter('consentStatus', i) as string;
+						const medium = this.getNodeParameter('consentMedium', i) as string;
+						const comment = this.getNodeParameter('comment', i, '') as string;
+						const body: JsonObject = { personId, status, medium };
+						if (comment.trim()) body.comment = comment.trim();
+						const raw = await vh3ListApiRequest.call(this, '/persons/consent/set', body);
+						responseData = [raw];
 					}
 				}
 
@@ -2018,6 +2056,37 @@ export class Vh3Ai implements INodeType {
 
 				// ── EMAIL (FSI) ──────────────────────────────────────────────
 				else if (resource === 'email') {
+					if (operation === 'listPendingExtractions' || operation === 'getPendingExtraction' || operation === 'confirmPendingExtraction' || operation === 'rejectPendingExtraction') {
+						if (operation === 'listPendingExtractions') {
+							const raw = await vh3FsiGetRequest.call(this, '/ingest/email/pending', {});
+							responseData = Array.isArray(raw) ? raw : [raw];
+						} else if (operation === 'getPendingExtraction') {
+							const extractionId = this.getNodeParameter('extractionId', i) as string;
+							const raw = await vh3FsiGetRequest.call(this, `/ingest/email/pending/${encodeURIComponent(extractionId)}`, {});
+							responseData = [raw];
+						} else if (operation === 'confirmPendingExtraction') {
+							const extractionId = this.getNodeParameter('extractionId', i) as string;
+							const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+							const body: JsonObject = { extraction_id: extractionId };
+							if (additionalFields.contactId) body.contact_id = additionalFields.contactId;
+							if (additionalFields.siteKey) body.site_key = additionalFields.siteKey;
+							if (additionalFields.typeId) body.type_id = additionalFields.typeId;
+							if (additionalFields.categoryId) body.category_id = additionalFields.categoryId;
+							if (additionalFields.reviewedBy) body.reviewed_by = additionalFields.reviewedBy;
+							const corrections = parseJsonField(additionalFields.corrections);
+							if (corrections !== undefined) body.corrections = corrections as JsonObject;
+							const raw = await vh3FsiPostRequest.call(this, '/ingest/email/confirm', body);
+							responseData = [raw];
+						} else {
+							const extractionId = this.getNodeParameter('extractionId', i) as string;
+							const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+							const body: JsonObject = { extraction_id: extractionId };
+							if (additionalFields.reason) body.reason = additionalFields.reason;
+							if (additionalFields.reviewedBy) body.reviewed_by = additionalFields.reviewedBy;
+							const raw = await vh3FsiPostRequest.call(this, '/ingest/email/reject', body);
+							responseData = [raw];
+						}
+					} else {
 					const attachments = await buildAttachments(this, i);
 
 				if (operation === 'classifyEmail') {
@@ -2076,6 +2145,7 @@ export class Vh3Ai implements INodeType {
 						responseData = operation === 'ingestEmail'
 							? [portalIngestNodeOutput(raw)]
 							: [raw];
+					}
 					}
 				}
 
@@ -2199,6 +2269,7 @@ export class Vh3Ai implements INodeType {
 						if (simplify) qs.compact = true;
 						if (includeWorksheets) qs.include_worksheets = true;
 						const raw = await vh3FsiGetRequest.call(this, `/jobs/${jobId}`, qs);
+						assertEnrichedJobPayload(this, raw);
 						responseData = [raw];
 					}
 				}
@@ -2549,7 +2620,6 @@ export class Vh3Ai implements INodeType {
 				else if (resource === 'connie') {
 					if (operation === 'connieChat') {
 						const message = this.getNodeParameter('message', i) as string;
-						const experimental = this.getNodeParameter('experimentalMode', i, false) as boolean;
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
 						const body: JsonObject = { message };
 						if (additionalFields.sessionId) body.session_id = additionalFields.sessionId;
@@ -2559,8 +2629,7 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.summary) body.summary = additionalFields.summary;
 						if (additionalFields.contactId) body.contact_id = additionalFields.contactId;
 						if (additionalFields.currentJobReference) body.current_job_reference = additionalFields.currentJobReference;
-						const endpoint = experimental ? '/connie/experimental/chat' : '/connie/chat';
-						const raw = await vh3FsiPostRequest.call(this, endpoint, body);
+						const raw = await vh3FsiPostRequest.call(this, '/connie/chat', body);
 						responseData = [raw];
 					} else if (operation === 'connieListSessions') {
 						const additionalFields = this.getNodeParameter('additionalFields', i) as JsonObject;
@@ -2590,6 +2659,76 @@ export class Vh3Ai implements INodeType {
 						if (additionalFields.industry) body.industry = additionalFields.industry;
 						const raw = await vh3FsiPostRequest.call(this, '/connie/generate-summary', body);
 						responseData = [raw];
+					}
+				}
+
+				// ── KNOWLEDGE (VH3 AI) ───────────────────────────────────────
+				else if (resource === 'knowledge') {
+					const requireQuery = (value: string) => {
+						if (!value.trim()) {
+							throw new NodeOperationError(this.getNode(), 'Query is required.');
+						}
+					};
+					if (operation === 'searchKnowledge' || operation === 'searchLibrary') {
+						const query = this.getNodeParameter('query', i) as string;
+						requireQuery(query);
+						const actingUserId = this.getNodeParameter('actingUserId', i, 0) as number;
+						const isLibrary = operation === 'searchLibrary';
+						const limit = clampInteger(
+							this.getNodeParameter('resultLimit', i, isLibrary ? 5 : 10),
+							1,
+							isLibrary ? 10 : 20,
+							isLibrary ? 5 : 10,
+						);
+						const body: JsonObject = { query, limit };
+						if (actingUserId > 0) body.acting_user_id = actingUserId;
+						if (!isLibrary) {
+							const sources = this.getNodeParameter('sources', i, []) as string[];
+							const sectionsRaw = this.getNodeParameter('sections', i, '') as string;
+							const sections = sectionsRaw.split(',').map((section) => section.trim()).filter((section) => section.length > 0);
+							if (sources.length > 0) body.sources = sources as unknown as JsonObject;
+							if (sections.length > 0) body.sections = sections as unknown as JsonObject;
+						}
+						const endpoint = isLibrary ? '/knowledge/documents/search' : '/knowledge/search';
+						const raw = await vh3FsiPostRequest.call(this, endpoint, body);
+						responseData = [raw];
+					} else if (operation === 'uploadDocument') {
+						const userId = this.getNodeParameter('userId', i) as number;
+						if (!userId) {
+							throw new NodeOperationError(this.getNode(), 'Owner User ID is required.');
+						}
+						const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
+						const binary = this.helpers.assertBinaryData(i, binaryPropertyName);
+						const buffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
+						const share = this.getNodeParameter('share', i, false) as boolean;
+						const fields: Record<string, string> = { user_id: String(userId) };
+						if (share) fields.share = 'true';
+						const raw = await vh3FsiMultipartPostRequest.call(this, '/knowledge/documents/upload', fields, {
+							buffer,
+							fileName: binary.fileName || 'document.pdf',
+							mimeType: binary.mimeType || 'application/pdf',
+						});
+						responseData = [raw];
+					} else if (operation === 'shareDocument') {
+						const documentId = this.getNodeParameter('documentId', i) as string;
+						const userId = this.getNodeParameter('userId', i) as number;
+						const share = this.getNodeParameter('share', i, false) as boolean;
+						const raw = await vh3FsiPostRequest.call(this, '/knowledge/documents/share', {
+							document_id: documentId,
+							user_id: userId,
+							share,
+						});
+						responseData = [raw];
+					} else if (operation === 'deleteDocument') {
+						const documentId = this.getNodeParameter('documentId', i) as string;
+						const userId = this.getNodeParameter('userId', i) as number;
+						const raw = await vh3FsiPostRequest.call(this, '/knowledge/documents/delete', {
+							document_id: documentId,
+							user_id: userId,
+						});
+						responseData = [raw];
+					} else {
+						throw new NodeOperationError(this.getNode(), `The operation "${operation}" is not available on Knowledge.`);
 					}
 				}
 
@@ -2977,6 +3116,39 @@ export class Vh3Ai implements INodeType {
 							catalog_ids: catalogIds,
 						});
 						responseData = unwrapFsiList(raw);
+					} else if (operation === 'patchQuoteDocumentHeader') {
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const body: JsonObject = {
+							document_id: this.getNodeParameter('documentId', i) as string,
+							expected_draft_revision: this.getNodeParameter('expectedDraftRevision', i) as number,
+							initiated_by_user_id: this.getNodeParameter('initiatedByUserId', i) as number,
+						};
+						if (additionalFields.title) body.title = additionalFields.title;
+						if (additionalFields.validUntil) body.valid_until = additionalFields.validUntil;
+						if (additionalFields.assignedUserId) body.assigned_user_id = additionalFields.assignedUserId;
+						if (additionalFields.sessionId) body.session_id = additionalFields.sessionId;
+						const commercialContent = parseJsonField(additionalFields.commercialContent);
+						if (commercialContent !== undefined) body.commercial_content = commercialContent as JsonObject;
+						const raw = await vh3FsiPostRequest.call(this, '/quoting/documents/patch_head', body);
+						responseData = [raw];
+					} else if (operation === 'createQuoteRevision') {
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const body: JsonObject = {
+							document_id: this.getNodeParameter('documentId', i) as string,
+							version: this.getNodeParameter('revisionVersion', i) as number,
+							status: this.getNodeParameter('revisionStatus', i) as string,
+							lines: (parseJsonField(this.getNodeParameter('lines', i)) ?? []) as JsonObject,
+						};
+						if (additionalFields.title) body.title = additionalFields.title;
+						if (additionalFields.currency) body.currency = additionalFields.currency;
+						if (additionalFields.changeSummary) body.change_summary = additionalFields.changeSummary;
+						if (additionalFields.customerRef) body.customer_ref = additionalFields.customerRef;
+						if (additionalFields.siteRef) body.site_ref = additionalFields.siteRef;
+						if (additionalFields.jobRef) body.job_ref = additionalFields.jobRef;
+						const commercialContent = parseJsonField(additionalFields.commercialContent);
+						if (commercialContent !== undefined) body.commercial_content = commercialContent as JsonObject;
+						const raw = await vh3FsiPostRequest.call(this, '/quoting/revisions/create', body);
+						responseData = [raw];
 					}
 				}
 

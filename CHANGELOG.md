@@ -4,6 +4,27 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.14.0] — 2026-11-02
+
+### Changed
+
+- **Job (BigChange) › Get Job** and **Get Job by ID** return the plain BigChange job. Company ID is not required. Simplify requests a compact job, and Include Worksheets requests worksheet answers. Existing steps keep their operation names. For the enriched job, use Job Feed (VH3 AI) › Get Enriched Job.
+- **Connie › Chat** always uses the stable chat route. The experimental chat switch is removed. A workflow that had it turned on keeps sending messages.
+
+### Added
+
+- **Knowledge (VH3 AI)** — search knowledge, search the library, upload a PDF, and share or delete a library document.
+- **Email (VH3 AI)** — list pending extractions, fetch one, confirm it into a job, or reject it.
+- **Quote Document (VH3 AI)** — patch a document header and create a revision.
+- **Job (BigChange)** — get or delete one job-stock row.
+- **Person (BigChange)** — set a person's consent.
+- **Contact (BigChange)** — list and update site access hours.
+- **Invoice (BigChange)** — create an invoice document.
+
+### Fixed
+
+- **Job Feed › Get Enriched Job** fails the item when the response is only an error detail, so a missing job is not treated as a successful item.
+
 ## [0.13.0] — 2026-09-15
 
 ### Added
