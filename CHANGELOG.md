@@ -14,7 +14,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ### Added
 
 - **Knowledge (VH3 AI)** — search knowledge, search the library, upload a PDF, and share or delete a library document.
-- **Graph (VH3 AI)** — list named graph queries and run one with optional filters.
 - **Email (VH3 AI)** — list pending extractions, fetch one, confirm it into a job, or reject it.
 - **Quote Document (VH3 AI)** — patch a document header and create a revision.
 - **Job (BigChange)** — get or delete one job-stock row.

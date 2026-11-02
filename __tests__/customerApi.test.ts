@@ -311,50 +311,7 @@ describe('Knowledge', () => {
 	});
 });
 
-describe('graph and the other customer operations', () => {
-	it('posts a graph query with the preset, filters, and company credentials', async () => {
-		const { httpRequest } = await executeNode({
-			resource: 'graph',
-			operation: 'runGraphQuery',
-			preset: 'job_neighborhood',
-			filters: '{"jobId":501}',
-		});
-
-		const request = fsiCall(httpRequest);
-		expect(request.method).toBe('POST');
-		expect(request.url).toBe(`${CREDENTIALS.fsiBaseUrl}/graph/query`);
-		expect(JSON.parse(request.body as string)).toEqual({
-			company_id: 'company-123',
-			api_key: 'tenant-api-key',
-			preset: 'job_neighborhood',
-			filters: { jobId: 501 },
-		});
-	});
-
-	it('lists graph presets with company credentials on the query', async () => {
-		const { httpRequest } = await executeNode({
-			resource: 'graph',
-			operation: 'listGraphPresets',
-		});
-
-		const request = fsiCall(httpRequest);
-		expect(request.method).toBe('GET');
-		expect(request.url).toBe(`${CREDENTIALS.fsiBaseUrl}/graph/presets`);
-		expect(request.qs).toMatchObject({
-			company_id: 'company-123',
-			api_key: 'tenant-api-key',
-		});
-	});
-
-	it('fails a graph query when the gateway returns an error', async () => {
-		await expect(
-			executeNode(
-				{ resource: 'graph', operation: 'runGraphQuery', preset: 'missing', filters: '{}' },
-				{ rejectHttp: new Error('Preset not found') },
-			),
-		).rejects.toThrow(/POST \/graph\/query/);
-	});
-
+describe('the other customer operations', () => {
 	it('lists, gets, confirms, and rejects pending email extractions', async () => {
 		const listed = await executeNode({ resource: 'email', operation: 'listPendingExtractions' });
 		expect(fsiCall(listed.httpRequest).method).toBe('GET');

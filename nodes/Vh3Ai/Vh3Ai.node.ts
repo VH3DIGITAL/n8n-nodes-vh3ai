@@ -71,7 +71,6 @@ import { fsiIntelligenceOperations, fsiIntelligenceFields } from './descriptions
 import { fsiInvestigateOperations, fsiInvestigateFields } from './descriptions/FsiInvestigateDescription';
 import { fsiConnieOperations, fsiConnieFields } from './descriptions/FsiConnieDescription';
 import { fsiKnowledgeOperations, fsiKnowledgeFields } from './descriptions/FsiKnowledgeDescription';
-import { fsiGraphOperations, fsiGraphFields } from './descriptions/FsiGraphDescription';
 import { fsiUsersOperations, fsiUsersFields } from './descriptions/FsiUsersDescription';
 import { fsiTeamsOperations, fsiTeamsFields } from './descriptions/FsiTeamsDescription';
 import { fsiContactFeedOperations, fsiContactFeedFields } from './descriptions/FsiContactFeedDescription';
@@ -119,7 +118,6 @@ export class Vh3Ai implements INodeType {
 					{ name: 'Contact (BigChange)', value: 'contacts', description: 'Customers and sites — companies, addresses, locations' },
 					{ name: 'Contact Feed (VH3 AI)', value: 'contactFeed', description: 'Enriched contact/customer feed with operational snapshot' },
 					{ name: 'Email (VH3 AI)', value: 'email', description: 'Email triage — classify, ingest, and list triage categories' },
-					{ name: 'Graph (VH3 AI)', value: 'graph', description: 'Named graph queries and the presets they accept' },
 					{ name: 'Intelligence (VH3 AI)', value: 'intelligence', description: 'Job type profiling — list, get, and generate intelligence profiles' },
 					{ name: 'Investigate (VH3 AI)', value: 'investigate', description: 'Run investigative queries against operational data' },
 					{ name: 'Invoice (BigChange)', value: 'invoices', description: 'Sales invoices and their line items — read, create, edit, mark sent/paid, cancel' },
@@ -214,8 +212,6 @@ export class Vh3Ai implements INodeType {
 			...fsiConnieFields,
 			...fsiKnowledgeOperations,
 			...fsiKnowledgeFields,
-			...fsiGraphOperations,
-			...fsiGraphFields,
 			...fsiUsersOperations,
 			...fsiUsersFields,
 			...fsiTeamsOperations,
@@ -249,7 +245,7 @@ export class Vh3Ai implements INodeType {
 
 		const fsiResources = new Set([
 			'accountReport', 'briefing', 'cases', 'connie', 'contactFeed', 'email',
-			'graph', 'intelligence', 'investigate', 'jobFeed', 'knowledge', 'pulse', 'quoteDocuments',
+			'intelligence', 'investigate', 'jobFeed', 'knowledge', 'pulse', 'quoteDocuments',
 			'quotient', 'reports', 'salma', 'search', 'sentinel', 'teams', 'users',
 			'weather',
 		]);
@@ -2733,30 +2729,6 @@ export class Vh3Ai implements INodeType {
 						responseData = [raw];
 					} else {
 						throw new NodeOperationError(this.getNode(), `The operation "${operation}" is not available on Knowledge.`);
-					}
-				}
-
-				// ── GRAPH (VH3 AI) ───────────────────────────────────────────
-				else if (resource === 'graph') {
-					if (operation === 'listGraphPresets') {
-						const raw = await vh3FsiGetRequest.call(this, '/graph/presets', {});
-						responseData = Array.isArray(raw) ? raw : [raw];
-					} else if (operation === 'runGraphQuery') {
-						const preset = this.getNodeParameter('preset', i) as string;
-						const filters = parseJsonField(this.getNodeParameter('filters', i, ''));
-						const body: JsonObject = { preset };
-						if (
-							filters !== undefined &&
-							typeof filters === 'object' &&
-							!Array.isArray(filters) &&
-							Object.keys(filters as JsonObject).length > 0
-						) {
-							body.filters = filters as JsonObject;
-						}
-						const raw = await vh3FsiPostRequest.call(this, '/graph/query', body);
-						responseData = [raw];
-					} else {
-						throw new NodeOperationError(this.getNode(), `The operation "${operation}" is not available on Graph.`);
 					}
 				}
 
