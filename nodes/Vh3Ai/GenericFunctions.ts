@@ -7,7 +7,6 @@ import type {
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 const LIST_API_PREFIX = '/api:YdihQNr3';
-const ENRICH_API_PREFIX = '/api:6q5N0phZ';
 
 /**
  * Normalise the three BigChange response envelope shapes into a flat items array.
@@ -104,7 +103,7 @@ export async function vh3ListApiRequest(
 }
 
 /**
- * Validate that companyId is present in credentials before calling enrich endpoints.
+ * Validate that companyId is present before a VH3 AI call.
  */
 export function requireCompanyId(context: IExecuteFunctions, companyId: unknown): asserts companyId is string {
 	if (!companyId || (typeof companyId === 'string' && companyId.trim() === '')) {
@@ -112,38 +111,6 @@ export function requireCompanyId(context: IExecuteFunctions, companyId: unknown)
 			context.getNode(),
 			'Company ID is required for this operation. Set it in your VH3 AI API credentials.',
 		);
-	}
-}
-
-/**
- * Make an authenticated GET request to the VH3 enrichment API.
- */
-export async function vh3EnrichApiRequest(
-	this: IExecuteFunctions,
-	endpoint: string,
-	qs: Record<string, string | number>,
-): Promise<JsonObject> {
-	const credentials = await this.getCredentials('vh3AiApi');
-	const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
-
-	const options: IHttpRequestOptions = {
-		method: 'GET',
-		url: `${baseUrl}${ENRICH_API_PREFIX}${endpoint}`,
-		qs,
-		json: true,
-	};
-
-	try {
-		return (await this.helpers.httpRequestWithAuthentication.call(
-			this,
-			'vh3AiApi',
-			options,
-		)) as JsonObject;
-	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject, {
-			message: `Enrich API request failed: GET ${endpoint}`,
-			description: (error as Error).message,
-		});
 	}
 }
 
