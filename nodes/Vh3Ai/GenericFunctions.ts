@@ -450,6 +450,86 @@ export async function vh3FsiPostRequest(
 	}
 }
 
+const JOB_IDENTITY_KEYS = ['id', 'job_id', 'reference'] as const;
+
+function isEmptyPayloadValue(value: unknown): boolean {
+	if (value === undefined || value === null || value === '') return true;
+	if (Array.isArray(value)) return value.length === 0;
+	if (typeof value === 'object') return Object.keys(value as object).length === 0;
+	return false;
+}
+
+/**
+ * A successful enriched-job response that is only an error detail, with no job identity.
+ */
+export function enrichedJobResponseIsErrorDetail(body: JsonObject): boolean {
+	const hasIdentity = JOB_IDENTITY_KEYS.some((key) => !isEmptyPayloadValue(body[key]));
+	if (hasIdentity) return false;
+	if (typeof body.detail !== 'string' || body.detail.trim() === '') return false;
+	return Object.entries(body).every(([key, value]) => key === 'detail' || isEmptyPayloadValue(value));
+}
+
+export function assertEnrichedJobPayload(context: IExecuteFunctions, raw: JsonObject): void {
+	if (!enrichedJobResponseIsErrorDetail(raw)) return;
+	const detail = String(raw.detail);
+	throw new NodeApiError(context.getNode(), { message: detail }, {
+		message: detail,
+		description: detail,
+	});
+}
+
+export function clampInteger(value: unknown, min: number, max: number, fallback: number): number {
+	const parsed = typeof value === 'number' ? value : Number(value);
+	if (!Number.isFinite(parsed)) return fallback;
+	return Math.min(max, Math.max(min, Math.trunc(parsed)));
+}
+
+/**
+ * Multipart POST to the VH3 AI API. Auth fields are sent in the form body.
+ */
+export async function vh3FsiMultipartPostRequest(
+	this: IExecuteFunctions,
+	endpoint: string,
+	fields: Record<string, string>,
+	file: { buffer: Buffer; fileName: string; mimeType: string },
+): Promise<JsonObject> {
+	const { fsiBaseUrl, company_id, api_key } = await getFsiAuth(this);
+	const body = {
+		company_id,
+		api_key,
+		...fields,
+		file: {
+			value: file.buffer,
+			options: {
+				filename: file.fileName,
+				contentType: file.mimeType,
+			},
+		},
+	};
+
+	const options: IHttpRequestOptions = {
+		method: 'POST',
+		url: `${fsiBaseUrl}${endpoint}`,
+		body: body as IHttpRequestOptions['body'],
+		headers: {
+			'Content-Type': 'multipart/form-data',
+		},
+	};
+
+	try {
+		const response = await this.helpers.httpRequest(options);
+		if (typeof response === 'string') {
+			return JSON.parse(response) as JsonObject;
+		}
+		return response as JsonObject;
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: `FSI API request failed: POST ${endpoint}`,
+			description: (error as Error).message,
+		});
+	}
+}
+
 /**
  * PATCH request to the VH3 FSI API.
  */

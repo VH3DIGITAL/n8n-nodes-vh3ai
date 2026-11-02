@@ -55,8 +55,8 @@ A **Job** is a single field service visit — a callout, inspection, installatio
 | Operation | What It Does |
 |---|---|
 | **List Jobs** | Returns a filtered list of jobs. You must supply a **Created From** and **Created To** date. Note: this filters by when the job was *created*, not when it was *scheduled*. |
-| **Get Job** | Returns the full enriched detail of a job — including worksheet answers, status history, and all linked data. Use this when you need the complete picture. |
-| **Get Job by ID** | A lightweight lookup by job number. Use this for a quick check when you already know the ID. |
+| **Get Job** | Returns one plain BigChange job. It does not include VH3 AI enrichment. Use Job Feed → Get Enriched Job for the enriched job. |
+| **Get Job by ID** | Returns the same plain BigChange job as Get Job. |
 | **Create Job** | Creates a new job. You need a **Job Type ID** (the template) and a **Contact ID** (the customer or site). The job is created but not yet scheduled. |
 | **Edit Job** | Updates fields on an existing job. |
 | **Cancel Job** | Cancels a job that did not take place. Do **not** use this to mark a job where the engineer attended but had problems — use **Set Job Result** for that. |
@@ -543,7 +543,7 @@ All semantic search operations return one n8n item per result (pre-unwrapped for
 | What you want to do | Which operation(s) to use |
 |---|---|
 | See all jobs for a customer this week | **List Jobs** (BigChange) — filter by contactId and created date range |
-| Get the full detail of a specific job | **Get Job** (BigChange) — returns worksheets, history, and linked data |
+| Get the full enriched detail of a specific job | **Get Enriched Job** on Job Feed (VH3 AI). **Get Job** on Job (BigChange) is the plain job. |
 | Reassign a job to a different engineer | **Schedule Job** (BigChange) — supply the new resourceId and planned start |
 | Check what an engineer completed on-site | **List Worksheet Answers** (BigChange) or **Get Enriched Job** (VH3 AI) |
 | Raise an invoice for a completed job | **Create Invoice** → **Create Invoice Line Items** → **Mark Invoice Sent** (BigChange) |

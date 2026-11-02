@@ -25,6 +25,12 @@ export const invoicesOperations: INodeProperties[] = [
 			description: 'Raise a new invoice. Requires currencyCode (ISO 4217, e.g. GBP, USD, EUR). Link to a job, job group, OR contact via additional fields. Optionally set invoice date (createdAt), notes, bank account, department, nominal code. After creation, add lines via Create Invoice Line Item, then Mark Invoice Sent.',
 		},
 			{
+				name: 'Create Invoice Document',
+				value: 'createInvoiceDocument',
+				action: 'Create an invoice document',
+				description: 'Create the document for an invoice, such as its PDF',
+			},
+			{
 				name: 'Create Invoice Line Item',
 				value: 'createInvoiceLineItem',
 				action: 'Create an invoice line item',
@@ -758,5 +764,14 @@ export const invoicesFields: INodeProperties[] = [
 				operation: ['listInvoices', 'getInvoice', 'listInvoiceLineItems', 'getInvoiceLineItem'],
 			},
 		},
+	},
+	{
+		displayName: 'Invoice ID',
+		name: 'invoiceId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'Numeric ID of the invoice to turn into a document',
+		displayOptions: { show: { resource: ['invoices'], operation: ['createInvoiceDocument'] } },
 	},
 ];

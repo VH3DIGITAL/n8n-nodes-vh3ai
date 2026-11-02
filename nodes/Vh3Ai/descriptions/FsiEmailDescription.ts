@@ -25,6 +25,18 @@ export const fsiEmailOperations: INodeProperties[] = [
 				description: 'Classify an incoming email using the AI triage pipeline',
 			},
 			{
+				name: 'Confirm Pending Extraction',
+				value: 'confirmPendingExtraction',
+				action: 'Confirm a pending extraction',
+				description: 'Confirm a pending email extraction and create the job',
+			},
+			{
+				name: 'Get Pending Extraction',
+				value: 'getPendingExtraction',
+				action: 'Get a pending extraction',
+				description: 'Fetch one pending email extraction so it can be reviewed',
+			},
+			{
 				name: 'Ingest General Email',
 				value: 'ingestGeneralEmail',
 				action: 'Ingest a general email',
@@ -37,6 +49,12 @@ export const fsiEmailOperations: INodeProperties[] = [
 				description: 'Extract structured job data from an FM portal email via the /ingest/email/portal endpoint and resolve entities',
 			},
 			{
+				name: 'List Pending Extractions',
+				value: 'listPendingExtractions',
+				action: 'List pending extractions',
+				description: 'List email extractions that are waiting to be confirmed or rejected',
+			},
+			{
 				name: 'List Triage Categories',
 				value: 'listTriageCategories',
 				action: 'List triage categories',
@@ -47,6 +65,12 @@ export const fsiEmailOperations: INodeProperties[] = [
 				value: 'listTaxonomyRules',
 				action: 'List triage routing rules',
 				description: 'Return the tenant\'s active email routing rules with full condition/action definitions; optionally filter by classification phase',
+			},
+			{
+				name: 'Reject Pending Extraction',
+				value: 'rejectPendingExtraction',
+				action: 'Reject a pending extraction',
+				description: 'Reject a pending email extraction so it is not turned into a job',
 			},
 		],
 		default: 'classifyEmail',
@@ -375,6 +399,48 @@ export const fsiEmailFields: INodeProperties[] = [
 			{ name: 'All Phases', value: '' },
 			{ name: 'Pre-Classify (Noise Filters)', value: 'pre_classify' },
 			{ name: 'Post-Classify (Routing Decisions)', value: 'post_classify' },
+		],
+	},
+	{
+		displayName: 'Extraction ID',
+		name: 'extractionId',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'Pending extraction to fetch, confirm, or reject',
+		displayOptions: {
+			show: {
+				resource: ['email'],
+				operation: ['getPendingExtraction', 'confirmPendingExtraction', 'rejectPendingExtraction'],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: { show: { resource: ['email'], operation: ['confirmPendingExtraction'] } },
+		options: [
+			{ displayName: 'Category ID', name: 'categoryId', type: 'string', default: '', description: 'Job category to use when creating the job' },
+			{ displayName: 'Contact ID', name: 'contactId', type: 'string', default: '', description: 'Contact to attach the created job to' },
+			{ displayName: 'Corrections', name: 'corrections', type: 'json', default: '{}', description: 'Corrections to apply to the extraction before the job is created' },
+			{ displayName: 'Reviewed By', name: 'reviewedBy', type: 'string', default: '', description: 'Person or system that confirmed the extraction' },
+			{ displayName: 'Site Key', name: 'siteKey', type: 'string', default: '', description: 'Site to attach the created job to' },
+			{ displayName: 'Type ID', name: 'typeId', type: 'string', default: '', description: 'Job type to use when creating the job' },
+		],
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: { show: { resource: ['email'], operation: ['rejectPendingExtraction'] } },
+		options: [
+			{ displayName: 'Reason', name: 'reason', type: 'string', default: '', description: 'Why the extraction is being rejected' },
+			{ displayName: 'Reviewed By', name: 'reviewedBy', type: 'string', default: '', description: 'Person or system that rejected the extraction' },
 		],
 	},
 ];

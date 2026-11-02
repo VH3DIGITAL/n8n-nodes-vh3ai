@@ -31,14 +31,6 @@ export const fsiConnieFields: INodeProperties[] = [
 		displayOptions: { show: { resource: ['connie'], operation: ['connieChat'] } },
 	},
 	{
-		displayName: 'Experimental Mode',
-		name: 'experimentalMode',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to use the experimental Connie pipeline (/connie/experimental/chat)',
-		displayOptions: { show: { resource: ['connie'], operation: ['connieChat'] } },
-	},
-	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
 		type: 'collection',
