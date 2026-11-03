@@ -611,13 +611,22 @@ export class Vh3Ai implements INodeType {
 						responseData = [raw];
 					} else if (operation === 'listSiteAccessHours') {
 						const contactId = this.getNodeParameter('contactId', i) as number;
-						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
 						const body: JsonObject = { contactId };
-						if (additionalFields.pageNumber) body.pageNumber = additionalFields.pageNumber;
-						if (additionalFields.pageSize) body.pageSize = additionalFields.pageSize;
-						const raw = await vh3ListApiRequest.call(this, '/contacts/site_access_hours_list', body);
-						const hours = extractItems(raw).items;
-						responseData = hours.length > 0 ? hours : [raw];
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(
+								this,
+								'/contacts/site_access_hours_list',
+								body,
+							);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							body.pageNumber = 1;
+							body.pageSize = limit;
+							const raw = await vh3ListApiRequest.call(this, '/contacts/site_access_hours_list', body);
+							const hours = extractItems(raw).items;
+							responseData = hours.length > 0 ? hours.slice(0, limit) : [raw];
+						}
 					} else if (operation === 'updateSiteAccessHours') {
 						const contactId = this.getNodeParameter('contactId', i) as number;
 						const accessHours = parseJsonField(this.getNodeParameter('accessHours', i));
@@ -1720,9 +1729,10 @@ export class Vh3Ai implements INodeType {
 						const personId = this.getNodeParameter('personId', i) as string;
 						const status = this.getNodeParameter('consentStatus', i) as string;
 						const medium = this.getNodeParameter('consentMedium', i) as string;
-						const comment = this.getNodeParameter('comment', i, '') as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const comment = typeof additionalFields.comment === 'string' ? additionalFields.comment.trim() : '';
 						const body: JsonObject = { personId, status, medium };
-						if (comment.trim()) body.comment = comment.trim();
+						if (comment) body.comment = comment;
 						const raw = await vh3ListApiRequest.call(this, '/persons/consent/set', body);
 						responseData = [raw];
 					}
@@ -2672,7 +2682,8 @@ export class Vh3Ai implements INodeType {
 					if (operation === 'searchKnowledge' || operation === 'searchLibrary') {
 						const query = this.getNodeParameter('query', i) as string;
 						requireQuery(query);
-						const actingUserId = this.getNodeParameter('actingUserId', i, 0) as number;
+						const options = this.getNodeParameter('options', i, {}) as JsonObject;
+						const actingUserId = Number(options.actingUserId ?? 0);
 						const isLibrary = operation === 'searchLibrary';
 						const limit = clampInteger(
 							this.getNodeParameter('resultLimit', i, isLibrary ? 5 : 10),
@@ -2683,8 +2694,8 @@ export class Vh3Ai implements INodeType {
 						const body: JsonObject = { query, limit };
 						if (actingUserId > 0) body.acting_user_id = actingUserId;
 						if (!isLibrary) {
-							const sources = this.getNodeParameter('sources', i, []) as string[];
-							const sectionsRaw = this.getNodeParameter('sections', i, '') as string;
+							const sources = (Array.isArray(options.sources) ? options.sources : []) as string[];
+							const sectionsRaw = typeof options.sections === 'string' ? options.sections : '';
 							const sections = sectionsRaw.split(',').map((section) => section.trim()).filter((section) => section.length > 0);
 							if (sources.length > 0) body.sources = sources as unknown as JsonObject;
 							if (sections.length > 0) body.sections = sections as unknown as JsonObject;
@@ -2700,7 +2711,8 @@ export class Vh3Ai implements INodeType {
 						const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
 						const binary = this.helpers.assertBinaryData(i, binaryPropertyName);
 						const buffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
-						const share = this.getNodeParameter('share', i, false) as boolean;
+						const options = this.getNodeParameter('options', i, {}) as JsonObject;
+						const share = Boolean(options.share);
 						const fields: Record<string, string> = { user_id: String(userId) };
 						if (share) fields.share = 'true';
 						const raw = await vh3FsiMultipartPostRequest.call(this, '/knowledge/documents/upload', fields, {

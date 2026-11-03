@@ -190,10 +190,12 @@ describe('Knowledge', () => {
 			resource: 'knowledge',
 			operation: 'searchKnowledge',
 			query: 'boiler',
-			actingUserId: 0,
-			sources: ['knowledge_document'],
-			sections: 'systems_equipment, ',
 			resultLimit: 99,
+			options: {
+				actingUserId: 0,
+				sources: ['knowledge_document'],
+				sections: 'systems_equipment, ',
+			},
 		});
 
 		expect(JSON.parse(fsiCall(httpRequest).body as string)).toEqual({
@@ -211,8 +213,10 @@ describe('Knowledge', () => {
 			resource: 'knowledge',
 			operation: 'searchLibrary',
 			query: 'manual',
-			actingUserId: 15,
 			resultLimit: 0,
+			options: {
+				actingUserId: 15,
+			},
 		});
 
 		const request = fsiCall(httpRequest);
@@ -232,10 +236,8 @@ describe('Knowledge', () => {
 				resource: 'knowledge',
 				operation: 'searchKnowledge',
 				query: '   ',
-				actingUserId: 0,
-				sources: [],
-				sections: '',
 				resultLimit: 10,
+				options: {},
 			});
 			throw new Error('expected an empty query to fail');
 		} catch (error) {
@@ -244,14 +246,14 @@ describe('Knowledge', () => {
 		}
 	});
 
-	it('uploads a PDF as multipart with the owner and the file', async () => {
+	it('uploads a PDF as native FormData with the owner and the file part', async () => {
 		const { httpRequest } = await executeNode(
 			{
 				resource: 'knowledge',
 				operation: 'uploadDocument',
 				userId: 8,
 				binaryPropertyName: 'data',
-				share: true,
+				options: { share: true },
 			},
 			{ httpResponse: { document_id: 'doc-1' } },
 		);
@@ -259,16 +261,25 @@ describe('Knowledge', () => {
 		const request = fsiCall(httpRequest);
 		expect(request.method).toBe('POST');
 		expect(request.url).toBe(`${CREDENTIALS.fsiBaseUrl}/knowledge/documents/upload`);
-		expect(request.headers).toMatchObject({ 'Content-Type': 'multipart/form-data' });
-		const body = request.body as Record<string, unknown>;
-		expect(body.company_id).toBe('company-123');
-		expect(body.api_key).toBe('tenant-api-key');
-		expect(body.user_id).toBe('8');
-		expect(body.share).toBe('true');
-		expect(body.file).toEqual({
-			value: Buffer.from('pdf-bytes'),
-			options: { filename: 'manual.pdf', contentType: 'application/pdf' },
-		});
+		expect(request.headers).toBeUndefined();
+		expect(request.body).toBeInstanceOf(FormData);
+		const form = request.body as FormData;
+		expect(form.get('company_id')).toBe('company-123');
+		expect(form.get('api_key')).toBe('tenant-api-key');
+		expect(form.get('user_id')).toBe('8');
+		expect(form.get('share')).toBe('true');
+		const filePart = form.get('file') as File;
+		expect(filePart).toBeInstanceOf(Blob);
+		expect(filePart.name).toBe('manual.pdf');
+		expect(filePart.type).toBe('application/pdf');
+		expect(Buffer.from(await filePart.arrayBuffer()).toString()).toBe('pdf-bytes');
+
+		const serialized = new Response(form);
+		expect(serialized.headers.get('content-type')).toMatch(/^multipart\/form-data; boundary=/);
+		const rawMultipart = await serialized.text();
+		expect(rawMultipart).toContain('name="file"; filename="manual.pdf"');
+		expect(rawMultipart).toContain('Content-Type: application/pdf');
+		expect(rawMultipart).toContain('pdf-bytes');
 	});
 
 	it('posts share and delete, and surfaces not found as an error', async () => {
@@ -417,10 +428,25 @@ describe('the other customer operations', () => {
 			personId: 'person-1',
 			consentStatus: 'granted',
 			consentMedium: 'email',
-			comment: '',
+			additionalFields: { comment: '  Confirmed by email  ' },
 		});
 		expect(authCall(consent.httpRequestWithAuthentication).url).toMatch(/\/persons\/consent\/set$/);
 		expect(JSON.parse(authCall(consent.httpRequestWithAuthentication).body as string)).toEqual({
+			personId: 'person-1',
+			status: 'granted',
+			medium: 'email',
+			comment: 'Confirmed by email',
+		});
+
+		const consentWithoutComment = await executeNode({
+			resource: 'persons',
+			operation: 'setPersonConsent',
+			personId: 'person-1',
+			consentStatus: 'granted',
+			consentMedium: 'email',
+			additionalFields: { comment: '   ' },
+		});
+		expect(JSON.parse(authCall(consentWithoutComment.httpRequestWithAuthentication).body as string)).toEqual({
 			personId: 'person-1',
 			status: 'granted',
 			medium: 'email',
@@ -430,13 +456,39 @@ describe('the other customer operations', () => {
 			resource: 'contacts',
 			operation: 'listSiteAccessHours',
 			contactId: 55,
-			additionalFields: { pageNumber: 1, pageSize: 25 },
+			returnAll: false,
+			limit: 25,
 		});
 		expect(authCall(hours.httpRequestWithAuthentication).url).toMatch(/\/contacts\/site_access_hours_list$/);
 		expect(JSON.parse(authCall(hours.httpRequestWithAuthentication).body as string)).toEqual({
 			contactId: 55,
 			pageNumber: 1,
 			pageSize: 25,
+		});
+
+		const allHours = await executeNode(
+			{
+				resource: 'contacts',
+				operation: 'listSiteAccessHours',
+				contactId: 55,
+				returnAll: true,
+			},
+			{
+				authResponse: {
+					items: [{ dayOfWeek: 'monday', start: '09:00', stop: '17:00' }],
+					pageItemCount: 1,
+				},
+			},
+		);
+		expect(JSON.parse(authCall(allHours.httpRequestWithAuthentication).body as string)).toEqual({
+			contactId: 55,
+			pageNumber: 1,
+			pageSize: 100,
+		});
+		expect(allHours.output[0][0]?.json).toEqual({
+			dayOfWeek: 'monday',
+			start: '09:00',
+			stop: '17:00',
 		});
 
 		const updated = await executeNode({

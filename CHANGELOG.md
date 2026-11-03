@@ -4,6 +4,15 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.14.1] — 2026-11-03
+
+### Fixed
+
+- **Knowledge › Upload Document** — sends the PDF file using a native `FormData` body (`Blob` file part with filename and MIME type) without a manual `Content-Type` header so `httpRequest` attaches the multipart boundary automatically.
+- **Contact › List Site Access Hours** — replaces raw `Page Number` / `Page Size` fields with `Return All` and `Limit`, using internal pagination via `vh3ListApiRequestAllPages`.
+- **Knowledge › Search Knowledge / Search Library / Upload Document** — moves optional `Acting User ID`, `Sources`, `Sections`, and upload `Share` parameters into `Options` collections.
+- **Person › Set Consent** — moves the optional `Comment` parameter into `Additional Fields`.
+
 ## [0.14.0] — 2026-11-02
 
 ### Changed
