@@ -796,30 +796,34 @@ export const contactsFields: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
-		default: {},
-		displayOptions: { show: { resource: ['contacts'], operation: ['listSiteAccessHours'] } },
-		options: [
-			{
-				displayName: 'Page Number',
-				name: 'pageNumber',
-				type: 'number',
-				typeOptions: { minValue: 1 },
-				default: 1,
-				description: 'Page to retrieve (1-based)',
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				resource: ['contacts'],
+				operation: ['listSiteAccessHours'],
 			},
-			{
-				displayName: 'Page Size',
-				name: 'pageSize',
-				type: 'number',
-				typeOptions: { minValue: 1, maxValue: 1000 },
-				default: 100,
-				description: 'Number of results per page',
+		},
+	},
+	{
+		displayName: 'Limit',
+		name: 'limit',
+		type: 'number',
+		typeOptions: {
+			minValue: 1,
+		},
+		default: 50,
+		description: 'Max number of results to return',
+		displayOptions: {
+			show: {
+				resource: ['contacts'],
+				operation: ['listSiteAccessHours'],
+				returnAll: [false],
 			},
-		],
+		},
 	},
 	{
 		displayName: 'Access Hours',

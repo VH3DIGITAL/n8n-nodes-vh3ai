@@ -461,26 +461,18 @@ export async function vh3FsiMultipartPostRequest(
 	file: { buffer: Buffer; fileName: string; mimeType: string },
 ): Promise<JsonObject> {
 	const { fsiBaseUrl, company_id, api_key } = await getFsiAuth(this);
-	const body = {
-		company_id,
-		api_key,
-		...fields,
-		file: {
-			value: file.buffer,
-			options: {
-				filename: file.fileName,
-				contentType: file.mimeType,
-			},
-		},
-	};
+	const form = new FormData();
+	form.append('company_id', company_id);
+	form.append('api_key', api_key);
+	for (const [key, value] of Object.entries(fields)) {
+		form.append(key, value);
+	}
+	form.append('file', new Blob([new Uint8Array(file.buffer)], { type: file.mimeType }), file.fileName);
 
 	const options: IHttpRequestOptions = {
 		method: 'POST',
 		url: `${fsiBaseUrl}${endpoint}`,
-		body: body as IHttpRequestOptions['body'],
-		headers: {
-			'Content-Type': 'multipart/form-data',
-		},
+		body: form,
 	};
 
 	try {

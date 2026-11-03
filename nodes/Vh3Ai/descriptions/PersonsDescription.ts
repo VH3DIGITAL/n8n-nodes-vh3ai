@@ -537,11 +537,20 @@ export const personsFields: INodeProperties[] = [
 		displayOptions: { show: { resource: ['persons'], operation: ['setPersonConsent'] } },
 	},
 	{
-		displayName: 'Comment',
-		name: 'comment',
-		type: 'string',
-		default: '',
-		description: 'Optional note about the preference. Leave empty to omit it.',
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
 		displayOptions: { show: { resource: ['persons'], operation: ['setPersonConsent'] } },
+		options: [
+			{
+				displayName: 'Comment',
+				name: 'comment',
+				type: 'string',
+				default: '',
+				description: 'Optional note about the preference. Leave empty to omit it.',
+			},
+		],
 	},
 ];
