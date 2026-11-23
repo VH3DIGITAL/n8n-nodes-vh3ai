@@ -75,4 +75,13 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Scan published package (n8n Cloud verification)
-        run: npx @n8n/scan-community-package "n8n-nodes-vh3ai@$(node -p "require('./package.json').version")"
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          for i in $(seq 1 12); do
+            if npm view "n8n-nodes-vh3ai@${VERSION}" version >/dev/null 2>&1; then
+              break
+            fi
+            echo "Waiting for npm registry metadata for n8n-nodes-vh3ai@${VERSION} (attempt ${i}/12)..."
+            sleep 5
+          done
+          npx --yes @n8n/scan-community-package@beta "n8n-nodes-vh3ai@${VERSION}"

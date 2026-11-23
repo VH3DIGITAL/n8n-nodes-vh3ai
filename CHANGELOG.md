@@ -4,6 +4,13 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.15.1] — 2026-11-23
+
+### Fixed
+
+- **Creator Portal scanner (`@n8n/community-nodes/require-node-api-error`)** — replaced raw `throw error;` statements in `Vh3Ai.node.ts` (`Flag › Get Active Flag` and `execute()` catch blocks) with `throw new NodeApiError(...)` / `throw new NodeOperationError(...)` so `n8n-workflow`'s identity constructor preserves `NodeApiError` (`httpCode`, `description`, `context.itemIndex`) while passing `@n8n/scan-community-package@beta` with 0 errors.
+- **Release & CI workflows** — waited for npm registry metadata propagation before running `@n8n/scan-community-package@beta` in `publish.yml`, and enabled `pull_request` CI checks on `dev` as well as `main` in `ci.yml`.
+
 ## [0.15.0] — 2026-11-23
 
 ### Added
