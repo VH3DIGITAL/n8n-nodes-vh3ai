@@ -3260,8 +3260,17 @@ export class Vh3Ai implements INodeType {
 				returnData.push(...executionData);
 			} catch (error) {
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: i } });
+					const errJson: JsonObject = { error: (error as Error).message };
+					if (error instanceof NodeApiError) {
+						if (error.httpCode) errJson.httpCode = error.httpCode;
+						if (error.description) errJson.description = error.description;
+					}
+					returnData.push({ json: errJson, pairedItem: { item: i } });
 					continue;
+				}
+				if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+					error.context.itemIndex = i;
+					throw error;
 				}
 				throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
 			}

@@ -1,6 +1,7 @@
 import type {
 	IExecuteFunctions,
 	IHttpRequestOptions,
+	INode,
 	JsonObject,
 	JsonValue,
 } from 'n8n-workflow';
@@ -47,7 +48,11 @@ export function defaultCreatedAtRange(monthsBack = 12): { createdAtFrom: string;
 	};
 }
 
-export function extractItems(raw: JsonObject): { items: JsonObject[]; pageItemCount: number } {
+export function extractItems(raw: JsonObject): {
+	items: JsonObject[];
+	pageItemCount: number;
+	totalItemCount?: number;
+} {
 	let result: JsonObject = raw;
 
 	if (result.response && typeof result.response === 'object') {
@@ -60,8 +65,228 @@ export function extractItems(raw: JsonObject): { items: JsonObject[]; pageItemCo
 	const items = (Array.isArray(result.items) ? result.items : []) as JsonObject[];
 	const pageItemCount =
 		typeof result.pageItemCount === 'number' ? result.pageItemCount : items.length;
+	const totalItemCount =
+		typeof result.totalItemCount === 'number' ? result.totalItemCount : undefined;
 
-	return { items, pageItemCount };
+	return totalItemCount !== undefined
+		? { items, pageItemCount, totalItemCount }
+		: { items, pageItemCount };
+}
+
+function parseHttpStatusCode(value: unknown): number | undefined {
+	if (typeof value === 'number' && Number.isInteger(value) && value >= 100 && value <= 599) {
+		return value;
+	}
+	if (typeof value === 'string') {
+		const match = value.trim().match(/^(\d{3})$/);
+		if (match) {
+			const code = Number(match[1]);
+			if (code >= 100 && code <= 599) return code;
+		}
+	}
+	return undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+	if (value && typeof value === 'object' && !Array.isArray(value)) {
+		return value as Record<string, unknown>;
+	}
+	return undefined;
+}
+
+function extractHttpStatusCode(error: unknown): number | undefined {
+	const err = asRecord(error);
+	if (!err) return undefined;
+
+	const response = asRecord(err.response);
+	const cause = asRecord(err.cause);
+	const causeResponse = asRecord(cause?.response);
+	const context = asRecord(err.context);
+	const contextData = asRecord(context?.data);
+
+	const candidates = [
+		err.httpCode,
+		err.statusCode,
+		err.status,
+		response?.status,
+		response?.statusCode,
+		cause?.httpCode,
+		cause?.statusCode,
+		cause?.status,
+		causeResponse?.status,
+		causeResponse?.statusCode,
+		contextData?.statusCode,
+		contextData?.status,
+	];
+
+	for (const candidate of candidates) {
+		const parsed = parseHttpStatusCode(candidate);
+		if (parsed !== undefined) return parsed;
+	}
+	return undefined;
+}
+
+function tryParseJsonPayload(value: unknown): unknown {
+	if (typeof value !== 'string') return value;
+	const trimmed = value.trim();
+	if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return trimmed;
+	try {
+		return JSON.parse(trimmed);
+	} catch {
+		return trimmed;
+	}
+}
+
+function collectErrorDetails(value: unknown, out: string[], depth = 0): void {
+	if (depth > 4 || value === undefined || value === null) return;
+	const parsed = tryParseJsonPayload(value);
+
+	if (typeof parsed === 'string') {
+		const trimmed = parsed.trim();
+		if (trimmed) out.push(trimmed);
+		return;
+	}
+
+	const obj = asRecord(parsed);
+	if (!obj) return;
+
+	if (obj.payload !== undefined && obj.payload !== null && obj.payload !== '') {
+		collectErrorDetails(obj.payload, out, depth + 1);
+	}
+	if (obj.error !== undefined && obj.error !== null && obj.error !== '') {
+		collectErrorDetails(obj.error, out, depth + 1);
+	}
+
+	const title = typeof obj.title === 'string' ? obj.title.trim() : '';
+	const detail = typeof obj.detail === 'string' ? obj.detail.trim() : '';
+	if (title && detail && title.toLowerCase() !== detail.toLowerCase()) {
+		out.push(`${title}: ${detail}`);
+	} else if (detail) {
+		out.push(detail);
+	} else if (title) {
+		out.push(title);
+	}
+
+	if (typeof obj.message === 'string' && obj.message.trim()) {
+		out.push(obj.message.trim());
+	}
+	if (typeof obj.description === 'string' && obj.description.trim()) {
+		out.push(obj.description.trim());
+	}
+}
+
+function isGenericHttpClientMessage(msg: string): boolean {
+	return (
+		/^Request failed with status code \d{3}$/i.test(msg) ||
+		/^\d{3}\s*-\s*"?\{/.test(msg)
+	);
+}
+
+function extractUpstreamErrorDetail(error: unknown): string {
+	const err = asRecord(error);
+	const rawMessages: string[] = [];
+
+	if (err) {
+		const response = asRecord(err.response);
+		const cause = asRecord(err.cause);
+		const causeResponse = asRecord(cause?.response);
+		const context = asRecord(err.context);
+
+		collectErrorDetails(response?.data, rawMessages);
+		collectErrorDetails(response?.body, rawMessages);
+		collectErrorDetails(causeResponse?.data, rawMessages);
+		collectErrorDetails(causeResponse?.body, rawMessages);
+		collectErrorDetails(context?.data, rawMessages);
+		collectErrorDetails(err.error, rawMessages);
+		collectErrorDetails(err.payload, rawMessages);
+
+		if (typeof err.description === 'string' && err.description.trim()) {
+			rawMessages.push(err.description.trim());
+		}
+		if (typeof err.message === 'string' && err.message.trim()) {
+			rawMessages.push(err.message.trim());
+		}
+	} else if (error instanceof Error && error.message.trim()) {
+		rawMessages.push(error.message.trim());
+	}
+
+	const unique: string[] = [];
+	for (const candidate of rawMessages) {
+		const lower = candidate.toLowerCase();
+		const alreadyCovered = unique.some(
+			(existing) => existing.toLowerCase() === lower || existing.toLowerCase().includes(lower),
+		);
+		if (!alreadyCovered) {
+			unique.push(candidate);
+		}
+	}
+
+	const specific = unique.filter((msg) => !isGenericHttpClientMessage(msg));
+	const chosen = specific.length > 0 ? specific : unique;
+	return chosen.join(' — ');
+}
+
+/**
+ * Construct a NodeApiError that preserves the upstream HTTP status code (notably 429)
+ * and BigChange / Xano proxy error payload details without short-circuiting on
+ * pre-wrapped NodeApiError instances.
+ */
+export function buildBigChangeApiError(
+	node: INode,
+	error: unknown,
+	method: 'GET' | 'POST',
+	endpoint: string,
+): NodeApiError {
+	const statusCode = extractHttpStatusCode(error);
+	const upstreamDetail = extractUpstreamErrorDetail(error);
+	const httpCode = statusCode !== undefined ? String(statusCode) : undefined;
+
+	let message: string;
+	let description: string;
+
+	if (statusCode === 429) {
+		message = upstreamDetail
+			? `BigChange API rate/quota limit exceeded (429): ${upstreamDetail}`
+			: 'BigChange API rate/quota limit exceeded (429)';
+		description = upstreamDetail
+			? `${method} ${endpoint} failed with HTTP 429: ${upstreamDetail}`
+			: `${method} ${endpoint} failed with HTTP 429`;
+	} else if (statusCode !== undefined) {
+		message = upstreamDetail
+			? `BigChange API request failed (${statusCode}): ${method} ${endpoint} — ${upstreamDetail}`
+			: `BigChange API request failed (${statusCode}): ${method} ${endpoint}`;
+		description = upstreamDetail
+			? `${method} ${endpoint} failed with HTTP ${statusCode}: ${upstreamDetail}`
+			: `${method} ${endpoint} failed with HTTP ${statusCode}`;
+	} else {
+		const prefix = method === 'GET' ? 'Proxy API request failed' : 'List API request failed';
+		message = `${prefix}: ${method} ${endpoint}`;
+		description = upstreamDetail || (error instanceof Error ? error.message : 'Unknown error');
+	}
+
+	const errorPayload: JsonObject =
+		error instanceof NodeApiError
+			? ({
+					message: error.message,
+					...(error.description ? { description: error.description } : {}),
+					...(error.httpCode ? { httpCode: error.httpCode } : {}),
+					...(error.context?.data ? { data: error.context.data } : {}),
+			  } as JsonObject)
+			: ((error ?? {}) as JsonObject);
+
+	const apiError = new NodeApiError(node, errorPayload, {
+		message,
+		description,
+		httpCode,
+	});
+
+	apiError.message = message;
+	apiError.description = description;
+	if (httpCode) {
+		apiError.httpCode = httpCode;
+	}
+
+	return apiError;
 }
 
 /**
@@ -95,10 +320,7 @@ export async function vh3ListApiRequest(
 		}
 		return response as JsonObject;
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject, {
-			message: `List API request failed: POST ${endpoint}`,
-			description: (error as Error).message,
-		});
+		throw buildBigChangeApiError(this.getNode(), error, 'POST', endpoint);
 	}
 }
 
@@ -139,15 +361,14 @@ export async function vh3ProxyGetRequest(
 			options,
 		)) as JsonObject;
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject, {
-			message: `Proxy API request failed: GET ${endpoint}`,
-			description: (error as Error).message,
-		});
+		throw buildBigChangeApiError(this.getNode(), error, 'GET', endpoint);
 	}
 }
 
 /**
  * Fetch all pages from a list endpoint, auto-paginating until all items are collected.
+ * Stops early when `items.length === 0`, `pageItemCount < pageSize`, or
+ * `totalItemCount` has been reached.
  */
 export const MAX_PAGES = 200;
 
@@ -163,17 +384,58 @@ export async function vh3ListApiRequestAllPages(
 	while (page <= MAX_PAGES) {
 		const pagedBody: JsonObject = { ...body, pageNumber: page, pageSize };
 		const raw = await vh3ListApiRequest.call(this, endpoint, pagedBody);
-		const { items, pageItemCount } = extractItems(raw);
+		const { items, pageItemCount, totalItemCount } = extractItems(raw);
 
 		allItems.push(...items);
 
-		if (pageItemCount < pageSize) {
+		if (
+			items.length === 0 ||
+			pageItemCount < pageSize ||
+			(typeof totalItemCount === 'number' && allItems.length >= totalItemCount)
+		) {
 			break;
 		}
 		page++;
 	}
 
 	return allItems;
+}
+
+/**
+ * Fetch up to `limit` items from a paginated list endpoint using internal pagination.
+ * When `limit <= maxPageSize` (default 1000), only a single request is made.
+ */
+export async function vh3ListApiRequestWithLimit(
+	this: IExecuteFunctions,
+	endpoint: string,
+	body: JsonObject,
+	limit: number,
+	maxPageSize = 1000,
+): Promise<JsonObject[]> {
+	const targetLimit = Math.max(1, Math.trunc(limit));
+	const pageSize = Math.min(targetLimit, maxPageSize);
+	const allItems: JsonObject[] = [];
+	let page = 1;
+
+	while (page <= MAX_PAGES && allItems.length < targetLimit) {
+		const pagedBody: JsonObject = { ...body, pageNumber: page, pageSize };
+		const raw = await vh3ListApiRequest.call(this, endpoint, pagedBody);
+		const { items, pageItemCount, totalItemCount } = extractItems(raw);
+
+		allItems.push(...items);
+
+		if (
+			allItems.length >= targetLimit ||
+			items.length === 0 ||
+			pageItemCount < pageSize ||
+			(typeof totalItemCount === 'number' && allItems.length >= totalItemCount)
+		) {
+			break;
+		}
+		page++;
+	}
+
+	return allItems.slice(0, targetLimit);
 }
 
 // ── Web Services API helpers ──────────────────────────────────────────────────

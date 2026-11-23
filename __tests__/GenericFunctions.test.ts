@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IHttpRequestOptions, JsonObject } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 import {
 	extractItems,
 	omitEmptyWsParams,
@@ -9,7 +10,12 @@ import {
 	unwrapFsiList,
 	parseJsonField,
 	applyJobFeedTrueOnlyQuery,
+	vh3ListApiRequest,
+	vh3ListApiRequestAllPages,
+	vh3ListApiRequestWithLimit,
+	vh3ProxyGetRequest,
 } from '../nodes/Vh3Ai/GenericFunctions';
+import { Vh3Ai } from '../nodes/Vh3Ai/Vh3Ai.node';
 
 describe('extractItems', () => {
 	it('unwraps Shape A: { response: { result: { items, pageItemCount } } }', () => {
@@ -380,5 +386,276 @@ describe('applyJobFeedTrueOnlyQuery', () => {
 
 		applyJobFeedTrueOnlyQuery(qs, { hasFollowUp: true, includeVh3Ai: true });
 		expect(qs).toEqual({ has_follow_up: true, include_vh3_ai: true });
+	});
+});
+
+describe('extractItems totalItemCount support', () => {
+	it('extracts totalItemCount from Shape A (response.result)', () => {
+		const raw: JsonObject = {
+			response: {
+				result: {
+					items: [{ id: 1 }, { id: 2 }],
+					totalItemCount: 25,
+				},
+			},
+		};
+		expect(extractItems(raw)).toEqual({
+			items: [{ id: 1 }, { id: 2 }],
+			pageItemCount: 2,
+			totalItemCount: 25,
+		});
+	});
+
+	it('extracts totalItemCount from Shape B (result)', () => {
+		const raw: JsonObject = {
+			result: {
+				items: [{ id: 10 }],
+				totalItemCount: 1,
+			},
+		};
+		expect(extractItems(raw)).toEqual({
+			items: [{ id: 10 }],
+			pageItemCount: 1,
+			totalItemCount: 1,
+		});
+	});
+
+	it('extracts totalItemCount from Shape C (top-level)', () => {
+		const raw: JsonObject = {
+			items: [{ id: 1 }, { id: 2 }, { id: 3 }],
+			totalItemCount: 3,
+		};
+		expect(extractItems(raw)).toEqual({
+			items: [{ id: 1 }, { id: 2 }, { id: 3 }],
+			pageItemCount: 3,
+			totalItemCount: 3,
+		});
+	});
+});
+
+describe('totalItemCount pagination and vh3ListApiRequestWithLimit', () => {
+	function createPagedContext(responses: JsonObject[]) {
+		let calls = 0;
+		const httpRequestWithAuthentication = jest.fn().mockImplementation(async () => {
+			const res = responses[calls] ?? { items: [], pageItemCount: 0 };
+			calls++;
+			return res;
+		});
+		const ctx = {
+			getCredentials: jest.fn().mockResolvedValue({
+				apiKey: 'test-key',
+				baseUrl: 'https://api.test.io',
+				companyId: 'test-company',
+			}),
+			helpers: { httpRequestWithAuthentication } as any,
+			getNode: jest.fn().mockReturnValue({ name: 'VH3 AI' }),
+		} as unknown as IExecuteFunctions;
+		return { ctx, httpRequestWithAuthentication };
+	}
+
+	it('stops immediately on exact pageSize boundary when totalItemCount matches (1 request, not 2)', async () => {
+		const page1Items = Array.from({ length: 100 }, (_, i) => ({ id: i + 1 }));
+		const { ctx, httpRequestWithAuthentication } = createPagedContext([
+			{ result: { items: page1Items, totalItemCount: 100 } },
+			{ result: { items: [], totalItemCount: 100 } },
+		]);
+
+		const result = await vh3ListApiRequestAllPages.call(ctx, '/flags/list', {}, 100);
+		expect(result).toHaveLength(100);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
+	});
+
+	it('stops after multi-page totalItemCount exact multiple without trailing empty page request', async () => {
+		const { ctx, httpRequestWithAuthentication } = createPagedContext([
+			{ items: [{ id: 1 }, { id: 2 }], totalItemCount: 4 },
+			{ items: [{ id: 3 }, { id: 4 }], totalItemCount: 4 },
+			{ items: [], totalItemCount: 4 },
+		]);
+
+		const result = await vh3ListApiRequestAllPages.call(ctx, '/flags/list', {}, 2);
+		expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(2);
+	});
+
+	it('fetches exact limit in a single call when limit <= maxPageSize', async () => {
+		const { ctx, httpRequestWithAuthentication } = createPagedContext([
+			{ items: [{ id: 1 }, { id: 2 }, { id: 3 }], totalItemCount: 50 },
+		]);
+
+		const result = await vh3ListApiRequestWithLimit.call(ctx, '/flags/list', {}, 2);
+		expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(1);
+		const req = httpRequestWithAuthentication.mock.calls[0][1] as IHttpRequestOptions;
+		expect(JSON.parse(req.body as string)).toEqual({ pageNumber: 1, pageSize: 2 });
+	});
+
+	it('paginates across pages when limit > maxPageSize and slices to exact limit', async () => {
+		const { ctx, httpRequestWithAuthentication } = createPagedContext([
+			{ items: [{ id: 1 }, { id: 2 }], totalItemCount: 10 },
+			{ items: [{ id: 3 }, { id: 4 }], totalItemCount: 10 },
+		]);
+
+		const result = await vh3ListApiRequestWithLimit.call(ctx, '/flags/list', {}, 3, 2);
+		expect(result).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+		expect(httpRequestWithAuthentication).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe('BigChange upstream HTTP error propagation (429, 403, 404, 422)', () => {
+	function createErrorContext(errorToThrow: unknown) {
+		const httpRequestWithAuthentication = jest.fn().mockRejectedValue(errorToThrow);
+		const ctx = {
+			getCredentials: jest.fn().mockResolvedValue({
+				apiKey: 'test-key',
+				baseUrl: 'https://api.vh3connect.io',
+				companyId: 'test-company',
+			}),
+			helpers: { httpRequestWithAuthentication } as any,
+			getNode: jest.fn().mockReturnValue({ name: 'VH3 AI' }),
+		} as unknown as IExecuteFunctions;
+		return { ctx, httpRequestWithAuthentication };
+	}
+
+	it('surfaces 429 Limit Exceeded through vh3ListApiRequest with httpCode, message, and description', async () => {
+		const axios429 = {
+			message: 'Request failed with status code 429',
+			response: {
+				status: 429,
+				data: {
+					code: 'ERROR_CODE_TOO_MANY_REQUESTS',
+					message: 'Rate limit reached',
+					payload: { error: { message: 'Limit Exceeded' } },
+				},
+			},
+		};
+		const { ctx } = createErrorContext(axios429);
+
+		try {
+			await vh3ListApiRequest.call(ctx, '/flags/list', {});
+			fail('Expected vh3ListApiRequest to throw');
+		} catch (err) {
+			expect(err).toBeInstanceOf(NodeApiError);
+			const apiErr = err as NodeApiError;
+			expect(apiErr.httpCode).toBe('429');
+			expect(apiErr.message).toContain('429');
+			expect(apiErr.message).toContain('Limit Exceeded');
+			expect(apiErr.description).toContain('429');
+			expect(apiErr.description).toContain('Limit Exceeded');
+		}
+	});
+
+	it('surfaces 429 Limit Exceeded through vh3ProxyGetRequest even when error is a pre-wrapped NodeApiError', async () => {
+		const preWrapped = new NodeApiError(
+			{ name: 'VH3 AI' } as any,
+			{
+				statusCode: 429,
+				response: { status: 429, data: { title: 'Too Many Requests', detail: 'Limit Exceeded' } },
+			},
+			{ httpCode: '429', description: 'Limit Exceeded' },
+		);
+		const { ctx } = createErrorContext(preWrapped);
+
+		try {
+			await vh3ProxyGetRequest.call(ctx, '/jobs/line_item', { jobId: 1, lineItemId: 2 });
+			fail('Expected vh3ProxyGetRequest to throw');
+		} catch (err) {
+			expect(err).toBeInstanceOf(NodeApiError);
+			const apiErr = err as NodeApiError;
+			expect(apiErr.httpCode).toBe('429');
+			expect(apiErr.message).toContain('429');
+			expect(apiErr.message).toContain('Limit Exceeded');
+			expect(apiErr.description).toContain('GET /jobs/line_item');
+			expect(apiErr.description).toContain('Limit Exceeded');
+		}
+	});
+
+	it.each([
+		{
+			status: 403,
+			data: { message: 'Access denied', payload: { detail: 'Missing scope flag:write' } },
+			expectedText: 'Missing scope flag:write',
+		},
+		{
+			status: 404,
+			data: { title: 'Not Found', detail: 'Job 99999 was not found' },
+			expectedText: 'Job 99999 was not found',
+		},
+		{
+			status: 422,
+			data: { title: 'Validation Error', detail: 'unitSellingPrice must be >= 0' },
+			expectedText: 'unitSellingPrice must be >= 0',
+		},
+	])('propagates HTTP $status with payload details', async ({ status, data, expectedText }) => {
+		const { ctx } = createErrorContext({
+			message: `Request failed with status code ${status}`,
+			response: { status, data },
+		});
+
+		try {
+			await vh3ListApiRequest.call(ctx, '/jobs/line_item/create', { jobId: 1 });
+			fail(`Expected HTTP ${status} to throw`);
+		} catch (err) {
+			expect(err).toBeInstanceOf(NodeApiError);
+			const apiErr = err as NodeApiError;
+			expect(apiErr.httpCode).toBe(String(status));
+			expect(apiErr.message).toContain(String(status));
+			expect(apiErr.message).toContain(expectedText);
+			expect(apiErr.description).toContain(expectedText);
+		}
+	});
+
+	it('preserves NodeApiError with 429 in Vh3Ai.execute() when continueOnFail is false and emits error item when true', async () => {
+		const error429 = {
+			statusCode: 429,
+			response: { status: 429, data: { error: { message: 'Limit Exceeded' } } },
+		};
+
+		const makeContext = (continueOnFail: boolean) =>
+			({
+				getInputData: jest.fn().mockReturnValue([{ json: {} }]),
+				getNodeParameter: jest.fn((name: string, _idx: number, fallback?: unknown) => {
+					const params: Record<string, unknown> = {
+						resource: 'jobs',
+						operation: 'getJob',
+						jobId: 101,
+						simplify: false,
+						includeWorksheets: false,
+					};
+					return Object.prototype.hasOwnProperty.call(params, name) ? params[name] : fallback;
+				}),
+				getCredentials: jest.fn().mockResolvedValue({
+					apiKey: 'tenant-key',
+					companyId: 'company-1',
+					baseUrl: 'https://api.vh3connect.io',
+					fsiBaseUrl: 'https://api.vh3connect.io/api:kP8T1CK7',
+				}),
+				getNode: jest.fn().mockReturnValue({ name: 'VH3 AI' }),
+				continueOnFail: jest.fn().mockReturnValue(continueOnFail),
+				helpers: {
+					httpRequestWithAuthentication: jest.fn().mockRejectedValue(error429),
+					returnJsonArray: jest.fn((items: JsonObject[]) => items.map((json) => ({ json }))),
+					constructExecutionMetaData: jest.fn((items: JsonObject[]) => items),
+				},
+			}) as unknown as IExecuteFunctions;
+
+		// Continue On Fail = false -> throws NodeApiError with httpCode 429
+		try {
+			await new Vh3Ai().execute.call(makeContext(false));
+			fail('Expected execute() to throw NodeApiError');
+		} catch (err) {
+			expect(err).toBeInstanceOf(NodeApiError);
+			const apiErr = err as NodeApiError;
+			expect(apiErr.httpCode).toBe('429');
+			expect(apiErr.message).toContain('429');
+			expect(apiErr.message).toContain('Limit Exceeded');
+		}
+
+		// Continue On Fail = true -> returns error item with 429 status & message intact
+		const output = await new Vh3Ai().execute.call(makeContext(true));
+		expect(output[0]).toHaveLength(1);
+		expect(output[0][0].json.error).toContain('429');
+		expect(output[0][0].json.error).toContain('Limit Exceeded');
+		expect(output[0][0].json.httpCode).toBe('429');
+		expect(output[0][0].json.description).toContain('Limit Exceeded');
 	});
 });
