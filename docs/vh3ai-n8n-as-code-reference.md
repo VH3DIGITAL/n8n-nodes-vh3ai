@@ -147,17 +147,18 @@ typically fast (<2 s). The resource values are used in `$parameter["resource"]`.
 
 | Display name                    | `resource` value     | What it covers                                                           |
 | ------------------------------- | -------------------- | ------------------------------------------------------------------------ |
-| Job (BigChange)                 | `jobs`               | CRUD, schedule, start, set result, cancel, manage stock constraints      |
+| Job (BigChange)                 | `jobs`               | CRUD, schedule, start, set result, cancel, constraints, stock, line items |
 | Contact (BigChange)             | `contacts`           | Companies and sites — create, read, update, delete                       |
+| Flag (BigChange)                | `flag`               | Flags across Note, Job, Invoice, Job Group, PO, Quote, Opportunity, Person |
 | Resource / Engineer (BigChange) | `resources`          | Engineers/technicians and their groups                                   |
 | Job Type (BigChange)            | `jobTypes`           | Job type templates (installation/repair/maintenance schemas)             |
 | Vehicle (BigChange)             | `vehicles`           | Fleet vehicles — read/create/update records and groups                   |
-| Worksheet (BigChange)           | `worksheets`         | Mobile worksheet definitions, questions, and submitted answers           |
+| Worksheet (BigChange)           | `worksheets`         | Worksheet definitions, questions, submitted answers, and job worksheet assignment |
 | Worksheet Group (BigChange)     | `worksheetGroups`    | Folders that organise worksheet definitions                              |
 | Invoice (BigChange)             | `invoices`           | Sales invoices and line items                                            |
-| Note (BigChange)                | `notes`              | Notes/tasks/updates on jobs, contacts, and persons                       |
+| Note (BigChange)                | `notes`              | Notes/tasks/updates and note comments on jobs, contacts, and persons     |
 | Person (BigChange)              | `persons`            | Individual people attached to a contact (site contacts, consent history) |
-| Job Group (BigChange)           | `jobGroups`          | Linked sets of jobs (multi-visit projects)                               |
+| Job Group (BigChange)           | `jobGroups`          | Linked sets of jobs (multi-visit projects) and job group line items      |
 | Stock (BigChange)               | `stock`              | Product categories, stock details, items, movements, suppliers           |
 | Reference Data (BigChange)      | `referenceData`      | Department codes, nominal (accounting) codes                             |
 | Quote (BigChange)               | `quotes`             | Sales quotes and line items                                              |
@@ -594,9 +595,17 @@ All BigChange resources follow a consistent pattern. Key operations per resource
 
 ### Jobs (`jobs`)
 
-`create`, `update`, `get`, `getAll`, `delete`, `schedule`, `unschedule`,
-`start`, `setResult`, `cancel`, `addStock`, `deleteStock`, `updateStockQty`,
-`addWaypoint`, `deleteWaypoint`, `addRecurrence`
+`createJob`, `createJobDynamic`, `editJob`, `getJob`, `getJobById`, `listJobs`,
+`scheduleJob`, `startJob`, `setJobResult`, `cancelJob`, `listJobStatusHistory`,
+`createJobConstraint`, `listJobConstraints`, `deleteJobConstraint`,
+`createJobStock`, `getJobStock`, `listJobStock`, `deleteJobStock`,
+`listLineItems`, `getLineItem`, `createLineItem`, `editLineItem`, `deleteLineItem`
+
+### Flags (`flag`)
+
+`listDefinitions`, `getActiveFlag`, `addFlag`, `deleteFlag`, `listFlagHistory`,
+`listJobGroupJobFlags`, `applyJobGroupJobFlag`, `listJobGroupJobFlagHistory`,
+`listPersonFlags`, `addPersonFlag`, `removePersonFlag`
 
 ### Contacts (`contacts`)
 
@@ -616,7 +625,8 @@ All BigChange resources follow a consistent pattern. Key operations per resource
 
 ### Notes (`notes`)
 
-`create`, `update`, `get`, `getAll`, `delete`
+`createNote`, `editNote`, `getNote`, `listNotes`, `createProgressUpdate`,
+`listComments`, `createComment`, `listNoteTypes`, `getNoteType`
 
 ### Persons (`persons`)
 
@@ -636,7 +646,9 @@ All BigChange resources follow a consistent pattern. Key operations per resource
 
 ### Job Groups (`jobGroups`)
 
-`get`, `getAll`, `getStatusHistory`
+`createJobGroup`, `editJobGroup`, `getJobGroup`, `listJobGroups`,
+`markJobGroupComplete`, `markJobGroupFinanciallyComplete`, `listJobGroupStatusHistory`,
+`listLineItems`, `getLineItem`, `createLineItem`, `editLineItem`, `deleteLineItem`
 
 ### Stock (`stock`)
 
@@ -648,7 +660,8 @@ All BigChange resources follow a consistent pattern. Key operations per resource
 
 ### Worksheets (`worksheets`)
 
-`get`, `getAll`, `getQuestions`, `getAnswers`
+`listWorksheets`, `getWorksheet`, `getWorksheetQuestions`, `listWorksheetAnswers`,
+`listJobWorksheets`, `getJobWorksheet`, `updateJobWorksheets` (full replacement PUT — pass all worksheet IDs that should remain attached)
 
 ### Worksheet Groups (`worksheetGroups`)
 
@@ -892,6 +905,18 @@ preference to polling on a tight schedule.
 - If a workflow needs to wait for a job status to change, use a wait/delay node
 with a reasonable interval rather than a tight loop. If unsure of the right
 polling strategy for a use case, ask the user.
+
+### BigChange API quota & HTTP 429 handling
+
+- BigChange enforces strict daily/burst API limits. When the upstream API or
+VH3 Connect proxy returns HTTP `429`, the node throws `NodeApiError` with
+`httpCode: "429"` and `BigChange API rate/quota limit exceeded (429)` plus any
+upstream detail (such as `"Limit Exceeded"`). With `Continue On Fail` enabled,
+`httpCode` and `description` are included on the output item so error branches
+can back off rather than assuming success.
+- Prefer **Return All** OFF with a **Limit** where full lists are unnecessary;
+when **Return All** is ON, pagination stops early as soon as `totalItemCount`
+is satisfied so no extra trailing page request is consumed.
 
 ### Relative timestamps in expressions
 

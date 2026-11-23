@@ -4,6 +4,20 @@ All notable changes to `n8n-nodes-vh3ai` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 minor releases may include breaking changes; these are explicitly called out.
 
+## [0.15.0] — 2026-11-23
+
+### Added
+
+- **Flag (BigChange)** — new resource (`flag`) covering all 35 BigChange Flag API routes across 11 operations: `List Flag Definitions`, `Get Active Flag`, `Add Flag`, `Delete Flag`, `List Flag History` (supporting Note, Job, Invoice, Job Group, Purchase Order, Quote, and Sales Opportunity), `List Job Group Job Flags`, `Apply Job Group Job Flag`, `List Job Group Job Flag History`, `List Person Flags`, `Add Person Flag`, and `Remove Person Flag`.
+- **Note (BigChange)** — added `List Note Comments` (`listComments`) and `Create Note Comment` (`createComment`) with optional mentions, reaction, user IDs, and `entityId` defaulting to `noteId`.
+- **Worksheet (BigChange)** — added `List Job Worksheets` (`listJobWorksheets`, with `includeBranchedWorksheets`), `Get Job Worksheet` (`getJobWorksheet`), and `Update Job Worksheets` (`updateJobWorksheets`, full-replacement PUT with strict positive-integer ID validation).
+- **Job (BigChange) & Job Group (BigChange)** — added full Line Items CRUD (`List`, `Get`, `Create`, `Edit`, `Delete`) for both jobs and job groups, preserving explicit numeric `0` for `unitSellingPrice` and `unitCost` and using presence-only PATCH semantics on `Edit`.
+
+### Fixed
+
+- **BigChange API error & HTTP 429 propagation** — `vh3ListApiRequest`, `vh3ProxyGetRequest`, and `Vh3Ai.execute()` now throw `NodeApiError` with upstream `httpCode` and response payload preserved instead of wrapping errors as generic `NodeOperationError`s; HTTP `429` surfaces `BigChange API rate/quota limit exceeded (429)` and `continueOnFail` retains `httpCode` and `description`.
+- **Pagination quota efficiency** — `extractItems()` now reads `totalItemCount` and `vh3ListApiRequestAllPages()` stops immediately when `allItems.length >= totalItemCount`, avoiding extra trailing page requests. Added `vh3ListApiRequestWithLimit()` for `Return All` + `Limit` list operations.
+
 ## [0.14.1] — 2026-11-03
 
 ### Fixed
