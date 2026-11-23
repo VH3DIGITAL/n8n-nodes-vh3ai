@@ -2387,8 +2387,27 @@ export class Vh3Ai implements INodeType {
 						const { slug, idField } = singleFlagEntityConfig(entityType);
 						const body: JsonObject = { [idField]: entityId };
 						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
-						const raw = await vh3ListApiRequest.call(this, `/flags/${slug}/get`, body);
-						responseData = [raw];
+						try {
+							const raw = await vh3ListApiRequest.call(this, `/flags/${slug}/get`, body);
+							const hasActiveFlag = Object.prototype.hasOwnProperty.call(raw, 'result')
+								? raw.result !== null && raw.result !== undefined
+								: Object.keys(raw).length > 0;
+							responseData = [{ ...raw, hasActiveFlag }];
+						} catch (error) {
+							if (error instanceof NodeApiError && error.httpCode === '404') {
+								responseData = [
+									{
+										hasActiveFlag: false,
+										result: null,
+										status: 404,
+										entityType,
+										[idField]: entityId,
+									},
+								];
+							} else {
+								throw error;
+							}
+						}
 					} else if (operation === 'listFlagHistory') {
 						const entityType = this.getNodeParameter('entityType', i) as
 							| 'invoice'

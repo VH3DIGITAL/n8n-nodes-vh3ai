@@ -604,6 +604,112 @@ describe('BigChange upstream HTTP error propagation (429, 403, 404, 422)', () =>
 		}
 	});
 
+	it('promotes upstream payload.status from Xano HTTP 400 wrapper for 403, 404, 422, and non-JSON 502', async () => {
+		const cases: Array<{ upstreamStatus: number; payload: JsonObject; expectedText: string }> = [
+			{
+				upstreamStatus: 403,
+				payload: { title: 'Forbidden', detail: 'Missing scope flags:read', status: 403 },
+				expectedText: 'Forbidden: Missing scope flags:read',
+			},
+			{
+				upstreamStatus: 404,
+				payload: { title: 'The Flag For JobId with id 123 was not found.', status: 404 },
+				expectedText: 'The Flag For JobId with id 123 was not found.',
+			},
+			{
+				upstreamStatus: 422,
+				payload: { title: 'Validation Error', detail: 'quantity must be > 0', status: 422 },
+				expectedText: 'Validation Error: quantity must be > 0',
+			},
+			{
+				upstreamStatus: 502,
+				payload: { status: 502, result: 'Bad Gateway' },
+				expectedText: 'Bad Gateway',
+			},
+		];
+
+		for (const { upstreamStatus, payload, expectedText } of cases) {
+			// Simulate n8n httpRequestWithAuthentication pre-wrapping Xano's HTTP 400 in NodeApiError
+			const preWrapped = new NodeApiError(
+				{ name: 'VH3 AI' } as any,
+				{
+					response: {
+						status: 400,
+						data: {
+							code: 'ERROR_CODE_BAD_REQUEST',
+							message: 'Something went wrong.',
+							payload,
+						},
+					},
+				},
+				{ httpCode: '400' },
+			);
+			const { ctx } = createErrorContext(preWrapped);
+
+			try {
+				await vh3ListApiRequest.call(ctx, '/flags/job/get', { jobId: 123 });
+				fail(`Expected ${upstreamStatus} to throw`);
+			} catch (err) {
+				expect(err).toBeInstanceOf(NodeApiError);
+				const apiErr = err as NodeApiError;
+				expect(apiErr.httpCode).toBe(String(upstreamStatus));
+				expect(apiErr.message).toContain(String(upstreamStatus));
+				expect(apiErr.message).toContain(expectedText);
+				expect(apiErr.message).not.toContain('Something went wrong.');
+				expect(apiErr.message).not.toContain('Bad request - please check your parameters');
+			}
+		}
+	});
+
+	it('deduplicates Xano 429 wrapper message while preserving Limit Exceeded and status 429', async () => {
+		const xano429 = {
+			response: {
+				status: 429,
+				data: {
+					code: 'ERROR_CODE_TOO_MANY_REQUESTS',
+					message: 'BigChange API rate/quota limit exceeded',
+					payload: { message: 'Limit Exceeded', status: 429 },
+				},
+			},
+		};
+		const { ctx } = createErrorContext(xano429);
+
+		try {
+			await vh3ListApiRequest.call(ctx, '/flags/list', {});
+			fail('Expected 429 to throw');
+		} catch (err) {
+			expect(err).toBeInstanceOf(NodeApiError);
+			const apiErr = err as NodeApiError;
+			expect(apiErr.httpCode).toBe('429');
+			expect(apiErr.message).toBe('BigChange API rate/quota limit exceeded (429): Limit Exceeded');
+			expect(apiErr.description).toBe('POST /flags/list failed with HTTP 429: Limit Exceeded');
+		}
+	});
+
+	it('preserves Xano-native 401 unauthorized when no upstream payload.status is present', async () => {
+		const xano401 = {
+			response: {
+				status: 401,
+				data: {
+					code: 'ERROR_CODE_UNAUTHORIZED',
+					message: 'Invalid API key',
+				},
+			},
+		};
+		const { ctx } = createErrorContext(xano401);
+
+		try {
+			await vh3ListApiRequest.call(ctx, '/flags/list', {});
+			fail('Expected 401 to throw');
+		} catch (err) {
+			expect(err).toBeInstanceOf(NodeApiError);
+			const apiErr = err as NodeApiError;
+			expect(apiErr.httpCode).toBe('401');
+			expect(apiErr.message).toContain('401');
+			expect(apiErr.message).toContain('Invalid API key');
+		}
+	});
+
 	it('preserves NodeApiError with 429 in Vh3Ai.execute() when continueOnFail is false and emits error item when true', async () => {
 		const error429 = {
 			statusCode: 429,

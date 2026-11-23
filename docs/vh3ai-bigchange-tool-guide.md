@@ -116,7 +116,9 @@ quotes, notes, stock, or related data.
 | Make up custom field IDs on Create/Edit Job | Custom field `definitionId`s come from `Get Job Type`. Always look them up. |
 | Pass only a new worksheet ID to `Update Job Worksheets` | `Update Job Worksheets` is a full replacement PUT — list existing IDs via `List Job Worksheets` first and send the complete desired array so existing worksheets are not detached. |
 | Pass a `flagId` to `Delete Flag` on an entity | Entity flag removal takes the flag **history ID** (`historyId`, from `Get Active Flag` or `List Flag History`), whereas `Remove Person Flag` takes the `flagId` definition ID. |
-| Retry blindly on HTTP 429 | BigChange enforces strict daily/burst API quotas; `NodeApiError` surfaces `httpCode: "429"` and `"BigChange API rate/quota limit exceeded (429)"`. Back off or pause rather than looping. |
+| Treat a `Get Active Flag` miss as an error | BigChange returns 404 when a record has no active flag; `Get Active Flag` normalises that into `{ hasActiveFlag: false, result: null, status: 404 }`. Check `hasActiveFlag` instead of catching errors. |
+| Rely on `Get Job Worksheet` for IDs returned by `List Job Worksheets` | BigChange currently returns 404 (`JobWorksheet ... not found`) on `GET /v1/jobs/{jobId}/worksheets/{worksheetId}` for some IDs returned by `List Job Worksheets`. Prefer `List Job Worksheets`, which returns the same fields (`id`, `name`, `linkType`). |
+| Retry blindly on HTTP 429 | BigChange tenants have a **100,000 calls/month** API quota as well as burst limits; `NodeApiError` surfaces `httpCode: "429"` and `"BigChange API rate/quota limit exceeded (429)"`. Cap retries and pause rather than looping. |
 
 ---
 

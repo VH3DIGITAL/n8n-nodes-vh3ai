@@ -45,7 +45,7 @@ export const flagsOperations: INodeProperties[] = [
 				value: 'getActiveFlag',
 				action: 'Get the active flag for an entity',
 				description:
-					'Retrieve the currently active flag for a single BigChange entity (note, job, invoice, job group, purchase order, quote, or sales opportunity)',
+					'Retrieve the currently active flag for a single BigChange entity (note, job, invoice, job group, purchase order, quote, or sales opportunity). Returns hasActiveFlag: false and result: null when no flag is set.',
 			},
 			{
 				name: 'List Flag Definitions',

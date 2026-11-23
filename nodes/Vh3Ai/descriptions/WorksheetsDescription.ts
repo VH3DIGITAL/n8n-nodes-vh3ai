@@ -17,7 +17,7 @@ export const worksheetsOperations: INodeProperties[] = [
 				value: 'getJobWorksheet',
 				action: 'Get a job worksheet',
 				description:
-					'Get one worksheet attached to a specific job by job ID and worksheet ID (returns ID, name, and linkType)',
+					'Get one worksheet attached to a specific job by job ID and worksheet ID (returns ID, name, and linkType). Note: BigChange currently returns 404 on this endpoint for some IDs listed by List Job Worksheets — prefer List Job Worksheets to inspect attached worksheets.',
 			},
 			{
 				name: 'Get Worksheet',

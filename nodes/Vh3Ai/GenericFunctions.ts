@@ -94,7 +94,91 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 	return undefined;
 }
 
+function findPayloadStatusInValue(value: unknown, depth = 0): number | undefined {
+	if (depth > 4 || value === undefined || value === null) return undefined;
+	const parsed = tryParseJsonPayload(value);
+	const obj = asRecord(parsed);
+	if (!obj) return undefined;
+
+	if (obj.payload !== undefined && obj.payload !== null) {
+		const payloadObj = asRecord(tryParseJsonPayload(obj.payload));
+		if (payloadObj) {
+			const payloadStatus = parseHttpStatusCode(payloadObj.status);
+			if (payloadStatus !== undefined) return payloadStatus;
+		}
+		const nested = findPayloadStatusInValue(obj.payload, depth + 1);
+		if (nested !== undefined) return nested;
+	}
+
+	if (obj.error !== undefined && obj.error !== null) {
+		const nested = findPayloadStatusInValue(obj.error, depth + 1);
+		if (nested !== undefined) return nested;
+	}
+
+	return undefined;
+}
+
+function extractUpstreamPayloadStatus(error: unknown): number | undefined {
+	const err = asRecord(error);
+	if (!err) return undefined;
+
+	const response = asRecord(err.response);
+	const cause = asRecord(err.cause);
+	const causeResponse = asRecord(cause?.response);
+	const context = asRecord(err.context);
+
+	const directPayload = asRecord(tryParseJsonPayload(err.payload));
+	const directPayloadStatus = parseHttpStatusCode(directPayload?.status);
+	if (directPayloadStatus !== undefined) return directPayloadStatus;
+
+	const sources = [
+		response?.data,
+		response?.body,
+		causeResponse?.data,
+		causeResponse?.body,
+		context?.data,
+		cause?.data,
+		cause?.error,
+		err.data,
+		err.error,
+	];
+
+	for (const source of sources) {
+		const status = findPayloadStatusInValue(source);
+		if (status !== undefined) return status;
+	}
+	return undefined;
+}
+
+function extractUpstreamResponseData(error: unknown): JsonObject | undefined {
+	const err = asRecord(error);
+	if (!err) return undefined;
+
+	const response = asRecord(err.response);
+	const cause = asRecord(err.cause);
+	const causeResponse = asRecord(cause?.response);
+	const context = asRecord(err.context);
+
+	const candidates = [
+		response?.data,
+		response?.body,
+		causeResponse?.data,
+		causeResponse?.body,
+		context?.data,
+		err.data,
+	];
+
+	for (const candidate of candidates) {
+		const parsed = asRecord(tryParseJsonPayload(candidate));
+		if (parsed) return parsed as JsonObject;
+	}
+	return undefined;
+}
+
 function extractHttpStatusCode(error: unknown): number | undefined {
+	const upstreamPayloadStatus = extractUpstreamPayloadStatus(error);
+	if (upstreamPayloadStatus !== undefined) return upstreamPayloadStatus;
+
 	const err = asRecord(error);
 	if (!err) return undefined;
 
@@ -173,12 +257,21 @@ function collectErrorDetails(value: unknown, out: string[], depth = 0): void {
 	if (typeof obj.description === 'string' && obj.description.trim()) {
 		out.push(obj.description.trim());
 	}
+	if (typeof obj.result === 'string' && obj.result.trim()) {
+		out.push(obj.result.trim());
+	}
 }
 
-function isGenericHttpClientMessage(msg: string): boolean {
+function isGenericWrapperMessage(msg: string): boolean {
 	return (
 		/^Request failed with status code \d{3}$/i.test(msg) ||
-		/^\d{3}\s*-\s*"?\{/.test(msg)
+		/^\d{3}\s*-\s*"?\{/.test(msg) ||
+		/^Something went wrong\.?$/i.test(msg) ||
+		/^BigChange API rate\/quota limit exceeded\.?$/i.test(msg) ||
+		/^Bad request - please check your parameters$/i.test(msg) ||
+		/^The service is receiving too many requests from you$/i.test(msg) ||
+		/^Your request is invalid or could not be processed by the service$/i.test(msg) ||
+		/^The service failed to process your request$/i.test(msg)
 	);
 }
 
@@ -221,14 +314,15 @@ function extractUpstreamErrorDetail(error: unknown): string {
 		}
 	}
 
-	const specific = unique.filter((msg) => !isGenericHttpClientMessage(msg));
+	const specific = unique.filter((msg) => !isGenericWrapperMessage(msg));
 	const chosen = specific.length > 0 ? specific : unique;
 	return chosen.join(' — ');
 }
 
 /**
- * Construct a NodeApiError that preserves the upstream HTTP status code (notably 429)
- * and BigChange / Xano proxy error payload details without short-circuiting on
+ * Construct a NodeApiError that preserves the true upstream BigChange HTTP status
+ * code (promoting `payload.status` when Xano wraps non-2xx responses in HTTP 400,
+ * and preserving HTTP 429) and response payload details without short-circuiting on
  * pre-wrapped NodeApiError instances.
  */
 export function buildBigChangeApiError(
@@ -239,16 +333,19 @@ export function buildBigChangeApiError(
 ): NodeApiError {
 	const statusCode = extractHttpStatusCode(error);
 	const upstreamDetail = extractUpstreamErrorDetail(error);
+	const upstreamResponseData = extractUpstreamResponseData(error);
 	const httpCode = statusCode !== undefined ? String(statusCode) : undefined;
 
 	let message: string;
 	let description: string;
 
 	if (statusCode === 429) {
-		message = upstreamDetail
+		const isRedundant429 =
+			!upstreamDetail || /^BigChange API rate\/quota limit exceeded\.?$/i.test(upstreamDetail);
+		message = !isRedundant429
 			? `BigChange API rate/quota limit exceeded (429): ${upstreamDetail}`
 			: 'BigChange API rate/quota limit exceeded (429)';
-		description = upstreamDetail
+		description = !isRedundant429
 			? `${method} ${endpoint} failed with HTTP 429: ${upstreamDetail}`
 			: `${method} ${endpoint} failed with HTTP 429`;
 	} else if (statusCode !== undefined) {
@@ -284,6 +381,9 @@ export function buildBigChangeApiError(
 	apiError.description = description;
 	if (httpCode) {
 		apiError.httpCode = httpCode;
+	}
+	if (upstreamResponseData && !apiError.context.data) {
+		apiError.context.data = upstreamResponseData;
 	}
 
 	return apiError;

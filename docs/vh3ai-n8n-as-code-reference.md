@@ -603,7 +603,7 @@ All BigChange resources follow a consistent pattern. Key operations per resource
 
 ### Flags (`flag`)
 
-`listDefinitions`, `getActiveFlag`, `addFlag`, `deleteFlag`, `listFlagHistory`,
+`listDefinitions`, `getActiveFlag` (returns `{ hasActiveFlag: false, result: null, status: 404 }` when no flag is set), `addFlag`, `deleteFlag`, `listFlagHistory`,
 `listJobGroupJobFlags`, `applyJobGroupJobFlag`, `listJobGroupJobFlagHistory`,
 `listPersonFlags`, `addPersonFlag`, `removePersonFlag`
 
@@ -661,7 +661,7 @@ All BigChange resources follow a consistent pattern. Key operations per resource
 ### Worksheets (`worksheets`)
 
 `listWorksheets`, `getWorksheet`, `getWorksheetQuestions`, `listWorksheetAnswers`,
-`listJobWorksheets`, `getJobWorksheet`, `updateJobWorksheets` (full replacement PUT — pass all worksheet IDs that should remain attached)
+`listJobWorksheets`, `getJobWorksheet` (BigChange currently returns 404 for some IDs listed by `listJobWorksheets` — prefer `listJobWorksheets`), `updateJobWorksheets` (full replacement PUT — pass all worksheet IDs that should remain attached)
 
 ### Worksheet Groups (`worksheetGroups`)
 
@@ -908,12 +908,17 @@ polling strategy for a use case, ask the user.
 
 ### BigChange API quota & HTTP 429 handling
 
-- BigChange enforces strict daily/burst API limits. When the upstream API or
-VH3 Connect proxy returns HTTP `429`, the node throws `NodeApiError` with
-`httpCode: "429"` and `BigChange API rate/quota limit exceeded (429)` plus any
-upstream detail (such as `"Limit Exceeded"`). With `Continue On Fail` enabled,
-`httpCode` and `description` are included on the output item so error branches
-can back off rather than assuming success.
+- BigChange tenants are subject to a **100,000 calls/month** API quota in addition
+to burst rate limits. When the upstream API or VH3 Connect proxy returns HTTP `429`,
+the node throws `NodeApiError` with `httpCode: "429"` and
+`BigChange API rate/quota limit exceeded (429)` plus any upstream detail (such as
+`"Limit Exceeded"`). Because a `429` may indicate monthly quota exhaustion rather
+than a transient burst, cap retries rather than looping indefinitely.
+- For other upstream BigChange failures wrapped by the gateway in HTTP `400`
+(`payload.status` such as `403` missing scope, `404` not found, `422` validation,
+or `5xx`), `buildBigChangeApiError` promotes `payload.status` onto
+`NodeApiError.httpCode` and surfaces the upstream detail. With `Continue On Fail`
+enabled, `httpCode` and `description` are preserved on the output item.
 - Prefer **Return All** OFF with a **Limit** where full lists are unnecessary;
 when **Return All** is ON, pagination stops early as soon as `totalItemCount`
 is satisfied so no extra trailing page request is consumed.

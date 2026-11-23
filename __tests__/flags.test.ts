@@ -135,7 +135,7 @@ describe('Flag (BigChange) resource', () => {
 			deleteIdField: 'flagId',
 		},
 	])('single-active-flag routes for $entityType', ({ entityType, slug, idField, deleteIdField }) => {
-		it('getActiveFlag calls POST /flags/<slug>/get with entity ID and compact', async () => {
+		it('getActiveFlag calls POST /flags/<slug>/get with entity ID and compact and marks hasActiveFlag: true', async () => {
 			const { output, httpRequestWithAuthentication } = await executeFlags(
 				{
 					resource: 'flag',
@@ -144,14 +144,54 @@ describe('Flag (BigChange) resource', () => {
 					entityId: 42,
 					simplify: true,
 				},
-				{ responses: [{ id: 900, flagId: 7 }] },
+				{ responses: [{ result: { id: 900, flagId: 7 }, status: 200 }] },
 			);
 
 			const { opts } = getAuthRequest(httpRequestWithAuthentication);
 			expect(opts.method).toBe('POST');
 			expect(opts.url).toBe(`https://api.vh3connect.io/api:YdihQNr3/flags/${slug}/get`);
 			expect(JSON.parse(opts.body as string)).toEqual({ [idField]: 42, compact: true });
-			expect(output[0][0].json).toEqual({ id: 900, flagId: 7 });
+			expect(output[0][0].json).toEqual({
+				result: { id: 900, flagId: 7 },
+				status: 200,
+				hasActiveFlag: true,
+			});
+		});
+
+		it('getActiveFlag treats gateway HTTP 400 with payload.status 404 as no active flag set', async () => {
+			const xanoWrapped404 = {
+				statusCode: 400,
+				response: {
+					status: 400,
+					data: {
+						code: 'ERROR_CODE_BAD_REQUEST',
+						message: 'Something went wrong.',
+						payload: {
+							title: `The Flag For ${idField} with id 42 was not found.`,
+							status: 404,
+						},
+					},
+				},
+			};
+			const { output } = await executeFlags(
+				{
+					resource: 'flag',
+					operation: 'getActiveFlag',
+					entityType,
+					entityId: 42,
+					simplify: false,
+				},
+				{ rejectAuth: xanoWrapped404 },
+			);
+
+			expect(output[0]).toHaveLength(1);
+			expect(output[0][0].json).toEqual({
+				hasActiveFlag: false,
+				result: null,
+				status: 404,
+				entityType,
+				[idField]: 42,
+			});
 		});
 
 		it('listFlagHistory calls POST /flags/<slug>/history and emits one item per record', async () => {
@@ -333,6 +373,39 @@ describe('Flag (BigChange) resource', () => {
 			personId: uuid,
 			flagId: 12,
 		});
+	});
+
+	it('still throws NodeApiError with httpCode 403 on getActiveFlag when tenant lacks scope', async () => {
+		try {
+			await executeFlags(
+				{
+					resource: 'flag',
+					operation: 'getActiveFlag',
+					entityType: 'job',
+					entityId: 42,
+					simplify: false,
+				},
+				{
+					rejectAuth: {
+						statusCode: 400,
+						response: {
+							status: 400,
+							data: {
+								code: 'ERROR_CODE_BAD_REQUEST',
+								message: 'Something went wrong.',
+								payload: { title: 'Forbidden', detail: 'Missing scope jobs:read', status: 403 },
+							},
+						},
+					},
+				},
+			);
+			fail('Expected 403 to throw');
+		} catch (err) {
+			expect(err).toBeInstanceOf(NodeApiError);
+			const apiErr = err as NodeApiError;
+			expect(apiErr.httpCode).toBe('403');
+			expect(apiErr.message).toContain('Missing scope jobs:read');
+		}
 	});
 
 	it('propagates 429 Limit Exceeded errors via NodeApiError on Flag operations', async () => {
