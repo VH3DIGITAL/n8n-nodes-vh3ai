@@ -1039,3 +1039,88 @@ export function applyJobFeedTrueOnlyQuery(
 		qs.include_vh3_ai = true;
 	}
 }
+
+/**
+ * Strictly parse a comma-separated string or JSON array of positive integer IDs
+ * into `number[]`. Throws NodeOperationError on empty, malformed, or non-integer
+ * values so destructive PUT/replace endpoints never accidentally overwrite with [].
+ */
+export function parseStrictNumericIdList(
+	context: IExecuteFunctions,
+	raw: unknown,
+	fieldLabel = 'Worksheet IDs',
+): number[] {
+	if (raw === undefined || raw === null) {
+		throw new NodeOperationError(
+			context.getNode(),
+			`${fieldLabel} is required and must be a comma-separated list of numeric IDs or a JSON array of numbers.`,
+		);
+	}
+
+	let candidates: unknown[];
+	if (Array.isArray(raw)) {
+		candidates = raw;
+	} else if (typeof raw === 'number') {
+		candidates = [raw];
+	} else if (typeof raw === 'string') {
+		const trimmed = raw.trim();
+		if (!trimmed) {
+			throw new NodeOperationError(
+				context.getNode(),
+				`${fieldLabel} cannot be empty. Provide comma-separated numeric IDs (e.g. "12345, 67890") or a JSON array (e.g. [12345, 67890]).`,
+			);
+		}
+		if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+			let parsed: unknown;
+			let parseFailed = false;
+			try {
+				parsed = JSON.parse(trimmed);
+			} catch {
+				parseFailed = true;
+			}
+			if (parseFailed || !Array.isArray(parsed)) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`${fieldLabel} must be a valid JSON array of numeric IDs or a comma-separated list of numeric IDs.`,
+				);
+			}
+			candidates = parsed;
+		} else {
+			candidates = trimmed.split(',').map((part) => part.trim());
+		}
+	} else {
+		throw new NodeOperationError(
+			context.getNode(),
+			`${fieldLabel} must be a comma-separated list of numeric IDs or a JSON array of numbers.`,
+		);
+	}
+
+	const ids: number[] = [];
+	for (const entry of candidates) {
+		if (typeof entry === 'number') {
+			if (!Number.isInteger(entry) || entry <= 0) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`${fieldLabel} contains invalid numeric ID "${String(entry)}". All IDs must be positive integers.`,
+				);
+			}
+			ids.push(entry);
+		} else if (typeof entry === 'string') {
+			const trimmedEntry = entry.trim();
+			if (!/^[1-9]\d*$/.test(trimmedEntry)) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`${fieldLabel} contains invalid non-numeric value "${entry}". All IDs must be positive integers.`,
+				);
+			}
+			ids.push(Number(trimmedEntry));
+		} else {
+			throw new NodeOperationError(
+				context.getNode(),
+				`${fieldLabel} contains an invalid value (${String(entry)}). All IDs must be positive integers.`,
+			);
+		}
+	}
+
+	return ids;
+}

@@ -38,6 +38,7 @@ import {
 	assertEnrichedJobPayload,
 	clampInteger,
 	vh3FsiMultipartPostRequest,
+	parseStrictNumericIdList,
 } from './GenericFunctions';
 import { buildCaseDeleteRequest, buildCaseListRequest, buildCaseUpdateRequest, CaseUpdateValidationError } from './casesRequest';
 import { buildPortalIngestBody, portalIngestNodeOutput, SourceEmailValidationError } from './emailIngest';
@@ -831,6 +832,47 @@ export class Vh3Ai implements INodeType {
 							const raw = await vh3ListApiRequest.call(this, '/worksheet/worksheet_questions_get', body);
 							responseData = extractItems(raw).items;
 						}
+					} else if (operation === 'listJobWorksheets') {
+						const jobId = this.getNodeParameter('jobId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const body: JsonObject = { jobId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (typeof additionalFields.includeBranchedWorksheets === 'boolean') {
+							body.includeBranchedWorksheets = additionalFields.includeBranchedWorksheets;
+						}
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(
+								this,
+								'/jobs/worksheets/list',
+								body,
+							);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							responseData = await vh3ListApiRequestWithLimit.call(
+								this,
+								'/jobs/worksheets/list',
+								body,
+								limit,
+							);
+						}
+					} else if (operation === 'getJobWorksheet') {
+						const jobId = this.getNodeParameter('jobId', i) as number;
+						const worksheetId = this.getNodeParameter('worksheetId', i) as number;
+						const simplify = this.getNodeParameter('simplify', i, false) as boolean;
+						const qs: Record<string, string | number | boolean> = { jobId, worksheetId };
+						if (simplify) qs.compact = true;
+						const raw = await vh3ProxyGetRequest.call(this, '/jobs/worksheets/get', qs);
+						responseData = [raw];
+					} else if (operation === 'updateJobWorksheets') {
+						const jobId = this.getNodeParameter('jobId', i) as number;
+						const rawWorksheetIds = this.getNodeParameter('worksheetIds', i);
+						const worksheetIds = parseStrictNumericIdList(this, rawWorksheetIds, 'Worksheet IDs');
+						const raw = await vh3ListApiRequest.call(this, '/jobs/worksheets/set', {
+							jobId,
+							worksheetIds,
+						});
+						responseData = [raw];
 					}
 				}
 
