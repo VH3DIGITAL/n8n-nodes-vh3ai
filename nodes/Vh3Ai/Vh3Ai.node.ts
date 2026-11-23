@@ -1654,6 +1654,58 @@ export class Vh3Ai implements INodeType {
 						if (simplify) qs.compact = true;
 						const raw = await vh3ProxyGetRequest.call(this, '/note_types/note', qs);
 						responseData = [raw];
+					} else if (operation === 'listComments') {
+						const noteId = this.getNodeParameter('noteId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const body: JsonObject = { noteId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (additionalFields.sortBy) body.sortBy = additionalFields.sortBy;
+						if (additionalFields.direction) body.direction = additionalFields.direction;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(
+								this,
+								'/notes/comments/list',
+								body,
+							);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							responseData = await vh3ListApiRequestWithLimit.call(
+								this,
+								'/notes/comments/list',
+								body,
+								limit,
+							);
+						}
+					} else if (operation === 'createComment') {
+						const noteId = this.getNodeParameter('noteId', i) as number;
+						const noteComment = this.getNodeParameter('noteComment', i) as string;
+						const commentEntityType = this.getNodeParameter('commentEntityType', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const rawEntityId = additionalFields.entityId;
+						const entityId =
+							typeof rawEntityId === 'number' && rawEntityId > 0 ? rawEntityId : noteId;
+						const body: JsonObject = {
+							noteId,
+							noteComment,
+							commentEntityType,
+							entityId,
+						};
+						if (additionalFields.userIds) {
+							const userIds = parseIds(additionalFields.userIds);
+							if (userIds.length > 0) body.userIds = userIds;
+						}
+						if (typeof additionalFields.isMentions === 'boolean') {
+							body.isMentions = additionalFields.isMentions;
+						}
+						if (typeof additionalFields.isPreviousMentions === 'boolean') {
+							body.isPreviousMentions = additionalFields.isPreviousMentions;
+						}
+						if (additionalFields.reaction) {
+							body.reaction = additionalFields.reaction;
+						}
+						const raw = await vh3ListApiRequest.call(this, '/notes/comments/create', body);
+						responseData = [raw];
 					}
 				}
 
