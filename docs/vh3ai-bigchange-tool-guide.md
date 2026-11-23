@@ -84,17 +84,18 @@ quotes, notes, stock, or related data.
 
 | Resource | Use when the user asks about... | Primary read | Primary write |
 |---|---|---|---|
-| **Job** | jobs, visits, callouts, schedule, status of a job | `List Jobs`, `Get Job`, `Get Job by ID` (plain BigChange job). Enriched detail is Job Feed → `Get Enriched Job`. | `Create Job`, `Schedule Job`, `Start Job`, `Set Job Result`, `Cancel Job`, `Edit Job` |
+| **Job** | jobs, visits, callouts, schedule, status, cost/billing line items | `List Jobs`, `Get Job`, `Get Job by ID` (plain BigChange job), `List Job Line Items`, `Get Job Line Item`. Enriched detail is Job Feed → `Get Enriched Job`. | `Create Job`, `Schedule Job`, `Start Job`, `Set Job Result`, `Cancel Job`, `Edit Job`, `Create / Edit / Delete Job Line Item` |
 | **Contact** | customers, sites, addresses, accounts | `List Contacts`, `Get Contact` | `Create Contact`, `Edit Contact`, `Stop Contact` / `Unstop Contact` |
+| **Flag** | status flags/tags on notes, jobs, invoices, job groups, POs, quotes, sales opportunities, and persons | `List Flag Definitions`, `Get Active Flag`, `List Flag History`, `List Job Group Job Flags`, `List Person Flags` | `Add Flag`, `Delete Flag`, `Apply Job Group Job Flag`, `Add Person Flag`, `Remove Person Flag` |
 | **Resource (Engineer)** | engineers, technicians, operatives, who's free | `List Resources`, `Get Resource` | `Create Resource`, `Update Resource` |
 | **Vehicle** | fleet, vans, registrations | `List Vehicles`, `Get Vehicle` | `Create Vehicle`, `Update Vehicle` |
 | **Invoice** | bills, invoicing, accounts receivable | `List Invoices`, `Get Invoice`, `List Invoice Line Items` | `Create Invoice`, `Create Invoice Line Item`, `Mark Invoice Sent`, `Mark Invoice Paid`, `Cancel Invoice` |
 | **Quote** | quotes, estimates, pre-sale | `List Quotes`, `Get Quote`, `List Quote Line Items` | `Create Quote`, `Create Quote Line Item`, `Mark Quote Sent`, `Mark Quote Accepted/Rejected` |
-| **Note** | follow-ups, tasks, comments, callbacks | `List Notes`, `Get Note` | `Create Note`, `Edit Note`, `Create Progress Update` |
+| **Note** | follow-ups, tasks, comments, callbacks | `List Notes`, `Get Note`, `List Note Comments` | `Create Note`, `Edit Note`, `Create Progress Update`, `Create Note Comment` |
 | **Person** | individual people at a customer/site | `List Persons`, `Get Person`, `List Consent History` | `Create Person`, `Edit Person` |
-| **Job Group** | multi-job projects, packages of work | `List Job Groups`, `Get Job Group` | `Create Job Group`, `Edit Job Group`, `Mark Job Group Complete` |
+| **Job Group** | multi-job projects, packages of work, group line items | `List Job Groups`, `Get Job Group`, `List Job Group Line Items`, `Get Job Group Line Item` | `Create Job Group`, `Edit Job Group`, `Mark Job Group Complete`, `Create / Edit / Delete Job Group Line Item` |
 | **Stock** | inventory, parts, SKUs, serial numbers, movements | `List Stock Items`, `List Stock Details`, `List Stock Movements` | `Create Stock Item`, `Create Stock Details`, `Update Stock Item` |
-| **Worksheet** | on-site checklists, captured photos, signatures | `List Worksheet Answers` (per job), `List Worksheet Definitions` | (read-only resource) |
+| **Worksheet** | on-site checklists, job worksheet assignments, captured photos, signatures | `List Worksheet Answers` (per job), `List Worksheet Definitions`, `List Job Worksheets`, `Get Job Worksheet` | `Update Job Worksheets` (full replacement PUT of attached worksheet IDs) |
 | **Job Type** | what kinds of jobs are configured | `List Job Types`, `Get Job Type` | (read-only) |
 | **Reference Data** | department codes, nominal codes (for invoice/quote lines) | `List Department Codes`, `List Nominal Codes` | (read-only) |
 | **Worksheet Group** | folders that organise worksheet templates | `List Worksheet Groups` | (read-only) |
@@ -113,6 +114,11 @@ quotes, notes, stock, or related data.
 | Edit a contact and only supply one field | `Edit Contact` requires name, group ID, and lat/lng even if unchanged — re-supply them from `Get Contact`. |
 | List invoices/quotes with no filter | Either supply at least one filter or accept the node's last-12-months fallback. |
 | Make up custom field IDs on Create/Edit Job | Custom field `definitionId`s come from `Get Job Type`. Always look them up. |
+| Pass only a new worksheet ID to `Update Job Worksheets` | `Update Job Worksheets` is a full replacement PUT — list existing IDs via `List Job Worksheets` first and send the complete desired array so existing worksheets are not detached. |
+| Pass a `flagId` to `Delete Flag` on an entity | Entity flag removal takes the flag **history ID** (`historyId`, from `Get Active Flag` or `List Flag History`), whereas `Remove Person Flag` takes the `flagId` definition ID. |
+| Treat a `Get Active Flag` miss as an error | BigChange returns 404 when a record has no active flag; `Get Active Flag` normalises that into `{ hasActiveFlag: false, result: null, status: 404 }`. Check `hasActiveFlag` instead of catching errors. |
+| Rely on `Get Job Worksheet` for IDs returned by `List Job Worksheets` | BigChange currently returns 404 (`JobWorksheet ... not found`) on `GET /v1/jobs/{jobId}/worksheets/{worksheetId}` for some IDs returned by `List Job Worksheets`. Prefer `List Job Worksheets`, which returns the same fields (`id`, `name`, `linkType`). |
+| Retry blindly on HTTP 429 | BigChange tenants have a **100,000 calls/month** API quota as well as burst limits; `NodeApiError` surfaces `httpCode: "429"` and `"BigChange API rate/quota limit exceeded (429)"`. Cap retries and pause rather than looping. |
 
 ---
 
@@ -139,7 +145,9 @@ To avoid agents hallucinating IDs, here's the source for every ID the node accep
 | `stockItemId` (physical unit) | `List Stock Items` |
 | `invoiceId` / `lineItemId` | `List Invoices` / `List Invoice Line Items` |
 | `quoteId` / `lineItemId` | `List Quotes` / `List Quote Line Items` |
-| `jobGroupId` | `List Job Groups` |
+| `jobGroupId` / `lineItemId` | `List Job Groups` / `List Job Group Line Items` |
+| `jobId` / `lineItemId` | `List Jobs` / `List Job Line Items` |
+| `flagId` / `historyId` | `List Flag Definitions` (`flagId`) · `Get Active Flag` / `List Flag History` (`historyId`) |
 | `constraintId` | `List Job Constraints` (per job) |
 
 ---

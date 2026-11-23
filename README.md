@@ -62,19 +62,20 @@ BigChange operations, including Get Job, send the API key header. VH3 AI operati
 
 | Resource                | Operations                                                                                                                                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Job (BigChange)**                 | List Jobs · Get Job · Get Job by ID (plain BigChange job) · Create Job · Edit Job · Cancel Job · Schedule Job · Start Job · Set Job Result · List Job Status History · Create / Delete / List Job Constraints · Create / Get / List / Delete Job Stock |
+| **Job (BigChange)**                 | List Jobs · Get Job · Get Job by ID (plain BigChange job) · Create Job · Edit Job · Cancel Job · Schedule Job · Start Job · Set Job Result · List Job Status History · Create / Delete / List Job Constraints · Create / Get / List / Delete Job Stock · List / Get / Create / Edit / Delete Job Line Item |
 | **Contact (BigChange)**             | List Contacts · Get Contact · Create / Edit Contact · Stop / Unstop Contact · List Contact Groups · Get / Create / Update Contact Group · List / Update Site Access Hours                                         |
+| **Flag (BigChange)**                | List Flag Definitions · Get Active Flag · Add Flag · Delete Flag · List Flag History (across Note, Job, Invoice, Job Group, Purchase Order, Quote, Sales Opportunity) · List / Apply / History Job Group Job Flags · List / Add / Remove Person Flags |
 | **Resource / Engineer (BigChange)** | List Resources · Get Resource · Create / Update Resource · List Resource Groups · Get Resource Group                                                                                                              |
 | **Vehicle (BigChange)**             | List Vehicles · Get / Create / Update Vehicle                                                                                                                                                                     |
-| **Worksheet (BigChange)**           | List Worksheet Definitions · Get Worksheet · Get Worksheet Questions · List Worksheet Answers                                                                                                                     |
+| **Worksheet (BigChange)**           | List Worksheet Definitions · Get Worksheet · Get Worksheet Questions · List Worksheet Answers · List / Get / Update Job Worksheets                                                                                  |
 | **Worksheet Group (BigChange)**     | List · Get                                                                                                                                                                                                        |
 | **Invoice (BigChange)**             | List Invoices · Get Invoice · Create / Edit Invoice · Cancel Invoice · Mark Invoice Sent / Paid · Create Invoice Document · List Invoice Line Items · Get Invoice Line Item · Create / Delete Invoice Line Item     |
 | **Quote (BigChange)**               | List Quotes · Get Quote · Create / Edit Quote · Mark Quote Sent / Accepted / Rejected · List Quote Line Items · Get / Create / Edit / Delete Quote Line Item                                                      |
 | **Sales Opportunity (BigChange)**   | List Sales Opportunities · Get Sales Opportunity · Edit Sales Opportunity · List Probabilities · List Stages · List / Get / Create / Edit / Delete Sales Opportunity Line Item                                    |
 | **Purchase Order (BigChange)**      | List Purchase Orders · Get Purchase Order · Create / Edit Purchase Order · List / Get Purchase Order Series · List / Get / Create / Edit / Delete Purchase Order Line Item                                        |
-| **Note (BigChange)**                | List Notes · Get Note · Create / Edit Note · Create Progress Update · List Note Types · Get Note Type                                                                                                             |
+| **Note (BigChange)**                | List Notes · Get Note · Create / Edit Note · Create Progress Update · List Note Comments · Create Note Comment · List Note Types · Get Note Type                                                                  |
 | **Person (BigChange)**              | List Persons · Get Person · Create / Edit Person · List Consent History · Set Consent                                                                                                                              |
-| **Job Group (BigChange)**           | List Job Groups · Get Job Group · Create / Edit Job Group · Mark Complete · Mark Financially Complete · List Status History                                                                                       |
+| **Job Group (BigChange)**           | List Job Groups · Get Job Group · Create / Edit Job Group · Mark Complete · Mark Financially Complete · List Status History · List / Get / Create / Edit / Delete Job Group Line Item                             |
 | **Stock (BigChange)**               | List Product Categories · Get Product Category · List / Get / Create / Update Stock Details · List / Get / Create / Update Stock Item · List Stock Movements · List Stock Suppliers · Get Stock Supplier         |
 | **Reference Data (BigChange)**      | List Department Codes · Get Department Code · List Nominal Codes · Get Nominal Code                                                                                                                               |
 | **Job Type (BigChange)**            | List Job Types · Get Job Type                                                                                                                                                                                     |
@@ -153,7 +154,11 @@ The n8n UI uses **camelCase** field names. The handlers map these to the appropr
 
 ### Auto-pagination
 
-List operations expose a **Return All** toggle. When ON, the node walks every page automatically (capped at 200 pages).
+List operations expose a **Return All** toggle (with a **Limit** cap when OFF on newer list endpoints). When **Return All** is ON, the node walks pages automatically (capped at 200 pages) and stops immediately when a page is empty, smaller than `pageSize`, or reaches the envelope's `totalItemCount` — avoiding unnecessary trailing calls that consume BigChange API quota.
+
+### Error & HTTP 429 rate-limit visibility
+
+BigChange proxy errors throw `NodeApiError` with the upstream HTTP status code (`httpCode`) and error payload preserved instead of generic errors. HTTP `429` responses surface an explicit `BigChange API rate/quota limit exceeded (429)` message (including upstream details such as `"Limit Exceeded"`) and retain `httpCode` and `description` when `Continue On Fail` is enabled so workflows can back off or retry.
 
 ### AI tool compatibility
 

@@ -1,6 +1,7 @@
 import type {
 	IExecuteFunctions,
 	IHttpRequestOptions,
+	INode,
 	JsonObject,
 	JsonValue,
 } from 'n8n-workflow';
@@ -47,7 +48,11 @@ export function defaultCreatedAtRange(monthsBack = 12): { createdAtFrom: string;
 	};
 }
 
-export function extractItems(raw: JsonObject): { items: JsonObject[]; pageItemCount: number } {
+export function extractItems(raw: JsonObject): {
+	items: JsonObject[];
+	pageItemCount: number;
+	totalItemCount?: number;
+} {
 	let result: JsonObject = raw;
 
 	if (result.response && typeof result.response === 'object') {
@@ -60,8 +65,328 @@ export function extractItems(raw: JsonObject): { items: JsonObject[]; pageItemCo
 	const items = (Array.isArray(result.items) ? result.items : []) as JsonObject[];
 	const pageItemCount =
 		typeof result.pageItemCount === 'number' ? result.pageItemCount : items.length;
+	const totalItemCount =
+		typeof result.totalItemCount === 'number' ? result.totalItemCount : undefined;
 
-	return { items, pageItemCount };
+	return totalItemCount !== undefined
+		? { items, pageItemCount, totalItemCount }
+		: { items, pageItemCount };
+}
+
+function parseHttpStatusCode(value: unknown): number | undefined {
+	if (typeof value === 'number' && Number.isInteger(value) && value >= 100 && value <= 599) {
+		return value;
+	}
+	if (typeof value === 'string') {
+		const match = value.trim().match(/^(\d{3})$/);
+		if (match) {
+			const code = Number(match[1]);
+			if (code >= 100 && code <= 599) return code;
+		}
+	}
+	return undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+	if (value && typeof value === 'object' && !Array.isArray(value)) {
+		return value as Record<string, unknown>;
+	}
+	return undefined;
+}
+
+function findPayloadStatusInValue(value: unknown, depth = 0): number | undefined {
+	if (depth > 4 || value === undefined || value === null) return undefined;
+	const parsed = tryParseJsonPayload(value);
+	const obj = asRecord(parsed);
+	if (!obj) return undefined;
+
+	if (obj.payload !== undefined && obj.payload !== null) {
+		const payloadObj = asRecord(tryParseJsonPayload(obj.payload));
+		if (payloadObj) {
+			const payloadStatus = parseHttpStatusCode(payloadObj.status);
+			if (payloadStatus !== undefined) return payloadStatus;
+		}
+		const nested = findPayloadStatusInValue(obj.payload, depth + 1);
+		if (nested !== undefined) return nested;
+	}
+
+	if (obj.error !== undefined && obj.error !== null) {
+		const nested = findPayloadStatusInValue(obj.error, depth + 1);
+		if (nested !== undefined) return nested;
+	}
+
+	return undefined;
+}
+
+function extractUpstreamPayloadStatus(error: unknown): number | undefined {
+	const err = asRecord(error);
+	if (!err) return undefined;
+
+	const response = asRecord(err.response);
+	const cause = asRecord(err.cause);
+	const causeResponse = asRecord(cause?.response);
+	const context = asRecord(err.context);
+
+	const directPayload = asRecord(tryParseJsonPayload(err.payload));
+	const directPayloadStatus = parseHttpStatusCode(directPayload?.status);
+	if (directPayloadStatus !== undefined) return directPayloadStatus;
+
+	const sources = [
+		response?.data,
+		response?.body,
+		causeResponse?.data,
+		causeResponse?.body,
+		context?.data,
+		cause?.data,
+		cause?.error,
+		err.data,
+		err.error,
+	];
+
+	for (const source of sources) {
+		const status = findPayloadStatusInValue(source);
+		if (status !== undefined) return status;
+	}
+	return undefined;
+}
+
+function extractUpstreamResponseData(error: unknown): JsonObject | undefined {
+	const err = asRecord(error);
+	if (!err) return undefined;
+
+	const response = asRecord(err.response);
+	const cause = asRecord(err.cause);
+	const causeResponse = asRecord(cause?.response);
+	const context = asRecord(err.context);
+
+	const candidates = [
+		response?.data,
+		response?.body,
+		causeResponse?.data,
+		causeResponse?.body,
+		context?.data,
+		err.data,
+	];
+
+	for (const candidate of candidates) {
+		const parsed = asRecord(tryParseJsonPayload(candidate));
+		if (parsed) return parsed as JsonObject;
+	}
+	return undefined;
+}
+
+function extractHttpStatusCode(error: unknown): number | undefined {
+	const upstreamPayloadStatus = extractUpstreamPayloadStatus(error);
+	if (upstreamPayloadStatus !== undefined) return upstreamPayloadStatus;
+
+	const err = asRecord(error);
+	if (!err) return undefined;
+
+	const response = asRecord(err.response);
+	const cause = asRecord(err.cause);
+	const causeResponse = asRecord(cause?.response);
+	const context = asRecord(err.context);
+	const contextData = asRecord(context?.data);
+
+	const candidates = [
+		err.httpCode,
+		err.statusCode,
+		err.status,
+		response?.status,
+		response?.statusCode,
+		cause?.httpCode,
+		cause?.statusCode,
+		cause?.status,
+		causeResponse?.status,
+		causeResponse?.statusCode,
+		contextData?.statusCode,
+		contextData?.status,
+	];
+
+	for (const candidate of candidates) {
+		const parsed = parseHttpStatusCode(candidate);
+		if (parsed !== undefined) return parsed;
+	}
+	return undefined;
+}
+
+function tryParseJsonPayload(value: unknown): unknown {
+	if (typeof value !== 'string') return value;
+	const trimmed = value.trim();
+	if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return trimmed;
+	try {
+		return JSON.parse(trimmed);
+	} catch {
+		return trimmed;
+	}
+}
+
+function collectErrorDetails(value: unknown, out: string[], depth = 0): void {
+	if (depth > 4 || value === undefined || value === null) return;
+	const parsed = tryParseJsonPayload(value);
+
+	if (typeof parsed === 'string') {
+		const trimmed = parsed.trim();
+		if (trimmed) out.push(trimmed);
+		return;
+	}
+
+	const obj = asRecord(parsed);
+	if (!obj) return;
+
+	if (obj.payload !== undefined && obj.payload !== null && obj.payload !== '') {
+		collectErrorDetails(obj.payload, out, depth + 1);
+	}
+	if (obj.error !== undefined && obj.error !== null && obj.error !== '') {
+		collectErrorDetails(obj.error, out, depth + 1);
+	}
+
+	const title = typeof obj.title === 'string' ? obj.title.trim() : '';
+	const detail = typeof obj.detail === 'string' ? obj.detail.trim() : '';
+	if (title && detail && title.toLowerCase() !== detail.toLowerCase()) {
+		out.push(`${title}: ${detail}`);
+	} else if (detail) {
+		out.push(detail);
+	} else if (title) {
+		out.push(title);
+	}
+
+	if (typeof obj.message === 'string' && obj.message.trim()) {
+		out.push(obj.message.trim());
+	}
+	if (typeof obj.description === 'string' && obj.description.trim()) {
+		out.push(obj.description.trim());
+	}
+	if (typeof obj.result === 'string' && obj.result.trim()) {
+		out.push(obj.result.trim());
+	}
+}
+
+function isGenericWrapperMessage(msg: string): boolean {
+	return (
+		/^Request failed with status code \d{3}$/i.test(msg) ||
+		/^\d{3}\s*-\s*"?\{/.test(msg) ||
+		/^Something went wrong\.?$/i.test(msg) ||
+		/^BigChange API rate\/quota limit exceeded\.?$/i.test(msg) ||
+		/^Bad request - please check your parameters$/i.test(msg) ||
+		/^The service is receiving too many requests from you$/i.test(msg) ||
+		/^Your request is invalid or could not be processed by the service$/i.test(msg) ||
+		/^The service failed to process your request$/i.test(msg)
+	);
+}
+
+function extractUpstreamErrorDetail(error: unknown): string {
+	const err = asRecord(error);
+	const rawMessages: string[] = [];
+
+	if (err) {
+		const response = asRecord(err.response);
+		const cause = asRecord(err.cause);
+		const causeResponse = asRecord(cause?.response);
+		const context = asRecord(err.context);
+
+		collectErrorDetails(response?.data, rawMessages);
+		collectErrorDetails(response?.body, rawMessages);
+		collectErrorDetails(causeResponse?.data, rawMessages);
+		collectErrorDetails(causeResponse?.body, rawMessages);
+		collectErrorDetails(context?.data, rawMessages);
+		collectErrorDetails(err.error, rawMessages);
+		collectErrorDetails(err.payload, rawMessages);
+
+		if (typeof err.description === 'string' && err.description.trim()) {
+			rawMessages.push(err.description.trim());
+		}
+		if (typeof err.message === 'string' && err.message.trim()) {
+			rawMessages.push(err.message.trim());
+		}
+	} else if (error instanceof Error && error.message.trim()) {
+		rawMessages.push(error.message.trim());
+	}
+
+	const unique: string[] = [];
+	for (const candidate of rawMessages) {
+		const lower = candidate.toLowerCase();
+		const alreadyCovered = unique.some(
+			(existing) => existing.toLowerCase() === lower || existing.toLowerCase().includes(lower),
+		);
+		if (!alreadyCovered) {
+			unique.push(candidate);
+		}
+	}
+
+	const specific = unique.filter((msg) => !isGenericWrapperMessage(msg));
+	const chosen = specific.length > 0 ? specific : unique;
+	return chosen.join(' — ');
+}
+
+/**
+ * Construct a NodeApiError that preserves the true upstream BigChange HTTP status
+ * code (promoting `payload.status` when Xano wraps non-2xx responses in HTTP 400,
+ * and preserving HTTP 429) and response payload details without short-circuiting on
+ * pre-wrapped NodeApiError instances.
+ */
+export function buildBigChangeApiError(
+	node: INode,
+	error: unknown,
+	method: 'GET' | 'POST',
+	endpoint: string,
+): NodeApiError {
+	const statusCode = extractHttpStatusCode(error);
+	const upstreamDetail = extractUpstreamErrorDetail(error);
+	const upstreamResponseData = extractUpstreamResponseData(error);
+	const httpCode = statusCode !== undefined ? String(statusCode) : undefined;
+
+	let message: string;
+	let description: string;
+
+	if (statusCode === 429) {
+		const isRedundant429 =
+			!upstreamDetail || /^BigChange API rate\/quota limit exceeded\.?$/i.test(upstreamDetail);
+		message = !isRedundant429
+			? `BigChange API rate/quota limit exceeded (429): ${upstreamDetail}`
+			: 'BigChange API rate/quota limit exceeded (429)';
+		description = !isRedundant429
+			? `${method} ${endpoint} failed with HTTP 429: ${upstreamDetail}`
+			: `${method} ${endpoint} failed with HTTP 429`;
+	} else if (statusCode !== undefined) {
+		message = upstreamDetail
+			? `BigChange API request failed (${statusCode}): ${method} ${endpoint} — ${upstreamDetail}`
+			: `BigChange API request failed (${statusCode}): ${method} ${endpoint}`;
+		description = upstreamDetail
+			? `${method} ${endpoint} failed with HTTP ${statusCode}: ${upstreamDetail}`
+			: `${method} ${endpoint} failed with HTTP ${statusCode}`;
+	} else {
+		const prefix = method === 'GET' ? 'Proxy API request failed' : 'List API request failed';
+		message = `${prefix}: ${method} ${endpoint}`;
+		description = upstreamDetail || (error instanceof Error ? error.message : 'Unknown error');
+	}
+
+	const errorPayload: JsonObject =
+		error instanceof NodeApiError
+			? ({
+					message: error.message,
+					...(error.description ? { description: error.description } : {}),
+					...(error.httpCode ? { httpCode: error.httpCode } : {}),
+					...(error.context?.data ? { data: error.context.data } : {}),
+			  } as JsonObject)
+			: ((error ?? {}) as JsonObject);
+
+	const apiError = new NodeApiError(node, errorPayload, {
+		message,
+		description,
+		httpCode,
+	});
+
+	apiError.message = message;
+	apiError.description = description;
+	if (httpCode) {
+		apiError.httpCode = httpCode;
+	}
+	if (upstreamResponseData && !apiError.context.data) {
+		apiError.context.data = upstreamResponseData;
+	}
+
+	return apiError;
 }
 
 /**
@@ -95,10 +420,7 @@ export async function vh3ListApiRequest(
 		}
 		return response as JsonObject;
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject, {
-			message: `List API request failed: POST ${endpoint}`,
-			description: (error as Error).message,
-		});
+		throw buildBigChangeApiError(this.getNode(), error, 'POST', endpoint);
 	}
 }
 
@@ -139,15 +461,14 @@ export async function vh3ProxyGetRequest(
 			options,
 		)) as JsonObject;
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject, {
-			message: `Proxy API request failed: GET ${endpoint}`,
-			description: (error as Error).message,
-		});
+		throw buildBigChangeApiError(this.getNode(), error, 'GET', endpoint);
 	}
 }
 
 /**
  * Fetch all pages from a list endpoint, auto-paginating until all items are collected.
+ * Stops early when `items.length === 0`, `pageItemCount < pageSize`, or
+ * `totalItemCount` has been reached.
  */
 export const MAX_PAGES = 200;
 
@@ -163,17 +484,58 @@ export async function vh3ListApiRequestAllPages(
 	while (page <= MAX_PAGES) {
 		const pagedBody: JsonObject = { ...body, pageNumber: page, pageSize };
 		const raw = await vh3ListApiRequest.call(this, endpoint, pagedBody);
-		const { items, pageItemCount } = extractItems(raw);
+		const { items, pageItemCount, totalItemCount } = extractItems(raw);
 
 		allItems.push(...items);
 
-		if (pageItemCount < pageSize) {
+		if (
+			items.length === 0 ||
+			pageItemCount < pageSize ||
+			(typeof totalItemCount === 'number' && allItems.length >= totalItemCount)
+		) {
 			break;
 		}
 		page++;
 	}
 
 	return allItems;
+}
+
+/**
+ * Fetch up to `limit` items from a paginated list endpoint using internal pagination.
+ * When `limit <= maxPageSize` (default 1000), only a single request is made.
+ */
+export async function vh3ListApiRequestWithLimit(
+	this: IExecuteFunctions,
+	endpoint: string,
+	body: JsonObject,
+	limit: number,
+	maxPageSize = 1000,
+): Promise<JsonObject[]> {
+	const targetLimit = Math.max(1, Math.trunc(limit));
+	const pageSize = Math.min(targetLimit, maxPageSize);
+	const allItems: JsonObject[] = [];
+	let page = 1;
+
+	while (page <= MAX_PAGES && allItems.length < targetLimit) {
+		const pagedBody: JsonObject = { ...body, pageNumber: page, pageSize };
+		const raw = await vh3ListApiRequest.call(this, endpoint, pagedBody);
+		const { items, pageItemCount, totalItemCount } = extractItems(raw);
+
+		allItems.push(...items);
+
+		if (
+			allItems.length >= targetLimit ||
+			items.length === 0 ||
+			pageItemCount < pageSize ||
+			(typeof totalItemCount === 'number' && allItems.length >= totalItemCount)
+		) {
+			break;
+		}
+		page++;
+	}
+
+	return allItems.slice(0, targetLimit);
 }
 
 // ── Web Services API helpers ──────────────────────────────────────────────────
@@ -776,4 +1138,89 @@ export function applyJobFeedTrueOnlyQuery(
 	if (additionalFields.includeVh3Ai === true) {
 		qs.include_vh3_ai = true;
 	}
+}
+
+/**
+ * Strictly parse a comma-separated string or JSON array of positive integer IDs
+ * into `number[]`. Throws NodeOperationError on empty, malformed, or non-integer
+ * values so destructive PUT/replace endpoints never accidentally overwrite with [].
+ */
+export function parseStrictNumericIdList(
+	context: IExecuteFunctions,
+	raw: unknown,
+	fieldLabel = 'Worksheet IDs',
+): number[] {
+	if (raw === undefined || raw === null) {
+		throw new NodeOperationError(
+			context.getNode(),
+			`${fieldLabel} is required and must be a comma-separated list of numeric IDs or a JSON array of numbers.`,
+		);
+	}
+
+	let candidates: unknown[];
+	if (Array.isArray(raw)) {
+		candidates = raw;
+	} else if (typeof raw === 'number') {
+		candidates = [raw];
+	} else if (typeof raw === 'string') {
+		const trimmed = raw.trim();
+		if (!trimmed) {
+			throw new NodeOperationError(
+				context.getNode(),
+				`${fieldLabel} cannot be empty. Provide comma-separated numeric IDs (e.g. "12345, 67890") or a JSON array (e.g. [12345, 67890]).`,
+			);
+		}
+		if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+			let parsed: unknown;
+			let parseFailed = false;
+			try {
+				parsed = JSON.parse(trimmed);
+			} catch {
+				parseFailed = true;
+			}
+			if (parseFailed || !Array.isArray(parsed)) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`${fieldLabel} must be a valid JSON array of numeric IDs or a comma-separated list of numeric IDs.`,
+				);
+			}
+			candidates = parsed;
+		} else {
+			candidates = trimmed.split(',').map((part) => part.trim());
+		}
+	} else {
+		throw new NodeOperationError(
+			context.getNode(),
+			`${fieldLabel} must be a comma-separated list of numeric IDs or a JSON array of numbers.`,
+		);
+	}
+
+	const ids: number[] = [];
+	for (const entry of candidates) {
+		if (typeof entry === 'number') {
+			if (!Number.isInteger(entry) || entry <= 0) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`${fieldLabel} contains invalid numeric ID "${String(entry)}". All IDs must be positive integers.`,
+				);
+			}
+			ids.push(entry);
+		} else if (typeof entry === 'string') {
+			const trimmedEntry = entry.trim();
+			if (!/^[1-9]\d*$/.test(trimmedEntry)) {
+				throw new NodeOperationError(
+					context.getNode(),
+					`${fieldLabel} contains invalid non-numeric value "${entry}". All IDs must be positive integers.`,
+				);
+			}
+			ids.push(Number(trimmedEntry));
+		} else {
+			throw new NodeOperationError(
+				context.getNode(),
+				`${fieldLabel} contains an invalid value (${String(entry)}). All IDs must be positive integers.`,
+			);
+		}
+	}
+
+	return ids;
 }

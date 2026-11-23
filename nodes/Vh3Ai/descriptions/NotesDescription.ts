@@ -19,6 +19,12 @@ export const notesOperations: INodeProperties[] = [
 				description: 'Attach a note/task/comment to an entity. Requires entityType (job, contact, person, etc.), entityId, typeId (from List Note Types), and a subject. Optional description, dueAt (UTC), status, owner. Use for follow-ups, customer comms log, internal flags.',
 			},
 			{
+				name: 'Create Note Comment',
+				value: 'createComment',
+				action: 'Create a note comment',
+				description: 'Post a comment to an existing BigChange note thread. Defaults entityId to noteId for standard note comments; supports user mentions and reactions.',
+			},
+			{
 				name: 'Create Progress Update',
 				value: 'createProgressUpdate',
 				action: 'Create a progress update',
@@ -41,6 +47,12 @@ export const notesOperations: INodeProperties[] = [
 				value: 'getNoteType',
 				action: 'Get a note type',
 				description: 'Get one note type by ID. Use to map a note type ID to its display name and configuration.',
+			},
+			{
+				name: 'List Note Comments',
+				value: 'listComments',
+				action: 'List note comments',
+				description: 'List comments posted on a specific BigChange note. Returns one item per comment; supports sorting, Simplify, and Return All auto-pagination.',
 			},
 			{
 				name: 'List Note Types',
@@ -585,6 +597,197 @@ export const notesFields: INodeProperties[] = [
 			},
 		},
 	},
+
+	// ── List Note Comments fields ──
+	{
+		displayName: 'Note ID',
+		name: 'noteId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'The numeric ID of the note to list comments for',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['listComments'],
+			},
+		},
+	},
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['listComments'],
+			},
+		},
+	},
+	{
+		displayName: 'Limit',
+		name: 'limit',
+		type: 'number',
+		typeOptions: {
+			minValue: 1,
+		},
+		default: 50,
+		description: 'Max number of results to return',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['listComments'],
+				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['listComments'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Direction',
+				name: 'direction',
+				type: 'options',
+				options: [
+					{ name: 'Ascending', value: 'ascending' },
+					{ name: 'Descending', value: 'descending' },
+				],
+				default: 'descending',
+				description: 'Sort direction',
+			},
+			{
+				displayName: 'Sort By',
+				name: 'sortBy',
+				type: 'options',
+				options: [
+					{ name: 'Created At', value: 'createdAt' },
+					{ name: 'Due At', value: 'dueAt' },
+					{ name: 'Progress Percentage', value: 'progressPercentage' },
+					{ name: 'Progressed At', value: 'progressedAt' },
+					{ name: 'Status', value: 'status' },
+				],
+				default: 'createdAt',
+				description: 'Field to sort comments by',
+			},
+		],
+	},
+
+	// ── Create Note Comment fields ──
+	{
+		displayName: 'Note ID',
+		name: 'noteId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'The numeric ID of the note to comment on',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['createComment'],
+			},
+		},
+	},
+	{
+		displayName: 'Comment Text',
+		name: 'noteComment',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'The body text of the comment to post on the note',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['createComment'],
+			},
+		},
+	},
+	{
+		displayName: 'Comment Entity Type',
+		name: 'commentEntityType',
+		type: 'options',
+		required: true,
+		options: [
+			{ name: 'Asset Defect', value: 'assetDefect' },
+			{ name: 'Note', value: 'note' },
+		],
+		default: 'note',
+		description: 'Entity type the comment belongs to (use Note for standard note comments)',
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['createComment'],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['notes'],
+				operation: ['createComment'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Entity ID',
+				name: 'entityId',
+				type: 'number',
+				default: 0,
+				description: 'Target entity ID for the comment. Defaults to Note ID when omitted or 0.',
+			},
+			{
+				displayName: 'Is Mentions',
+				name: 'isMentions',
+				type: 'boolean',
+				default: false,
+				description: 'Whether the comment includes user mentions',
+			},
+			{
+				displayName: 'Is Previous Mentions',
+				name: 'isPreviousMentions',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to notify users previously mentioned on the note',
+			},
+			{
+				displayName: 'Reaction',
+				name: 'reaction',
+				type: 'options',
+				options: [
+					{ name: 'Applause', value: 'applause' },
+					{ name: 'Dislike', value: 'dislike' },
+					{ name: 'Heart', value: 'heart' },
+					{ name: 'Like', value: 'like' },
+				],
+				default: 'like',
+				description: 'Optional reaction to attach to the comment',
+			},
+			{
+				displayName: 'User IDs',
+				name: 'userIds',
+				type: 'string',
+				default: '',
+				description: 'Comma-separated numeric user IDs to mention on the comment',
+			},
+		],
+	},
+
 	// ── Simplify (compact response) toggle ──
 	{
 		displayName: 'Simplify',
@@ -595,7 +798,7 @@ export const notesFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['notes'],
-				operation: ['listNotes', 'getNote', 'listNoteTypes', 'getNoteType'],
+				operation: ['listNotes', 'getNote', 'listNoteTypes', 'getNoteType', 'listComments'],
 			},
 		},
 	},
