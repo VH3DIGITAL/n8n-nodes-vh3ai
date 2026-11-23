@@ -2404,8 +2404,10 @@ export class Vh3Ai implements INodeType {
 										[idField]: entityId,
 									},
 								];
+							} else if (error instanceof NodeApiError) {
+								throw new NodeApiError(this.getNode(), error as unknown as JsonObject);
 							} else {
-								throw error;
+								throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
 							}
 						}
 					} else if (operation === 'listFlagHistory') {
@@ -3797,9 +3799,12 @@ export class Vh3Ai implements INodeType {
 					returnData.push({ json: errJson, pairedItem: { item: i } });
 					continue;
 				}
-				if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+				if (error instanceof NodeApiError) {
 					error.context.itemIndex = i;
-					throw error;
+					throw new NodeApiError(this.getNode(), error as unknown as JsonObject);
+				}
+				if (error instanceof NodeOperationError) {
+					error.context.itemIndex = i;
 				}
 				throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
 			}
