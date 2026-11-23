@@ -11,6 +11,7 @@ import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workf
 import {
 	vh3ListApiRequest,
 	vh3ListApiRequestAllPages,
+	vh3ListApiRequestWithLimit,
 	vh3ProxyGetRequest,
 	extractItems,
 	requireCompanyId,
@@ -57,6 +58,7 @@ import { referenceDataOperations, referenceDataFields } from './descriptions/Ref
 import { quotesOperations, quotesFields } from './descriptions/QuotesDescription';
 import { salesOpportunitiesOperations, salesOpportunitiesFields } from './descriptions/SalesOpportunitiesDescription';
 import { purchaseOrdersOperations, purchaseOrdersFields } from './descriptions/PurchaseOrdersDescription';
+import { flagsOperations, flagsFields } from './descriptions/FlagsDescription';
 import { fsiAccountReportOperations, fsiAccountReportFields } from './descriptions/FsiAccountReviewDescription';
 import { fsiBriefingOperations, fsiBriefingFields } from './descriptions/FsiBriefingDescription';
 import { fsiEmailOperations, fsiEmailFields } from './descriptions/FsiEmailDescription';
@@ -118,6 +120,7 @@ export class Vh3Ai implements INodeType {
 					{ name: 'Contact (BigChange)', value: 'contacts', description: 'Customers and sites — companies, addresses, locations' },
 					{ name: 'Contact Feed (VH3 AI)', value: 'contactFeed', description: 'Enriched contact/customer feed with operational snapshot' },
 					{ name: 'Email (VH3 AI)', value: 'email', description: 'Email triage — classify, ingest, and list triage categories' },
+					{ name: 'Flag (BigChange)', value: 'flag', description: 'BigChange flags — definitions, active entity flags, history, job-group bulk flags, and person multi-tag flags' },
 					{ name: 'Intelligence (VH3 AI)', value: 'intelligence', description: 'Job type profiling — list, get, and generate intelligence profiles' },
 					{ name: 'Investigate (VH3 AI)', value: 'investigate', description: 'Run investigative queries against operational data' },
 					{ name: 'Invoice (BigChange)', value: 'invoices', description: 'Sales invoices and their line items — read, create, edit, mark sent/paid, cancel' },
@@ -184,6 +187,8 @@ export class Vh3Ai implements INodeType {
 			...stockFields,
 			...referenceDataOperations,
 			...referenceDataFields,
+			...flagsOperations,
+			...flagsFields,
 			...fsiAccountReportOperations,
 			...fsiAccountReportFields,
 			...fsiBriefingOperations,
@@ -2030,6 +2035,227 @@ export class Vh3Ai implements INodeType {
 						if (simplify) qs.compact = true;
 						const raw = await vh3ProxyGetRequest.call(this, '/reference_data/nominal_code_id', qs);
 						responseData = [raw];
+					}
+				}
+
+				// ── FLAGS (BIGCHANGE) ────────────────────────────────────────
+				else if (resource === 'flag') {
+					const singleFlagEntityConfig = (
+						entityType:
+							| 'invoice'
+							| 'job'
+							| 'jobGroup'
+							| 'note'
+							| 'purchaseOrder'
+							| 'quote'
+							| 'salesOpportunity',
+					): { slug: string; idField: string; deleteIdField: string } => {
+						switch (entityType) {
+							case 'note':
+								return { slug: 'note', idField: 'noteId', deleteIdField: 'flagId' };
+							case 'job':
+								return { slug: 'job', idField: 'jobId', deleteIdField: 'jobFlagId' };
+							case 'invoice':
+								return { slug: 'invoice', idField: 'invoiceId', deleteIdField: 'flagId' };
+							case 'jobGroup':
+								return { slug: 'job_group', idField: 'jobGroupId', deleteIdField: 'flagId' };
+							case 'purchaseOrder':
+								return { slug: 'purchase_order', idField: 'purchaseOrderId', deleteIdField: 'flagId' };
+							case 'quote':
+								return { slug: 'quote', idField: 'quoteId', deleteIdField: 'flagId' };
+							case 'salesOpportunity':
+								return { slug: 'sales_opportunity', idField: 'opportunityId', deleteIdField: 'flagId' };
+							default: {
+								const exhaustiveCheck: never = entityType;
+								throw new NodeOperationError(
+									this.getNode(),
+									`Unsupported flag entity type: ${String(exhaustiveCheck)}`,
+									{ itemIndex: i },
+								);
+							}
+						}
+					};
+
+					if (operation === 'listDefinitions') {
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const body: JsonObject = {};
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (additionalFields.entityType) body.entityType = additionalFields.entityType;
+						if (additionalFields.sortBy) body.sortBy = additionalFields.sortBy;
+						if (additionalFields.direction) body.direction = additionalFields.direction;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/flags/list', body);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							responseData = await vh3ListApiRequestWithLimit.call(this, '/flags/list', body, limit);
+						}
+					} else if (operation === 'getActiveFlag') {
+						const entityType = this.getNodeParameter('entityType', i) as
+							| 'invoice'
+							| 'job'
+							| 'jobGroup'
+							| 'note'
+							| 'purchaseOrder'
+							| 'quote'
+							| 'salesOpportunity';
+						const entityId = this.getNodeParameter('entityId', i) as number;
+						const { slug, idField } = singleFlagEntityConfig(entityType);
+						const body: JsonObject = { [idField]: entityId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						const raw = await vh3ListApiRequest.call(this, `/flags/${slug}/get`, body);
+						responseData = [raw];
+					} else if (operation === 'listFlagHistory') {
+						const entityType = this.getNodeParameter('entityType', i) as
+							| 'invoice'
+							| 'job'
+							| 'jobGroup'
+							| 'note'
+							| 'purchaseOrder'
+							| 'quote'
+							| 'salesOpportunity';
+						const entityId = this.getNodeParameter('entityId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+						const { slug, idField } = singleFlagEntityConfig(entityType);
+						const body: JsonObject = { [idField]: entityId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, `/flags/${slug}/history`, body);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							responseData = await vh3ListApiRequestWithLimit.call(
+								this,
+								`/flags/${slug}/history`,
+								body,
+								limit,
+							);
+						}
+					} else if (operation === 'addFlag') {
+						const entityType = this.getNodeParameter('entityType', i) as
+							| 'invoice'
+							| 'job'
+							| 'jobGroup'
+							| 'note'
+							| 'purchaseOrder'
+							| 'quote'
+							| 'salesOpportunity';
+						const entityId = this.getNodeParameter('entityId', i) as number;
+						const flagId = this.getNodeParameter('flagId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const { slug, idField } = singleFlagEntityConfig(entityType);
+						const body: JsonObject = { [idField]: entityId, flagId };
+						const owner = typeof additionalFields.owner === 'string' ? additionalFields.owner.trim() : '';
+						const comments =
+							typeof additionalFields.comments === 'string' ? additionalFields.comments.trim() : '';
+						if (owner) body.owner = owner;
+						if (comments) body.comments = comments;
+						const raw = await vh3ListApiRequest.call(this, `/flags/${slug}/create`, body);
+						responseData = [raw];
+					} else if (operation === 'deleteFlag') {
+						const entityType = this.getNodeParameter('entityType', i) as
+							| 'invoice'
+							| 'job'
+							| 'jobGroup'
+							| 'note'
+							| 'purchaseOrder'
+							| 'quote'
+							| 'salesOpportunity';
+						const entityId = this.getNodeParameter('entityId', i) as number;
+						const historyId = this.getNodeParameter('historyId', i) as number;
+						const { slug, idField, deleteIdField } = singleFlagEntityConfig(entityType);
+						const body: JsonObject = { [idField]: entityId, [deleteIdField]: historyId };
+						const raw = await vh3ListApiRequest.call(this, `/flags/${slug}/delete`, body);
+						responseData = [raw];
+					} else if (operation === 'listJobGroupJobFlags') {
+						const groupId = this.getNodeParameter('groupId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+						const body: JsonObject = { groupId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(
+								this,
+								'/flags/job_group_jobs/list',
+								body,
+							);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							responseData = await vh3ListApiRequestWithLimit.call(
+								this,
+								'/flags/job_group_jobs/list',
+								body,
+								limit,
+							);
+						}
+					} else if (operation === 'listJobGroupJobFlagHistory') {
+						const groupId = this.getNodeParameter('groupId', i) as number;
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+						const body: JsonObject = { groupId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(
+								this,
+								'/flags/job_group_jobs/history',
+								body,
+							);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							responseData = await vh3ListApiRequestWithLimit.call(
+								this,
+								'/flags/job_group_jobs/history',
+								body,
+								limit,
+							);
+						}
+					} else if (operation === 'applyJobGroupJobFlag') {
+						const groupId = this.getNodeParameter('groupId', i) as number;
+						const flagId = this.getNodeParameter('flagId', i) as number;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as JsonObject;
+						const body: JsonObject = { groupId, flagId };
+						const owner = typeof additionalFields.owner === 'string' ? additionalFields.owner.trim() : '';
+						const comments =
+							typeof additionalFields.comments === 'string' ? additionalFields.comments.trim() : '';
+						if (owner) body.owner = owner;
+						if (comments) body.comments = comments;
+						const raw = await vh3ListApiRequest.call(this, '/flags/job_group_jobs/create', body);
+						responseData = [raw];
+					} else if (operation === 'listPersonFlags') {
+						const personId = (this.getNodeParameter('personId', i) as string).trim();
+						const returnAll = this.getNodeParameter('returnAll', i, false) as boolean;
+						const body: JsonObject = { personId };
+						if (this.getNodeParameter('simplify', i, false) as boolean) body.compact = true;
+						if (returnAll) {
+							responseData = await vh3ListApiRequestAllPages.call(this, '/flags/person/list', body);
+						} else {
+							const limit = this.getNodeParameter('limit', i, 50) as number;
+							responseData = await vh3ListApiRequestWithLimit.call(
+								this,
+								'/flags/person/list',
+								body,
+								limit,
+							);
+						}
+					} else if (operation === 'addPersonFlag') {
+						const personId = (this.getNodeParameter('personId', i) as string).trim();
+						const flagId = this.getNodeParameter('flagId', i) as number;
+						const raw = await vh3ListApiRequest.call(this, '/flags/person/create', {
+							personId,
+							flagId,
+						});
+						responseData = [raw];
+					} else if (operation === 'removePersonFlag') {
+						const personId = (this.getNodeParameter('personId', i) as string).trim();
+						const flagId = this.getNodeParameter('flagId', i) as number;
+						const raw = await vh3ListApiRequest.call(this, '/flags/person/delete', {
+							personId,
+							flagId,
+						});
+						responseData = [raw];
+					} else {
+						throw new NodeOperationError(
+							this.getNode(),
+							`Unsupported flag operation: ${operation}`,
+							{ itemIndex: i },
+						);
 					}
 				}
 
