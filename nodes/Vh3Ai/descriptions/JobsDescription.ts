@@ -37,6 +37,13 @@ export const jobsOperations: INodeProperties[] = [
 				description: 'Add a scheduling rule to a job (e.g. must start before X, requires engineer Y or skill Z). Time-based types need constraintAt; resource/skill types need entityId. Used by the BigChange scheduler.',
 			},
 			{
+				name: 'Create Job Line Item',
+				value: 'createLineItem',
+				action: 'Create a job line item',
+				description:
+					'Add a cost or billing line item to a job. Requires job ID and quantity; optional description, unitCost, unitSellingPrice (0 is preserved for cost-only lines), taxId, nominalCodeId, departmentCodeId, and contactId.',
+			},
+			{
 				name: 'Create Job Stock',
 				value: 'createJobStock',
 				action: 'Create job stock entry',
@@ -47,6 +54,12 @@ export const jobsOperations: INodeProperties[] = [
 				value: 'deleteJobConstraint',
 				action: 'Delete a job constraint',
 				description: 'Remove a scheduling constraint by its constraint ID (get it first via List Job Constraints)',
+			},
+			{
+				name: 'Delete Job Line Item',
+				value: 'deleteLineItem',
+				action: 'Delete a job line item',
+				description: 'Delete a line item from a job by job ID and line item ID',
 			},
 			{
 				name: 'Delete Job Stock',
@@ -61,6 +74,13 @@ export const jobsOperations: INodeProperties[] = [
 				description: 'Update fields on an existing job (description, reference, planned duration, person, order number, custom fields, office notes, isActioned, isFinanciallyComplete). Does not change schedule or status — use Schedule Job / Start Job / Set Job Result for those.',
 			},
 			{
+				name: 'Edit Job Line Item',
+				value: 'editLineItem',
+				action: 'Edit a job line item',
+				description:
+					'Update fields on an existing job line item using presence-only PATCH semantics (only fields added in Update Fields are sent; numeric 0 is preserved)',
+			},
+			{
 				name: 'Get Job',
 				value: 'getJob',
 				action: 'Get a plain job',
@@ -73,6 +93,12 @@ export const jobsOperations: INodeProperties[] = [
 				description: 'Get one plain BigChange job by numeric ID, using the same job route as Get Job. Optionally request a compact payload or worksheet answers.',
 			},
 			{
+				name: 'Get Job Line Item',
+				value: 'getLineItem',
+				action: 'Get a job line item',
+				description: 'Retrieve a single cost or billing line item on a job by job ID and line item ID',
+			},
+			{
 				name: 'Get Job Stock',
 				value: 'getJobStock',
 				action: 'Get job stock',
@@ -83,6 +109,13 @@ export const jobsOperations: INodeProperties[] = [
 				value: 'listJobConstraints',
 				action: 'List job constraints',
 				description: 'List all scheduling constraints currently attached to a job (pre-existing rules the scheduler must respect)',
+			},
+			{
+				name: 'List Job Line Items',
+				value: 'listLineItems',
+				action: 'List job line items',
+				description:
+					'List cost and billing line items belonging to a specific job. Returns one item per line item; supports sorting, Simplify, and Return All auto-pagination.',
 			},
 			{
 				name: 'List Job Status History',
@@ -1259,7 +1292,14 @@ export const jobsFields: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['jobs'],
-				operation: ['listJobStatusHistory', 'listJobConstraints', 'listJobStock', 'getJobStock'],
+				operation: [
+					'listJobStatusHistory',
+					'listJobConstraints',
+					'listJobStock',
+					'getJobStock',
+					'listLineItems',
+					'getLineItem',
+				],
 			},
 		},
 	},
@@ -1284,5 +1324,241 @@ export const jobsFields: INodeProperties[] = [
 		displayOptions: {
 			show: { resource: ['jobs'], operation: ['getJobStock', 'deleteJobStock'] },
 		},
+	},
+
+	// ── Job Line Items fields ──
+	{
+		displayName: 'Job ID',
+		name: 'jobId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'Numeric ID of the job the line item belongs to',
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['listLineItems', 'getLineItem', 'createLineItem', 'editLineItem', 'deleteLineItem'],
+			},
+		},
+	},
+	{
+		displayName: 'Line Item ID',
+		name: 'lineItemId',
+		type: 'number',
+		required: true,
+		default: 0,
+		description: 'Numeric ID of the job line item',
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['getLineItem', 'editLineItem', 'deleteLineItem'],
+			},
+		},
+	},
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['listLineItems'],
+			},
+		},
+	},
+	{
+		displayName: 'Limit',
+		name: 'limit',
+		type: 'number',
+		typeOptions: {
+			minValue: 1,
+		},
+		default: 50,
+		description: 'Max number of results to return',
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['listLineItems'],
+				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['listLineItems'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Direction',
+				name: 'direction',
+				type: 'options',
+				options: [
+					{ name: 'Ascending', value: 'ascending' },
+					{ name: 'Descending', value: 'descending' },
+				],
+				default: 'descending',
+				description: 'Sort direction',
+			},
+			{
+				displayName: 'Sort By',
+				name: 'sortBy',
+				type: 'options',
+				options: [{ name: 'Created At', value: 'createdAt' }],
+				default: 'createdAt',
+				description: 'Field to sort line items by',
+			},
+		],
+	},
+	{
+		displayName: 'Quantity',
+		name: 'quantity',
+		type: 'number',
+		required: true,
+		default: 1,
+		description: 'Quantity for the job line item',
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['createLineItem'],
+			},
+		},
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['createLineItem'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Contact ID',
+				name: 'contactId',
+				type: 'number',
+				default: 0,
+				description: 'Optional contact ID associated with the line item',
+			},
+			{
+				displayName: 'Department Code ID',
+				name: 'departmentCodeId',
+				type: 'number',
+				default: 0,
+				description: 'Department code ID (from Reference Data › List Department Codes)',
+			},
+			{
+				displayName: 'Description',
+				name: 'description',
+				type: 'string',
+				default: '',
+				description: 'Line item description (e.g. labour, call-out, replacement part)',
+			},
+			{
+				displayName: 'Nominal Code ID',
+				name: 'nominalCodeId',
+				type: 'number',
+				default: 0,
+				description: 'Nominal accounting code ID (from Reference Data › List Nominal Codes)',
+			},
+			{
+				displayName: 'Tax ID',
+				name: 'taxId',
+				type: 'number',
+				default: 0,
+				description: 'Tax rate ID for the line item',
+			},
+			{
+				displayName: 'Unit Cost',
+				name: 'unitCost',
+				type: 'number',
+				default: 0,
+				description: 'Unit cost price (numeric 0 is preserved when added)',
+			},
+			{
+				displayName: 'Unit Selling Price',
+				name: 'unitSellingPrice',
+				type: 'number',
+				default: 0,
+				description: 'Unit selling price (numeric 0 is preserved when added, e.g. for cost-only lines)',
+			},
+		],
+	},
+	{
+		displayName: 'Update Fields',
+		name: 'updateFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['jobs'],
+				operation: ['editLineItem'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Department Code ID',
+				name: 'departmentCodeId',
+				type: 'number',
+				default: 0,
+				description: 'Updated department code ID',
+			},
+			{
+				displayName: 'Description',
+				name: 'description',
+				type: 'string',
+				default: '',
+				description: 'Updated line item description',
+			},
+			{
+				displayName: 'Nominal Code ID',
+				name: 'nominalCodeId',
+				type: 'number',
+				default: 0,
+				description: 'Updated nominal accounting code ID',
+			},
+			{
+				displayName: 'Quantity',
+				name: 'quantity',
+				type: 'number',
+				default: 1,
+				description: 'Updated line item quantity',
+			},
+			{
+				displayName: 'Tax ID',
+				name: 'taxId',
+				type: 'number',
+				default: 0,
+				description: 'Updated tax rate ID',
+			},
+			{
+				displayName: 'Unit Cost',
+				name: 'unitCost',
+				type: 'number',
+				default: 0,
+				description: 'Updated unit cost price (numeric 0 is preserved)',
+			},
+			{
+				displayName: 'Unit Selling Price',
+				name: 'unitSellingPrice',
+				type: 'number',
+				default: 0,
+				description: 'Updated unit selling price (numeric 0 is preserved)',
+			},
+		],
 	},
 ];
